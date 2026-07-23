@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 import type { AppState, Day, ScreenId, TabId } from '../types';
 import { loadLastId, loadState, saveLastId, saveState } from '../lib/storage';
-import { firebaseEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/sync';
+import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
 
 const TAB_SCREEN: Record<TabId, ScreenId> = {
   journey: 'journey',
@@ -10,6 +10,7 @@ const TAB_SCREEN: Record<TabId, ScreenId> = {
   decide: 'decide',
   type: 'type',
   schedule: 'schedule',
+  prayer: 'prayer',
 };
 
 type Action =
@@ -77,7 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (local) {
       dispatch({ type: 'RESTORE', state: { ...local, id: lastId } });
     }
-    if (firebaseEnabled) {
+    if (gasEnabled) {
       loadRemoteProgress(lastId).then((remote) => {
         if (!remote) return;
         dispatch({

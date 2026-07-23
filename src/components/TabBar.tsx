@@ -58,6 +58,15 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'prayer',
+    label: '기도',
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M4 5h16v10H8l-4 4V5z" />
+      </svg>
+    ),
+  },
 ];
 
 interface Props {

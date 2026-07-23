@@ -1,6 +1,7 @@
 import type { AppState } from '../types';
 
 const LAST_ID_KEY = 'breaker:lastId';
+const GROUP_KEY = 'breaker:group';
 
 function stateKey(id: string) {
   return `breaker:state:${id}`;
@@ -26,4 +27,12 @@ export function loadState(id: string): AppState | null {
   } catch {
     return null;
   }
+}
+
+export function saveGroup(group: string) {
+  localStorage.setItem(GROUP_KEY, group);
+}
+
+export function loadGroup(): string | null {
+  return localStorage.getItem(GROUP_KEY);
 }

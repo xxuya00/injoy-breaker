@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { subscribeLeaderboard, firebaseEnabled, type LeaderboardEntry } from '../lib/sync';
+import { fetchLeaderboard, gasEnabled, type LeaderboardEntry } from '../lib/gas';
 import Sheet from '../components/Sheet';
 import styles from './RankScreen.module.css';
 
@@ -23,9 +23,20 @@ export default function RankScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!firebaseEnabled) return;
-    return subscribeLeaderboard(setEntries);
-  }, []);
+    if (!gasEnabled || state.screen !== 'rank') return;
+    let cancelled = false;
+    const poll = () => {
+      fetchLeaderboard().then((data) => {
+        if (!cancelled && data.length) setEntries(data);
+      });
+    };
+    poll();
+    const id = setInterval(poll, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [state.screen]);
 
   useEffect(() => {
     return () => {
