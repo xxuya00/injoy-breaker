@@ -1,0 +1,25 @@
+.item {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.itemTitle {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--gold-soft);
+  margin-bottom: 6px;
+}
+.itemBody {
+  font-size: 14px;
+  color: #c9d2f2;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.empty {
+  text-align: center;
+  color: var(--mute);
+  font-size: 13.5px;
+  padding: 40px 0;
+}

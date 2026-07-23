@@ -1,6 +1,6 @@
 import type { Day, DayData } from '../types';
 
-export const TOTAL = 8;
+export const TOTAL = 16;
 
 export const LOCKS: Record<Day, DayData> = {
   1: {
@@ -43,6 +43,49 @@ export const LOCKS: Record<Day, DayData> = {
         type: 'math',
         reveal: '숫자에도 질서가 있듯, 오늘 하루에도 하나님의 질서가 있습니다.',
       },
+      {
+        id: 'd1e',
+        name: '다섯 번째 두드림',
+        sub: '틀린그림찾기 · 관찰력',
+        type: 'spotdiff',
+        reveal: '작은 차이를 알아채는 눈이, 삶의 헛됨도 알아챕니다.',
+      },
+      {
+        id: 'd1f',
+        name: '여섯 번째 두드림',
+        sub: '암기 · 순간 집중',
+        type: 'memory',
+        reveal: '잠깐의 집중도 훈련이 됩니다. 말씀을 마음에 새기는 것처럼요.',
+      },
+      {
+        id: 'd1g',
+        name: '일곱 번째 두드림',
+        sub: '퍼즐 · 말씀 순서 맞추기',
+        type: 'puzzle',
+        reveal: '흩어진 것을 제자리로— 우리 삶의 순서도 그렇습니다.',
+      },
+      {
+        id: 'd1h',
+        name: '여덟 번째 두드림',
+        sub: '추리 · 머리 굴리기',
+        type: 'quiz',
+        pill: '추리 자물쇠',
+        q: '세 친구 중 한 명만 진실을 말합니다. A: "B가 거짓말쟁이다", B: "C가 거짓말쟁이다", C: "나는 거짓말쟁이가 아니다". 진실을 말한 사람은?',
+        opts: ['A', 'B', 'C'],
+        answer: 0,
+        reveal: '겉으로 보이는 말보다, 끝까지 따져보는 태도가 지혜의 시작입니다.',
+      },
+      {
+        id: 'd1i',
+        name: '아홉 번째 두드림',
+        sub: '직관 · 떠오르는 대로',
+        type: 'quiz',
+        pill: '직관 자물쇠',
+        q: '지금 가장 먼저 떠오르는 단어를 골라보세요.',
+        opts: ['쉼', '관계', '성취', '자유'],
+        answer: -1,
+        reveal: '정답은 없어요. 지금 떠오른 그것이, 요즘 당신의 마음이 향한 곳일 수 있어요.',
+      },
     ],
   },
   2: {
@@ -76,11 +119,31 @@ export const LOCKS: Record<Day, DayData> = {
         reveal: '전도서 1:18 — 지혜가 많으면 번뇌도 많더라. 지혜조차 답이 아니었습니다.',
       },
       {
-        id: 'd2d',
-        name: '밤의 질문',
-        sub: '저녁 집회 · 잠긴 채로',
-        type: 'locked-until',
-        reveal: '',
+        id: 'd2e',
+        name: '사람의 자물쇠',
+        sub: 'QR · 만남의 장소',
+        type: 'mission',
+        q: '함께 온 사람에게 감사한 점 하나를 직접 말해보세요.',
+        hint: '말했다면 자물쇠가 열립니다.',
+        reveal: '전도서 4:9-10 — 두 사람이 한 사람보다 나음은 그들이 수고함으로 좋은 상을 얻을 것임이라.',
+      },
+      {
+        id: 'd2f',
+        name: '인정의 자물쇠',
+        sub: 'QR · 게시판 앞',
+        type: 'mission',
+        q: 'SNS에 자랑하고 싶었던 순간을 하나 떠올려, 사람 대신 하나님께만 조용히 말해보세요.',
+        hint: '마음속으로 말했다면 엽니다.',
+        reveal: '마태복음 6:1 — 사람에게 보이려고 그들 앞에서 의를 행하지 않도록 주의하라.',
+      },
+      {
+        id: 'd2g',
+        name: '권력의 자물쇠',
+        sub: 'QR · 전망대',
+        type: 'mission',
+        q: '내가 통제할 수 없는 것 하나를 떠올리고, 하나님께 맡기는 짧은 기도를 해보세요.',
+        hint: '기도했다면 자물쇠를 엽니다.',
+        reveal: '시편 127:1 — 여호와께서 집을 세우지 아니하시면 세우는 자의 수고가 헛되며.',
       },
     ],
   },
@@ -98,4 +161,7 @@ export const LOCKS: Record<Day, DayData> = {
   },
 };
 
-export const FINAL_REQUIRED = ['d1a', 'd1b', 'd1c', 'd1d', 'd2a', 'd2b', 'd2c'];
+export const FINAL_REQUIRED = [
+  'd1a', 'd1b', 'd1c', 'd1d', 'd1e', 'd1f', 'd1g', 'd1h', 'd1i',
+  'd2a', 'd2b', 'd2c', 'd2e', 'd2f', 'd2g',
+];

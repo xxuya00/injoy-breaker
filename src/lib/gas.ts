@@ -67,3 +67,16 @@ export async function addPrayer(group: string, nick: string, text: string) {
   if (!gasEnabled) return;
   await gasPost({ action: 'addPrayer', group, nick, text });
 }
+
+export interface NoticeEntry {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+}
+
+export async function fetchNotices(): Promise<NoticeEntry[]> {
+  if (!gasEnabled) return [];
+  const data = await gasGet({ action: 'getNotices' });
+  return data ?? [];
+}

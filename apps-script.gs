@@ -3,6 +3,7 @@ function doGet(e) {
   if (action === 'leaderboard') return leaderboard_();
   if (action === 'getPlayer') return getPlayer_(e.parameter.id);
   if (action === 'getPrayers') return getPrayers_(e.parameter.group);
+  if (action === 'getNotices') return getNotices_();
   return json_({ error: 'unknown action' });
 }
 
@@ -34,6 +35,10 @@ function playersSheet_() {
 
 function prayersSheet_() {
   return sheet_('prayers', ['id', 'group', 'nick', 'text', 'created_at']);
+}
+
+function noticesSheet_() {
+  return sheet_('notices', ['id', 'title', 'body', 'created_at']);
 }
 
 function savePlayer_(body) {
@@ -100,6 +105,17 @@ function getPrayers_(group) {
     if (data[i][1] === group) {
       rows.push({ id: data[i][0], group: data[i][1], nick: data[i][2], text: data[i][3], createdAt: data[i][4] });
     }
+  }
+  rows.reverse();
+  return json_(rows);
+}
+
+function getNotices_() {
+  var sh = noticesSheet_();
+  var data = sh.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    rows.push({ id: data[i][0], title: data[i][1], body: data[i][2], createdAt: data[i][3] });
   }
   rows.reverse();
   return json_(rows);

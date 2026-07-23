@@ -39,6 +39,16 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'notice',
+    label: '공지',
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M4 4h16v12l-4-2H4z" />
+        <path d="M8 9h8M8 12h5" />
+      </svg>
+    ),
+  },
 ];
 
 interface Props {

@@ -1,4 +1,4 @@
-export type LockType = 'quiz' | 'mission' | 'math' | 'locked-until' | 'final';
+export type LockType = 'quiz' | 'mission' | 'math' | 'spotdiff' | 'memory' | 'puzzle' | 'locked-until' | 'final';
 
 export interface LockItem {
   id: string;
@@ -10,6 +10,7 @@ export interface LockItem {
   answer?: number;
   reveal?: string;
   hint?: string;
+  pill?: string;
 }
 
 export interface DayData {
@@ -29,8 +30,9 @@ export type ScreenId =
   | 'type'
   | 'schedule'
   | 'prayer'
-  | 'qt';
-export type TabId = 'journey' | 'schedule' | 'prayer' | 'qt';
+  | 'qt'
+  | 'notice';
+export type TabId = 'journey' | 'schedule' | 'prayer' | 'qt' | 'notice';
 
 export interface AppState {
   id: string | null;

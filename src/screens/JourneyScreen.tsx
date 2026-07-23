@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
 import { MATH_PUZZLES } from '../data/mathQuiz';
+import { SPOT_DIFF } from '../data/spotDiff';
+import { MEMORY_CHALLENGE } from '../data/memoryGame';
+import { WORD_PUZZLE } from '../data/wordPuzzle';
 import type { Day, LockItem } from '../types';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
@@ -12,8 +15,20 @@ type SheetState =
   | { kind: 'quiz'; item: LockItem }
   | { kind: 'mission'; item: LockItem }
   | { kind: 'math'; item: LockItem }
+  | { kind: 'spotdiff'; item: LockItem }
+  | { kind: 'memory'; item: LockItem }
+  | { kind: 'puzzle'; item: LockItem }
   | { kind: 'reveal'; item: LockItem }
   | { kind: 'finalLocked'; done: number; need: number };
+
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 function LockIcon({ open }: { open: boolean }) {
   return open ? (
@@ -53,6 +68,19 @@ export default function JourneyScreen() {
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
   const [mathIdx, setMathIdx] = useState(0);
   const [mathAnswered, setMathAnswered] = useState<{ value: number; correct: boolean } | null>(null);
+  const [spotWrong, setSpotWrong] = useState(false);
+  const [memPhase, setMemPhase] = useState<'show' | 'ask'>('show');
+  const [memAnswered, setMemAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
+  const memTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [puzzleWords, setPuzzleWords] = useState<{ word: string; idx: number }[]>([]);
+  const [puzzlePicked, setPuzzlePicked] = useState<number[]>([]);
+  const [puzzleWrong, setPuzzleWrong] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (memTimer.current) clearTimeout(memTimer.current);
+    };
+  }, []);
 
   const dayData = LOCKS[state.day];
   const openedCount = Object.keys(state.opened).length;
@@ -84,7 +112,70 @@ export default function JourneyScreen() {
       setSheet({ kind: 'math', item });
       return;
     }
+    if (item.type === 'spotdiff') {
+      setSpotWrong(false);
+      setSheet({ kind: 'spotdiff', item });
+      return;
+    }
+    if (item.type === 'memory') {
+      setMemPhase('show');
+      setMemAnswered(null);
+      setSheet({ kind: 'memory', item });
+      if (memTimer.current) clearTimeout(memTimer.current);
+      memTimer.current = setTimeout(() => setMemPhase('ask'), 3000);
+      return;
+    }
+    if (item.type === 'puzzle') {
+      setPuzzleWords(shuffleArr(WORD_PUZZLE.words.map((word, idx) => ({ word, idx }))));
+      setPuzzlePicked([]);
+      setPuzzleWrong(false);
+      setSheet({ kind: 'puzzle', item });
+      return;
+    }
     setSheet({ kind: item.type === 'quiz' ? 'quiz' : 'mission', item });
+  };
+
+  const answerSpotDiff = (item: LockItem, index: number) => {
+    if (index === SPOT_DIFF.diffIndex) {
+      openLock(item.id);
+      setSheet({ kind: 'reveal', item });
+    } else {
+      setSpotWrong(true);
+      setTimeout(() => setSpotWrong(false), 400);
+    }
+  };
+
+  const answerMemory = (item: LockItem, idx: number) => {
+    const correct = idx === MEMORY_CHALLENGE.correctIndex;
+    setMemAnswered({ idx, correct });
+    if (correct) {
+      setTimeout(() => {
+        openLock(item.id);
+        setSheet({ kind: 'reveal', item });
+      }, 550);
+    } else {
+      setTimeout(() => setMemAnswered(null), 500);
+    }
+  };
+
+  const pickPuzzleWord = (item: LockItem, wordIdx: number) => {
+    const nextPicked = [...puzzlePicked, wordIdx];
+    setPuzzlePicked(nextPicked);
+    if (nextPicked.length === WORD_PUZZLE.words.length) {
+      const correct = nextPicked.every((v, i) => v === i);
+      if (correct) {
+        setTimeout(() => {
+          openLock(item.id);
+          setSheet({ kind: 'reveal', item });
+        }, 400);
+      } else {
+        setPuzzleWrong(true);
+        setTimeout(() => {
+          setPuzzleWrong(false);
+          setPuzzlePicked([]);
+        }, 800);
+      }
+    }
   };
 
   const answerMath = (item: LockItem, value: number) => {
@@ -107,7 +198,7 @@ export default function JourneyScreen() {
   };
 
   const answerQuiz = (item: LockItem, idx: number) => {
-    const correct = idx === item.answer;
+    const correct = item.answer === -1 || idx === item.answer;
     setAnswered({ idx, correct });
     if (correct) {
       setTimeout(() => {
@@ -226,7 +317,7 @@ export default function JourneyScreen() {
       <Sheet open={sheet !== null} onClose={() => setSheet(null)}>
         {sheet?.kind === 'quiz' && (
           <>
-            <span className="pill">성경 자물쇠</span>
+            <span className="pill">{sheet.item.pill ?? '성경 자물쇠'}</span>
             <h2 style={{ margin: '6px 0 16px' }}>{sheet.item.q}</h2>
             {sheet.item.opts?.map((opt, i) => (
               <button
@@ -267,6 +358,92 @@ export default function JourneyScreen() {
                   onClick={() => answerMath(sheet.item, opt)}
                 >
                   {opt}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {sheet?.kind === 'spotdiff' && (
+          <>
+            <span className="pill">🔍 틀린그림찾기</span>
+            <h2 style={{ margin: '6px 0 4px' }}>아래 줄에서 다른 하나를 찾아 탭하세요</h2>
+            <p className="muted" style={{ marginBottom: 16 }}>
+              두 줄은 똑같아요. 딱 하나만 다릅니다.
+            </p>
+            <div className={styles.emojiRow}>
+              {SPOT_DIFF.items.map((e, i) => (
+                <div key={i} className={styles.emojiCell}>
+                  {e}
+                </div>
+              ))}
+            </div>
+            <div className={`${styles.emojiRow} ${spotWrong ? styles.emojiRowWrong : ''}`} style={{ marginTop: 10 }}>
+              {SPOT_DIFF.items.map((e, i) => (
+                <button
+                  key={i}
+                  className={styles.emojiCellBtn}
+                  onClick={() => answerSpotDiff(sheet.item, i)}
+                >
+                  {i === SPOT_DIFF.diffIndex ? SPOT_DIFF.diffItem : e}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {sheet?.kind === 'memory' && (
+          <>
+            <span className="pill">🧠 암기 자물쇠</span>
+            {memPhase === 'show' ? (
+              <>
+                <h2 style={{ margin: '6px 0 16px' }}>이 순서를 기억하세요</h2>
+                <div className={styles.emojiRow}>
+                  {MEMORY_CHALLENGE.sequence.map((e, i) => (
+                    <div key={i} className={styles.emojiCellBig}>
+                      {e}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ margin: '6px 0 16px' }}>방금 본 순서와 같은 것은?</h2>
+                {MEMORY_CHALLENGE.options.map((opt, i) => (
+                  <button
+                    key={i}
+                    className={`opt ${memAnswered?.idx === i ? (memAnswered.correct ? 'correct' : 'wrong') : ''}`}
+                    onClick={() => answerMemory(sheet.item, i)}
+                  >
+                    {opt.join(' ')}
+                  </button>
+                ))}
+              </>
+            )}
+          </>
+        )}
+
+        {sheet?.kind === 'puzzle' && (
+          <>
+            <span className="pill">🧩 퍼즐 자물쇠</span>
+            <h2 style={{ margin: '6px 0 4px' }}>말씀 순서를 맞춰보세요</h2>
+            <p className="muted" style={{ marginBottom: 12 }}>
+              {WORD_PUZZLE.reference}
+            </p>
+            <div className={`${styles.puzzleAnswerRow} ${puzzleWrong ? styles.puzzleWrong : ''}`}>
+              {puzzlePicked.length === 0
+                ? '탭한 단어가 여기에 순서대로 쌓여요'
+                : puzzlePicked.map((wi) => WORD_PUZZLE.words[wi]).join(' ')}
+            </div>
+            <div className={styles.puzzleChipRow}>
+              {puzzleWords.map(({ word, idx }) => (
+                <button
+                  key={idx}
+                  className={styles.puzzleChip}
+                  disabled={puzzlePicked.includes(idx)}
+                  onClick={() => pickPuzzleWord(sheet.item, idx)}
+                >
+                  {word}
                 </button>
               ))}
             </div>
