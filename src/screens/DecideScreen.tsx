@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
+import BackLink from '../components/BackLink';
 
 export default function DecideScreen() {
-  const { state, openLock, setTab } = useApp();
+  const { state, openLock, setTab, goScreen } = useApp();
   const [keep, setKeep] = useState('');
   const [done, setDone] = useState(false);
 
@@ -15,6 +16,7 @@ export default function DecideScreen() {
 
   return (
     <section>
+      <BackLink onClick={() => goScreen('journey')} />
       <div className="eyebrow">Day 3 · Break Through</div>
       <h1>마지막 열쇠</h1>
       <p className="lead" style={{ marginBottom: 18 }}>

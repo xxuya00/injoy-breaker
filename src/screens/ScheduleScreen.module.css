@@ -1,44 +1,46 @@
-.dayCard {
-  background: var(--ink-2);
+.wrap {
+  overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 18px 20px;
-  margin-bottom: 16px;
+  border-radius: 14px;
 }
-.dayHead {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 12px;
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
 }
-.dayDate {
-  font-family: 'Bebas Neue';
-  font-size: 22px;
-  letter-spacing: 0.05em;
+.table th,
+.table td {
+  border: 1px solid var(--line);
+  text-align: center;
+  padding: 4px 3px;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+.table th {
+  background: var(--ink-2);
   color: var(--gold);
+  font-weight: 700;
+  font-size: 10.5px;
+  padding: 8px 3px;
 }
-.dayWeekday {
-  font-size: 13px;
+.timeCol {
+  width: 15%;
+}
+.dayCol {
+  width: 28.33%;
+}
+.timeCell {
   color: var(--mute);
-  font-weight: 600;
+  font-family: 'Bebas Neue';
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  background: var(--ink-2);
 }
-.block {
-  display: flex;
-  gap: 14px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line);
+.labelCell {
+  color: var(--text);
+  background: var(--ink-3);
 }
-.block:last-child {
-  border-bottom: 0;
-}
-.blockTime {
-  flex: 0 0 92px;
-  font-size: 12.5px;
-  color: var(--gold-soft);
-  font-weight: 600;
-  padding-top: 1px;
-}
-.blockLabel {
-  flex: 1;
-  font-size: 14.5px;
+.emptyCell {
+  background: transparent;
 }

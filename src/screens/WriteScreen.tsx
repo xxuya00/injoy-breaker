@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useToast } from '../context/ToastContext';
+import { useApp } from '../context/AppContext';
+import BackLink from '../components/BackLink';
 
 export default function WriteScreen() {
   const toast = useToast();
+  const { goScreen } = useApp();
   const [copy, setCopy] = useState('');
   const [confront, setConfront] = useState('');
 
   return (
     <section>
+      <BackLink onClick={() => goScreen('journey')} />
       <div className="eyebrow">Day 2 · Stillness</div>
       <h1>숲의 기록</h1>
       <p className="muted" style={{ marginBottom: 18 }}>

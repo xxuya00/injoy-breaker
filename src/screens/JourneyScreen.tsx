@@ -29,10 +29,25 @@ function LockIcon({ open }: { open: boolean }) {
   );
 }
 
+function NavCard({ icon, name, sub, onClick }: { icon: React.ReactNode; name: string; sub: string; onClick: () => void }) {
+  return (
+    <div className={`${styles.lock} ${styles.lockOpen} ${styles.tapable}`} onClick={onClick}>
+      <div className={styles.ic}>{icon}</div>
+      <div className={styles.body}>
+        <div className={styles.name}>{name}</div>
+        <div className={styles.sub}>{sub}</div>
+      </div>
+      <svg className={styles.chev} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+    </div>
+  );
+}
+
 const DAY_LABELS: Record<Day, string> = { 1: 'BREAK AWAY', 2: 'BREAK DOWN', 3: 'BREAK THROUGH' };
 
 export default function JourneyScreen() {
-  const { state, selectDay, openLock, setTab } = useApp();
+  const { state, selectDay, openLock, goScreen } = useApp();
   const toast = useToast();
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
@@ -49,7 +64,7 @@ export default function JourneyScreen() {
       if (done < FINAL_REQUIRED.length) {
         setSheet({ kind: 'finalLocked', done, need: FINAL_REQUIRED.length });
       } else {
-        setTab('decide');
+        goScreen('decide');
         setSheet(null);
       }
       return;
@@ -112,8 +127,17 @@ export default function JourneyScreen() {
 
   return (
     <section>
-      <div className="eyebrow">The Journey</div>
-      <h1>3일의 자물쇠</h1>
+      <div className={styles.header}>
+        <div>
+          <div className="eyebrow">The Journey</div>
+          <h1>3일의 자물쇠</h1>
+        </div>
+        <button className={styles.rankBtn} onClick={() => goScreen('rank')} aria-label="순위 보기">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 21h8M12 17v4M6 4h12v5a6 6 0 0 1-12 0V4z" />
+          </svg>
+        </button>
+      </div>
 
       <div className={styles.progressWrap}>
         <span className={styles.progressNum}>
@@ -167,6 +191,43 @@ export default function JourneyScreen() {
             </div>
           );
         })}
+        {state.day === 2 && (
+          <>
+            <NavCard
+              icon={
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
+                </svg>
+              }
+              name="숲의 기록"
+              sub="오늘 마주한 것을 남겨보세요"
+              onClick={() => goScreen('write')}
+            />
+            <NavCard
+              icon={
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="8" />
+                  <circle cx="12" cy="12" r="2.6" />
+                </svg>
+              }
+              name="유형 검사"
+              sub="우상 · 묵상 · 기도 유형 알아보기"
+              onClick={() => goScreen('type')}
+            />
+          </>
+        )}
+        {state.day === 3 && (
+          <NavCard
+            icon={
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3l2 5 5 .5-4 3.5 1 5-4-2.5L8 20l1-5-4-3.5 5-.5z" />
+              </svg>
+            }
+            name="마지막 열쇠 · 결단"
+            sub="깨어난 집중으로 세상에 나아가요"
+            onClick={() => goScreen('decide')}
+          />
+        )}
       </div>
 
       <Sheet open={sheet !== null} onClose={() => setSheet(null)}>

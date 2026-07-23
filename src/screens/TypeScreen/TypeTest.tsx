@@ -18,6 +18,8 @@ import {
   PRAY_TYPES,
   type IdolKey,
 } from '../../data/typeTest';
+import { useApp } from '../../context/AppContext';
+import BackLink from '../../components/BackLink';
 import styles from './TypeTest.module.css';
 
 function shuffledIndices(length: number): number[] {
@@ -107,6 +109,7 @@ function computePray(answers: Record<string, number>) {
 }
 
 export default function TypeTest() {
+  const { goScreen } = useApp();
   const screens = useMemo(buildScreens, []);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -135,6 +138,7 @@ export default function TypeTest() {
 
   return (
     <section>
+      <BackLink onClick={() => goScreen('journey')} />
       <div className="eyebrow">Self Diagnosis</div>
       <h1>우상 · 묵상 · 기도</h1>
       <p className="muted" style={{ marginBottom: 16 }}>

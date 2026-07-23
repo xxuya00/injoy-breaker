@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { fetchLeaderboard, gasEnabled, type LeaderboardEntry } from '../lib/gas';
 import Sheet from '../components/Sheet';
+import BackLink from '../components/BackLink';
 import styles from './RankScreen.module.css';
 
 const SEED: LeaderboardEntry[] = [
@@ -14,7 +15,7 @@ const SEED: LeaderboardEntry[] = [
 ];
 
 export default function RankScreen() {
-  const { state } = useApp();
+  const { state, goScreen } = useApp();
   const toast = useToast();
   const [entries, setEntries] = useState<LeaderboardEntry[]>(SEED);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -77,6 +78,7 @@ export default function RankScreen() {
 
   return (
     <section>
+      <BackLink onClick={() => goScreen('journey')} />
       <div className="eyebrow">Speed Rounds</div>
       <h1>돌발 순위판</h1>
       <p className="muted" style={{ marginBottom: 6 }}>

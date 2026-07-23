@@ -1,0 +1,21 @@
+.dayTabRow {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 20px;
+}
+.dayTab {
+  flex: 1;
+  text-align: center;
+  padding: 12px 4px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+.dayTabOn {
+  border-color: var(--gold);
+  background: var(--ink-3);
+  color: var(--gold);
+}

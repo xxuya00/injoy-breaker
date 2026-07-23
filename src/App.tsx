@@ -10,6 +10,7 @@ import RankScreen from './screens/RankScreen';
 import TypeTest from './screens/TypeScreen/TypeTest';
 import ScheduleScreen from './screens/ScheduleScreen';
 import PrayerScreen from './screens/PrayerScreen';
+import QtScreen from './screens/QtScreen';
 import type { ScreenId } from './types';
 import styles from './App.module.css';
 
@@ -23,6 +24,7 @@ const SCREENS: { id: ScreenId; render: () => React.ReactNode }[] = [
   { id: 'type', render: () => <TypeTest /> },
   { id: 'schedule', render: () => <ScheduleScreen /> },
   { id: 'prayer', render: () => <PrayerScreen /> },
+  { id: 'qt', render: () => <QtScreen /> },
 ];
 
 function Shell() {

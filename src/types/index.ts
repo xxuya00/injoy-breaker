@@ -19,8 +19,18 @@ export interface DayData {
 
 export type Day = 1 | 2 | 3;
 
-export type ScreenId = 'login' | 'brief' | 'journey' | 'write' | 'decide' | 'rank' | 'type' | 'schedule' | 'prayer';
-export type TabId = 'journey' | 'write' | 'rank' | 'decide' | 'type' | 'schedule' | 'prayer';
+export type ScreenId =
+  | 'login'
+  | 'brief'
+  | 'journey'
+  | 'write'
+  | 'decide'
+  | 'rank'
+  | 'type'
+  | 'schedule'
+  | 'prayer'
+  | 'qt';
+export type TabId = 'journey' | 'schedule' | 'prayer' | 'qt';
 
 export interface AppState {
   id: string | null;

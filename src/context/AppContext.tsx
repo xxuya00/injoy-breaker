@@ -5,12 +5,9 @@ import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
 
 const TAB_SCREEN: Record<TabId, ScreenId> = {
   journey: 'journey',
-  write: 'write',
-  rank: 'rank',
-  decide: 'decide',
-  type: 'type',
   schedule: 'schedule',
   prayer: 'prayer',
+  qt: 'qt',
 };
 
 type Action =

@@ -12,39 +12,11 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    id: 'write',
-    label: '기록',
+    id: 'qt',
+    label: '큐티',
     icon: (
       <svg viewBox="0 0 24 24">
-        <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'rank',
-    label: '순위',
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M8 21h8M12 17v4M6 4h12v5a6 6 0 0 1-12 0V4z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'decide',
-    label: '결단',
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M12 3l2 5 5 .5-4 3.5 1 5-4-2.5L8 20l1-5-4-3.5 5-.5z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'type',
-    label: '유형',
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8" />
-        <circle cx="12" cy="12" r="2.6" />
+        <path d="M12 3v3M5 6l2 2M19 6l-2 2M4 14a8 8 0 1 1 16 0c0 3-2 4-2 6H6c0-2-2-3-2-6z" />
       </svg>
     ),
   },
