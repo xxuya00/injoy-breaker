@@ -19,6 +19,10 @@ function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+function nowKST_() {
+  return Utilities.formatDate(new Date(), 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX");
+}
+
 function sheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(name);
@@ -51,7 +55,7 @@ function savePlayer_(body) {
       break;
     }
   }
-  var row = [body.id, body.nick, body.day, JSON.stringify(body.opened || {}), body.score, new Date().toISOString()];
+  var row = [body.id, body.nick, body.day, JSON.stringify(body.opened || {}), body.score, nowKST_()];
   if (rowIndex > 0) {
     sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   } else {
@@ -93,7 +97,7 @@ function leaderboard_() {
 function addPrayer_(body) {
   var sh = prayersSheet_();
   var id = Utilities.getUuid();
-  sh.appendRow([id, body.group, body.nick, body.text, new Date().toISOString()]);
+  sh.appendRow([id, body.group, body.nick, body.text, nowKST_()]);
   return json_({ ok: true, id: id });
 }
 
