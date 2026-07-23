@@ -9,6 +9,7 @@ const TAB_SCREEN: Record<TabId, ScreenId> = {
   rank: 'rank',
   decide: 'decide',
   type: 'type',
+  schedule: 'schedule',
 };
 
 type Action =

@@ -48,6 +48,16 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'schedule',
+    label: '일정',
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M4 9h16M8 3v4M16 3v4" />
+      </svg>
+    ),
+  },
 ];
 
 interface Props {

@@ -3,49 +3,66 @@ export type IdolKey = (typeof IDOL_ORDER)[number];
 
 interface IdolMeta {
   label: string;
-  noun: string;
-  mod: string;
-  desc: string;
-  flavor: string;
   verse: string;
 }
 
 export const IDOL_META: Record<IdolKey, IdolMeta> = {
+  people: { label: '사람', verse: '마태복음 10:37' },
+  love: { label: '사랑', verse: '고린도전서 13장' },
+  money: { label: '돈', verse: '마태복음 6:24, 33' },
+  power: { label: '권력', verse: '빌립보서 2:5-8' },
+  approval: { label: '인정', verse: '갈라디아서 1:10' },
+  dopamine: { label: '도파민', verse: '시편 46:10' },
+};
+
+interface IdolCombo {
+  name: string;
+  desc: string;
+}
+
+// [주유형][보조유형] 조합별 이름·설명 (30가지 = 6 × 5)
+export const IDOL_COMBOS: Record<IdolKey, Partial<Record<IdolKey, IdolCombo>>> = {
   people: {
-    label: '사람', noun: '관계러', mod: '정 많은',
-    desc: '당신에게 가장 큰 영향을 주는 것은 ‘사람’이에요. 관계 속에서 사랑받고 연결되어 있다는 느낌이 삶의 중요한 기준이 되곤 해요. 그 마음 자체는 나쁘지 않지만, 사람의 반응이 하나님보다 더 크게 나를 흔들고 있지는 않은지 돌아볼 때예요.',
-    flavor: '여기에 더해 사람들과의 관계 역시 당신에게 꽤 중요한 영향을 미치고 있어요.',
-    verse: '마태복음 10:37',
+    love: { name: '목마른 환대자', desc: '사람의 온기를 사랑으로 채우려 해요.' },
+    money: { name: '너그러운 채권자', desc: '관계 뒤에 계산이 숨어 있어요.' },
+    power: { name: '다정한 지배자', desc: '사람을 품으면서 위에 서려 해요.' },
+    approval: { name: '헌신적인 구경꾼', desc: '타인의 시선 안에서 살아가요.' },
+    dopamine: { name: '충실한 군중꾼', desc: '사람과 함께할 때만 살아있어요.' },
   },
   love: {
-    label: '사랑', noun: '로맨티스트', mod: '설레는',
-    desc: '당신의 마음 중심에는 ‘사랑(연애)’이 자리하고 있어요. 누군가와의 특별한 관계가 삶에 설렘과 의미를 주지만, 그 관계의 온도에 따라 하나님과의 관계까지 흔들리고 있지는 않은지 점검이 필요해요.',
-    flavor: '동시에 로맨틱한 관계에 대한 마음도 은근히 크게 자리잡고 있어요.',
-    verse: '고린도전서 13장',
+    people: { name: '낭만적인 의존자', desc: '사랑이 관계의 전부가 되어버려요.' },
+    money: { name: '현실적인 연인', desc: '마음보다 조건이 먼저 움직여요.' },
+    power: { name: '부드러운 소유자', desc: '사랑 안에서 주도권을 놓지 않아요.' },
+    approval: { name: '절박한 수신자', desc: '사랑받아야만 존재가 완성돼요.' },
+    dopamine: { name: '열렬한 방랑자', desc: '설렘이 식으면 떠나고 싶어져요.' },
   },
   money: {
-    label: '돈', noun: '머니러', mod: '계산적인',
-    desc: '당신에게는 ‘돈과 재정’이 마음의 큰 기준입니다. 안정감을 추구하는 건 자연스럽지만, 통장 잔고가 곧 나의 평안이 되어버리진 않았는지, 재물보다 하나님을 더 신뢰하고 있는지 돌아볼 필요가 있어요.',
-    flavor: '동시에 재정적인 안정에 대한 생각도 꽤 신경 쓰이는 편이에요.',
-    verse: '마태복음 6:24, 33',
+    people: { name: '관대한 투자자', desc: '물질로 사람의 마음을 사려 해요.' },
+    love: { name: '안전한 동반자', desc: '돈이 사랑의 기준이 되어 있어요.' },
+    power: { name: '야심찬 축재자', desc: '재물과 지위를 함께 쌓아 올려요.' },
+    approval: { name: '성실한 증명자', desc: '성과로 자신의 가치를 말해요.' },
+    dopamine: { name: '만족 모르는 수집가', desc: '채워도 또 비워지는 항아리예요.' },
   },
   power: {
-    label: '권력', noun: '파워러', mod: '야망 있는',
-    desc: '당신은 ‘주도권과 영향력’에 마음이 크게 반응하는 사람이에요. 리더십과 책임감은 좋은 은사이지만, 내가 통제할 수 없을 때 느끼는 불안이 하나님을 신뢰하지 못하는 마음에서 오는 건 아닌지 살펴볼 때예요.',
-    flavor: '동시에 주도권을 잃지 않으려는 마음도 함께 작용하고 있어요.',
-    verse: '빌립보서 2:5-8',
+    people: { name: '인자한 군주', desc: '관계 안에서 왕좌를 원해요.' },
+    love: { name: '자상한 정복자', desc: '사랑조차 승패로 읽어버려요.' },
+    money: { name: '냉철한 건축가', desc: '지위와 재물이 서로를 강화해요.' },
+    approval: { name: '고독한 등대지기', desc: '높아야만 인정받는다고 믿어요.' },
+    dopamine: { name: '능숙한 조종자', desc: '통제하는 쾌감에 길들여져 있어요.' },
   },
   approval: {
-    label: '인정', noun: '인정러', mod: '인정 목마른',
-    desc: '당신의 마음은 ‘인정과 칭찬’에 민감하게 반응해요. 사람들의 반응 하나하나가 크게 다가오지만, 하나님 앞에서 이미 사랑받고 있다는 사실보다 사람의 평가가 더 크게 자리잡고 있지는 않은지 돌아볼 때예요.',
-    flavor: '동시에 사람들의 인정과 반응에도 은근히 마음이 쓰이는 편이에요.',
-    verse: '갈라디아서 1:10',
+    people: { name: '예민한 거울', desc: '타인의 눈빛 하나에 하루가 달려요.' },
+    love: { name: '갈급한 수취인', desc: '사랑받음으로만 완성되는 자아예요.' },
+    money: { name: '단단한 외투', desc: '성과로 자신을 보호하려 해요.' },
+    power: { name: '우아한 등반가', desc: '인정은 항상 높은 곳에서 와요.' },
+    dopamine: { name: '달콤한 허영자', desc: '칭찬받는 순간이 가장 살아있어요.' },
   },
   dopamine: {
-    label: '도파민', noun: '자극러', mod: '짜릿한',
-    desc: '당신은 ‘즉각적인 자극과 즐거움’에 마음이 쉽게 이끌려요. 게임, 휴대폰, 운동, 쇼핑 같은 짜릿함이 지루함과 공허함을 채워주지만, 그 순간의 자극이 하나님과의 조용한 시간을 자꾸 밀어내고 있지는 않은지 점검이 필요해요.',
-    flavor: '동시에 즉각적인 자극과 재미도 무시할 수 없는 요소예요.',
-    verse: '시편 46:10',
+    people: { name: '활기찬 불꽃놀이꾼', desc: '사람의 반응에서 자극을 얻어요.' },
+    love: { name: '격렬한 로맨티스트', desc: '불꽃 없는 사랑은 사랑이 아니에요.' },
+    money: { name: '충동적인 수확자', desc: '더 많이, 더 빨리를 멈출 수 없어요.' },
+    power: { name: '쾌활한 독재자', desc: '내 뜻대로 되는 것의 단맛을 알아요.' },
+    approval: { name: '중독된 발신자', desc: '반응이 없으면 숨이 막혀요.' },
   },
 };
 

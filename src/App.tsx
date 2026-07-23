@@ -8,6 +8,7 @@ import WriteScreen from './screens/WriteScreen';
 import DecideScreen from './screens/DecideScreen';
 import RankScreen from './screens/RankScreen';
 import TypeTest from './screens/TypeScreen/TypeTest';
+import ScheduleScreen from './screens/ScheduleScreen';
 import type { ScreenId } from './types';
 import styles from './App.module.css';
 
@@ -19,6 +20,7 @@ const SCREENS: { id: ScreenId; render: () => React.ReactNode }[] = [
   { id: 'decide', render: () => <DecideScreen /> },
   { id: 'rank', render: () => <RankScreen /> },
   { id: 'type', render: () => <TypeTest /> },
+  { id: 'schedule', render: () => <ScheduleScreen /> },
 ];
 
 function Shell() {

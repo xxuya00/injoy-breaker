@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import {
   IDOL_ORDER,
   IDOL_META,
+  IDOL_COMBOS,
   IDOL_QUESTIONS,
   LIKERT_LABELS,
   AB_SCALE,
@@ -267,8 +268,7 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
   const med = computeMed(answers);
   const pray = computePray(answers);
   const pMeta = IDOL_META[idol.primary];
-  const sMeta = IDOL_META[idol.secondary];
-  const typeName = `${sMeta.mod} ${pMeta.noun}`;
+  const combo = IDOL_COMBOS[idol.primary][idol.secondary]!;
   const medT = MED_TYPES[med.type];
   const prayT = PRAY_TYPES[pray.type];
   const medSocialNote =
@@ -284,9 +284,8 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
         <div className={styles.ttResultTag} style={{ position: 'relative' }}>
           01 · 나의 우상 유형
         </div>
-        <h2 style={{ position: 'relative', marginBottom: 10 }}>{typeName}</h2>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 8 }}>{pMeta.desc}</p>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 2 }}>{sMeta.flavor}</p>
+        <h2 style={{ position: 'relative', marginBottom: 10 }}>{combo.name}</h2>
+        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>
         <div className={styles.ttBars} style={{ position: 'relative' }}>
           {IDOL_ORDER.map((c) => {
             const meta = IDOL_META[c];

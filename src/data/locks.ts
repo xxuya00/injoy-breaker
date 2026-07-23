@@ -1,6 +1,6 @@
 import type { Day, DayData } from '../types';
 
-export const TOTAL = 7;
+export const TOTAL = 8;
 
 export const LOCKS: Record<Day, DayData> = {
   1: {
@@ -35,6 +35,13 @@ export const LOCKS: Record<Day, DayData> = {
         opts: ['부귀', '장수', '지혜'],
         answer: 2,
         reveal: '모든 걸 가질 수 있었지만, 그는 지혜를 구했습니다.',
+      },
+      {
+        id: 'd1d',
+        name: '네 번째 두드림',
+        sub: '숫자 퍼즐 · 머리 굴리기',
+        type: 'math',
+        reveal: '숫자에도 질서가 있듯, 오늘 하루에도 하나님의 질서가 있습니다.',
       },
     ],
   },
@@ -91,4 +98,4 @@ export const LOCKS: Record<Day, DayData> = {
   },
 };
 
-export const FINAL_REQUIRED = ['d1a', 'd1b', 'd1c', 'd2a', 'd2b', 'd2c'];
+export const FINAL_REQUIRED = ['d1a', 'd1b', 'd1c', 'd1d', 'd2a', 'd2b', 'd2c'];

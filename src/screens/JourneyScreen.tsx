@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
+import { MATH_PUZZLES } from '../data/mathQuiz';
 import type { Day, LockItem } from '../types';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
@@ -10,6 +11,7 @@ import styles from './JourneyScreen.module.css';
 type SheetState =
   | { kind: 'quiz'; item: LockItem }
   | { kind: 'mission'; item: LockItem }
+  | { kind: 'math'; item: LockItem }
   | { kind: 'reveal'; item: LockItem }
   | { kind: 'finalLocked'; done: number; need: number };
 
@@ -34,6 +36,8 @@ export default function JourneyScreen() {
   const toast = useToast();
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
+  const [mathIdx, setMathIdx] = useState(0);
+  const [mathAnswered, setMathAnswered] = useState<{ value: number; correct: boolean } | null>(null);
 
   const dayData = LOCKS[state.day];
   const openedCount = Object.keys(state.opened).length;
@@ -59,7 +63,32 @@ export default function JourneyScreen() {
       return;
     }
     setAnswered(null);
+    if (item.type === 'math') {
+      setMathIdx(0);
+      setMathAnswered(null);
+      setSheet({ kind: 'math', item });
+      return;
+    }
     setSheet({ kind: item.type === 'quiz' ? 'quiz' : 'mission', item });
+  };
+
+  const answerMath = (item: LockItem, value: number) => {
+    const puzzle = MATH_PUZZLES[mathIdx];
+    const correct = value === puzzle.answer;
+    setMathAnswered({ value, correct });
+    if (correct) {
+      setTimeout(() => {
+        if (mathIdx < MATH_PUZZLES.length - 1) {
+          setMathIdx((i) => i + 1);
+          setMathAnswered(null);
+        } else {
+          openLock(item.id);
+          setSheet({ kind: 'reveal', item });
+        }
+      }, 550);
+    } else {
+      setTimeout(() => setMathAnswered(null), 500);
+    }
   };
 
   const answerQuiz = (item: LockItem, idx: number) => {
@@ -168,6 +197,25 @@ export default function JourneyScreen() {
             <button className="btn" onClick={() => completeMission(sheet.item)}>
               완료했어요 · 자물쇠 열기
             </button>
+          </>
+        )}
+
+        {sheet?.kind === 'math' && (
+          <>
+            <span className="pill">🧮 숫자 퍼즐 · {mathIdx + 1}/{MATH_PUZZLES.length}</span>
+            <h2 style={{ margin: '6px 0 16px' }}>{MATH_PUZZLES[mathIdx].question}</h2>
+            <div className="row" style={{ flexWrap: 'wrap' }}>
+              {MATH_PUZZLES[mathIdx].options.map((opt) => (
+                <button
+                  key={opt}
+                  className={`opt ${mathAnswered?.value === opt ? (mathAnswered.correct ? 'correct' : 'wrong') : ''}`}
+                  style={{ flex: '0 0 47%' }}
+                  onClick={() => answerMath(sheet.item, opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </>
         )}
 
