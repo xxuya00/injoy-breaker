@@ -80,3 +80,37 @@ export async function fetchNotices(): Promise<NoticeEntry[]> {
   const data = await gasGet({ action: 'getNotices' });
   return data ?? [];
 }
+
+export async function fetchLockUnlockTimes(): Promise<Record<string, string>> {
+  if (!gasEnabled) return {};
+  const data = await gasGet({ action: 'getLocks' });
+  const map: Record<string, string> = {};
+  (data ?? []).forEach((row: { id: string; unlockAt: string }) => {
+    map[row.id] = row.unlockAt;
+  });
+  return map;
+}
+
+export interface TypeResultPayload {
+  playerId: string;
+  nick: string;
+  idolPrimary: string;
+  idolSecondary: string;
+  comboName: string;
+  medType: string;
+  medTypeName: string;
+  prayType: string;
+  prayTypeName: string;
+  medTime: string;
+  prayTime: string;
+}
+
+export async function saveTypeResult(payload: TypeResultPayload) {
+  if (!gasEnabled) return;
+  await gasPost({ action: 'saveTypeResult', ...payload });
+}
+
+export async function sendMessage(playerId: string, nick: string, text: string, urgent: boolean) {
+  if (!gasEnabled) return;
+  await gasPost({ action: 'addMessage', playerId, nick, text, urgent });
+}

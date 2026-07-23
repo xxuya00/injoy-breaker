@@ -23,3 +23,8 @@
   font-size: 13.5px;
   padding: 40px 0;
 }
+.divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 28px 0 20px;
+}

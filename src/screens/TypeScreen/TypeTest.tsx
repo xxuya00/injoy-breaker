@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   IDOL_ORDER,
   IDOL_META,
@@ -19,6 +19,7 @@ import {
   type IdolKey,
 } from '../../data/typeTest';
 import { useApp } from '../../context/AppContext';
+import { saveTypeResult } from '../../lib/gas';
 import BackLink from '../../components/BackLink';
 import styles from './TypeTest.module.css';
 
@@ -306,6 +307,7 @@ export default function TypeTest() {
 }
 
 function ResultView({ answers, onRestart }: { answers: Record<string, number>; onRestart: () => void }) {
+  const { state } = useApp();
   const idol = computeIdol(answers);
   const med = computeMed(answers);
   const pray = computePray(answers);
@@ -314,6 +316,27 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
   const iconUrl = comboIconUrl(idol.primary, idol.secondary);
   const medT = MED_TYPES[med.type];
   const prayT = PRAY_TYPES[pray.type];
+  const savedRef = useRef(false);
+
+  useEffect(() => {
+    if (savedRef.current || !state.id) return;
+    savedRef.current = true;
+    saveTypeResult({
+      playerId: state.id,
+      nick: state.nick,
+      idolPrimary: idol.primary,
+      idolSecondary: idol.secondary,
+      comboName: combo.name,
+      medType: med.type,
+      medTypeName: medT.name,
+      prayType: pray.type,
+      prayTypeName: prayT.name,
+      medTime: med.time,
+      prayTime: pray.time,
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const medSocialNote =
     med.social === 'G' ? '함께 말씀을 나누며 묵상할 때 더 은혜를 받는 편이에요.' : '혼자 조용히 묵상할 때 더 은혜를 받는 편이에요.';
   const prayFocusNote =

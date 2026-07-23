@@ -4,6 +4,7 @@ function doGet(e) {
   if (action === 'getPlayer') return getPlayer_(e.parameter.id);
   if (action === 'getPrayers') return getPrayers_(e.parameter.group);
   if (action === 'getNotices') return getNotices_();
+  if (action === 'getLocks') return getLocks_();
   return json_({ error: 'unknown action' });
 }
 
@@ -12,6 +13,8 @@ function doPost(e) {
   var action = body.action;
   if (action === 'savePlayer') return savePlayer_(body);
   if (action === 'addPrayer') return addPrayer_(body);
+  if (action === 'saveTypeResult') return saveTypeResult_(body);
+  if (action === 'addMessage') return addMessage_(body);
   return json_({ error: 'unknown action' });
 }
 
@@ -43,6 +46,23 @@ function prayersSheet_() {
 
 function noticesSheet_() {
   return sheet_('notices', ['id', 'title', 'body', 'created_at']);
+}
+
+function locksSheet_() {
+  return sheet_('locks', ['id', 'name', 'unlock_at', 'note']);
+}
+
+function messagesSheet_() {
+  return sheet_('messages', ['id', 'playerId', 'nick', 'text', 'urgent', 'created_at']);
+}
+
+function typeResultsSheet_() {
+  return sheet_('typeResults', [
+    'id', 'playerId', 'nick',
+    'idolPrimary', 'idolSecondary', 'comboName',
+    'medType', 'medTypeName', 'prayType', 'prayTypeName',
+    'medTime', 'prayTime', 'created_at',
+  ]);
 }
 
 function savePlayer_(body) {
@@ -123,4 +143,90 @@ function getNotices_() {
   }
   rows.reverse();
   return json_(rows);
+}
+
+// 참가자가 보낸 건의/신고는 앱에서 다시 읽어오지 않고 이 시트에만 쌓인다(관리자 전용).
+// 시트 메뉴 "도구 → 알림 규칙"에서 "변경사항이 있을 때 알림"을 켜두면
+// 새 메시지가 올 때마다 이메일로 바로 알림을 받을 수 있다(무료, 긴급 대응용).
+function addMessage_(body) {
+  var sh = messagesSheet_();
+  var id = Utilities.getUuid();
+  sh.appendRow([id, body.playerId, body.nick, body.text, !!body.urgent, nowKST_()]);
+  return json_({ ok: true, id: id });
+}
+
+function toKSTIso_(v) {
+  if (!v) return null;
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return Utilities.formatDate(v, 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  }
+  var s = String(v).trim();
+  return s === '' ? null : s;
+}
+
+// locks 시트의 unlock_at 칸을 읽어 각 자물쇠의 개방 시각을 내려줍니다.
+// unlock_at이 비어있으면 시간 제한 없음(응답 목록에서 제외)으로 취급됩니다.
+function getLocks_() {
+  var sh = locksSheet_();
+  var data = sh.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var id = data[i][0];
+    if (!id) continue;
+    var unlockAt = toKSTIso_(data[i][2]);
+    if (unlockAt) rows.push({ id: id, unlockAt: unlockAt });
+  }
+  return json_(rows);
+}
+
+function saveTypeResult_(body) {
+  var sh = typeResultsSheet_();
+  var data = sh.getDataRange().getValues();
+  var rowIndex = -1;
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][1] === body.playerId) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  var row = [
+    Utilities.getUuid(), body.playerId, body.nick,
+    body.idolPrimary, body.idolSecondary, body.comboName,
+    body.medType, body.medTypeName, body.prayType, body.prayTypeName,
+    body.medTime, body.prayTime, nowKST_(),
+  ];
+  if (rowIndex > 0) {
+    row[0] = data[rowIndex - 1][0]; // 기존 id 유지 (재검사 시 덮어쓰기)
+    sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+  } else {
+    sh.appendRow(row);
+  }
+  return json_({ ok: true });
+}
+
+// ---- 관리자용: Apps Script 편집기에서 이 함수만 딱 한 번 수동 실행(▶ 버튼)하세요 ----
+// 미리 하면 좋은 일: 스프레드시트에서 안 쓰이던 'Sheet1' 탭 이름을 'locks'로 바꿔두면
+// 그 시트를 그대로 재사용합니다(안 바꿔도 새 시트가 자동 생성됨).
+// 실행하면 자물쇠 id/이름이 빈 unlock_at 칸과 함께 채워집니다.
+// unlock_at 칸에 "2026-08-29 18:00" 처럼 열리는 시각을 적으면, 그 시각이 지나야
+// 앱에서 해당 자물쇠를 풀 수 있습니다. 비워두면 지금처럼 언제든 풀 수 있어요.
+// 시각을 지우거나 과거 시각으로 바꾸면 즉시 열 수도 있습니다(수동 조정).
+function setupLocksSheet() {
+  var sh = locksSheet_();
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(['id', 'name', 'unlock_at', 'note']);
+  }
+  var ids = [
+    ['d1a', '첫 번째 두드림'], ['d1b', '두 번째 두드림'], ['d1c', '세 번째 두드림'],
+    ['d1d', '네 번째 두드림'], ['d1e', '다섯 번째 두드림'], ['d1f', '여섯 번째 두드림'],
+    ['d1g', '일곱 번째 두드림'], ['d1h', '여덟 번째 두드림'], ['d1i', '아홉 번째 두드림'],
+    ['d2a', '쾌락의 자물쇠'], ['d2b', '재물의 자물쇠'], ['d2c', '지혜의 자물쇠'],
+    ['d2e', '사람의 자물쇠'], ['d2f', '인정의 자물쇠'], ['d2g', '권력의 자물쇠'],
+  ];
+  var existing = sh.getDataRange().getValues();
+  var existingIds = {};
+  for (var i = 1; i < existing.length; i++) existingIds[existing[i][0]] = true;
+  ids.forEach(function (pair) {
+    if (!existingIds[pair[0]]) sh.appendRow([pair[0], pair[1], '', '']);
+  });
 }

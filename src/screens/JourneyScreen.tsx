@@ -5,11 +5,21 @@ import { MATH_PUZZLES } from '../data/mathQuiz';
 import { SPOT_DIFF } from '../data/spotDiff';
 import { MEMORY_CHALLENGE } from '../data/memoryGame';
 import { WORD_PUZZLE } from '../data/wordPuzzle';
+import { fetchLockUnlockTimes } from '../lib/gas';
 import type { Day, LockItem } from '../types';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
 import { useToast } from '../context/ToastContext';
 import styles from './JourneyScreen.module.css';
+
+function formatKST(iso: string): string {
+  const d = new Date(iso);
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const period = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m === 0 ? `${period} ${h12}시` : `${period} ${h12}시 ${m}분`;
+}
 
 type SheetState =
   | { kind: 'quiz'; item: LockItem }
@@ -62,7 +72,7 @@ function NavCard({ icon, name, sub, onClick }: { icon: React.ReactNode; name: st
 const DAY_LABELS: Record<Day, string> = { 1: 'BREAK AWAY', 2: 'BREAK DOWN', 3: 'BREAK THROUGH' };
 
 export default function JourneyScreen() {
-  const { state, selectDay, openLock, goScreen } = useApp();
+  const { state, selectDay, openLock, goScreen, setTab } = useApp();
   const toast = useToast();
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
@@ -75,6 +85,8 @@ export default function JourneyScreen() {
   const [puzzleWords, setPuzzleWords] = useState<{ word: string; idx: number }[]>([]);
   const [puzzlePicked, setPuzzlePicked] = useState<number[]>([]);
   const [puzzleWrong, setPuzzleWrong] = useState(false);
+  const [lockTimes, setLockTimes] = useState<Record<string, string>>({});
+  const qrHandled = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -82,8 +94,36 @@ export default function JourneyScreen() {
     };
   }, []);
 
+  // 관리자가 시트(locks)에 적어둔 unlock_at 시각을 주기적으로 확인해
+  // 시간이 되면 자동으로 자물쇠가 풀리도록 한다. 화면이 보일 때만 폴링한다.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchLockUnlockTimes()
+        .then((times) => {
+          if (!cancelled) setLockTimes(times);
+        })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    document.addEventListener('visibilitychange', load);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', load);
+    };
+  }, []);
+
   const dayData = LOCKS[state.day];
   const openedCount = Object.keys(state.opened).length;
+
+  const isTimeLocked = (item: LockItem) => {
+    const t = lockTimes[item.id];
+    if (!t) return false;
+    return new Date(t).getTime() > Date.now();
+  };
 
   const handleLockClick = (item: LockItem) => {
     const isOpen = !!state.opened[item.id];
@@ -95,6 +135,10 @@ export default function JourneyScreen() {
         goScreen('decide');
         setSheet(null);
       }
+      return;
+    }
+    if (!isOpen && isTimeLocked(item)) {
+      toast(`${formatKST(lockTimes[item.id])}에 열려요`);
       return;
     }
     if (item.type === 'locked-until') {
@@ -134,6 +178,25 @@ export default function JourneyScreen() {
     }
     setSheet({ kind: item.type === 'quiz' ? 'quiz' : 'mission', item });
   };
+
+  // 현장 곳곳에 붙여둔 QR(예: ?qr=d2a)을 스캔하면 로그인된 사용자를 해당 자물쇠로 바로 데려간다.
+  useEffect(() => {
+    if (qrHandled.current || !state.id) return;
+    const qrId = new URLSearchParams(window.location.search).get('qr');
+    if (!qrId) return;
+    qrHandled.current = true;
+    window.history.replaceState({}, '', window.location.pathname);
+    let target: { day: Day; item: LockItem } | null = null;
+    ([1, 2, 3] as Day[]).forEach((d) => {
+      const found = LOCKS[d].items.find((it) => it.id === qrId);
+      if (found) target = { day: d, item: found };
+    });
+    if (!target) return;
+    selectDay(target.day);
+    setTab('journey');
+    handleLockClick(target.item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.id]);
 
   const answerSpotDiff = (item: LockItem, index: number) => {
     if (index === SPOT_DIFF.diffIndex) {

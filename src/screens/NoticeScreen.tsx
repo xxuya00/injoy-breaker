@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { fetchNotices, gasEnabled, type NoticeEntry } from '../lib/gas';
+import { fetchNotices, gasEnabled, sendMessage, type NoticeEntry } from '../lib/gas';
 import styles from './NoticeScreen.module.css';
 
 export default function NoticeScreen() {
@@ -9,6 +9,9 @@ export default function NoticeScreen() {
   const toast = useToast();
   const [notices, setNotices] = useState<NoticeEntry[]>([]);
   const warnedRef = useRef(false);
+  const [msgText, setMsgText] = useState('');
+  const [urgent, setUrgent] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!gasEnabled || state.screen !== 'notice') return;
@@ -34,6 +37,22 @@ export default function NoticeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.screen]);
 
+  const submitMessage = async () => {
+    const v = msgText.trim();
+    if (!v) return;
+    setSending(true);
+    try {
+      await sendMessage(state.id ?? '', state.nick || '나', v, urgent);
+      setMsgText('');
+      setUrgent(false);
+      toast('진행자에게 전달했어요');
+    } catch {
+      toast('전달에 실패했어요. 다시 시도해주세요');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <section>
       <div className="eyebrow">Notice</div>
@@ -52,6 +71,26 @@ export default function NoticeScreen() {
           </div>
         ))
       )}
+
+      <hr className={styles.divider} />
+      <div className="eyebrow">Report to Staff</div>
+      <h2 style={{ margin: '6px 0 4px' }}>건의 · 신고하기</h2>
+      <p className="muted" style={{ marginBottom: 14 }}>
+        진행자만 확인해요. 불편한 점이나 문제 상황을 알려주세요.
+      </p>
+      <textarea
+        className="field"
+        style={{ minHeight: 90, resize: 'none' }}
+        placeholder="예: 3동 화장실 물이 안 나와요"
+        value={msgText}
+        onChange={(e) => setMsgText(e.target.value)}
+      />
+      <button className={`opt ${urgent ? 'selected' : ''}`} style={{ marginBottom: 12 }} onClick={() => setUrgent((v) => !v)}>
+        🚨 지금 바로 도움이 필요해요
+      </button>
+      <button className="btn" onClick={submitMessage} disabled={sending || !msgText.trim()}>
+        {sending ? '전달하는 중…' : '진행자에게 전달'}
+      </button>
     </section>
   );
 }
