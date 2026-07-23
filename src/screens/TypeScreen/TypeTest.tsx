@@ -22,6 +22,18 @@ import { useApp } from '../../context/AppContext';
 import BackLink from '../../components/BackLink';
 import styles from './TypeTest.module.css';
 
+const COMBO_ICONS = import.meta.glob('../../assets/idol-icons/*.svg', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
+function comboIconUrl(primary: IdolKey, secondary: IdolKey): string | null {
+  const key = `${primary}-${secondary}`;
+  const path = Object.keys(COMBO_ICONS).find((p) => p.endsWith(`/${key}.svg`));
+  return path ? COMBO_ICONS[path] : null;
+}
+
 function shuffledIndices(length: number): number[] {
   const arr = Array.from({ length }, (_, i) => i);
   for (let i = arr.length - 1; i > 0; i--) {
@@ -273,6 +285,7 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
   const pray = computePray(answers);
   const pMeta = IDOL_META[idol.primary];
   const combo = IDOL_COMBOS[idol.primary][idol.secondary]!;
+  const iconUrl = comboIconUrl(idol.primary, idol.secondary);
   const medT = MED_TYPES[med.type];
   const prayT = PRAY_TYPES[pray.type];
   const medSocialNote =
@@ -287,6 +300,16 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
       <div className="decision-card" style={{ marginBottom: 16 }}>
         <div className={styles.ttResultTag} style={{ position: 'relative' }}>
           01 · 나의 우상 유형
+        </div>
+        <div className={styles.comboIconWrap} style={{ position: 'relative' }}>
+          {iconUrl ? (
+            <img src={iconUrl} alt="" className={styles.comboIcon} />
+          ) : (
+            <svg className={styles.comboIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <circle cx="12" cy="12" r="8" />
+              <circle cx="12" cy="12" r="2.6" />
+            </svg>
+          )}
         </div>
         <h2 style={{ position: 'relative', marginBottom: 10 }}>{combo.name}</h2>
         <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>

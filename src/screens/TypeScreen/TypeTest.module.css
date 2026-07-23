@@ -1,3 +1,20 @@
+.comboIconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(233, 184, 114, 0.14);
+  border: 1px solid rgba(233, 184, 114, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.comboIcon {
+  width: 30px;
+  height: 30px;
+  color: var(--gold);
+}
+
 .abLabels {
   margin-bottom: 14px;
 }
