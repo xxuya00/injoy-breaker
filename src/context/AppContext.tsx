@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useReducer, type ReactNode } from
 import type { AppState, Day, ScreenId, TabId } from '../types';
 import { loadLastId, loadState, saveLastId, saveState } from '../lib/storage';
 import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
+import { useToast } from './ToastContext';
 
 const TAB_SCREEN: Record<TabId, ScreenId> = {
   journey: 'journey',
@@ -66,6 +67,7 @@ export function useApp() {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const toast = useToast();
 
   // resume session on load
   useEffect(() => {
@@ -76,18 +78,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'RESTORE', state: { ...local, id: lastId } });
     }
     if (gasEnabled) {
-      loadRemoteProgress(lastId).then((remote) => {
-        if (!remote) return;
-        dispatch({
-          type: 'RESTORE',
-          state: {
-            id: lastId,
-            nick: remote.nick,
-            day: (Math.max(local?.day ?? 1, remote.day) as Day) ?? remote.day,
-            opened: { ...local?.opened, ...remote.opened },
-          },
+      loadRemoteProgress(lastId)
+        .then((remote) => {
+          if (!remote) return;
+          dispatch({
+            type: 'RESTORE',
+            state: {
+              id: lastId,
+              nick: remote.nick,
+              day: (Math.max(local?.day ?? 1, remote.day) as Day) ?? remote.day,
+              opened: { ...local?.opened, ...remote.opened },
+            },
+          });
+        })
+        .catch(() => {
+          // 백그라운드 동기화 실패는 조용히 무시 (로컬 데이터로 계속 진행)
         });
-      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -96,7 +102,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state.id) return;
     saveState(state.id, state);
-    saveRemoteProgress(state.id, state.nick, state.day, state.opened);
+    saveRemoteProgress(state.id, state.nick, state.day, state.opened).catch(() => {
+      toast('저장에 실패했어요. 네트워크를 확인해주세요');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const enroll = (nick: string, id: string) => {
@@ -106,7 +115,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const restoreById = async (id: string): Promise<boolean> => {
     const local = loadState(id);
-    const remote = await loadRemoteProgress(id);
+    let remote = null;
+    try {
+      remote = await loadRemoteProgress(id);
+    } catch {
+      toast('네트워크 오류로 이어하기에 실패했어요');
+    }
     if (!local && !remote) return false;
     saveLastId(id);
     dispatch({

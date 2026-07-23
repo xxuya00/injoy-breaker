@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { addPrayer, fetchPrayers, gasEnabled, type PrayerEntry } from '../lib/gas';
@@ -14,13 +14,21 @@ export default function PrayerScreen() {
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
 
+  const warnedRef = useRef(false);
   useEffect(() => {
     if (!group || !gasEnabled || state.screen !== 'prayer') return;
     let cancelled = false;
     const poll = () => {
-      fetchPrayers(group).then((data) => {
-        if (!cancelled) setPrayers(data);
-      });
+      fetchPrayers(group)
+        .then((data) => {
+          if (!cancelled) setPrayers(data);
+        })
+        .catch(() => {
+          if (!cancelled && !warnedRef.current) {
+            warnedRef.current = true;
+            toast('기도제목을 불러오지 못했어요. 네트워크를 확인해주세요');
+          }
+        });
     };
     poll();
     const id = setInterval(poll, 8000);
@@ -28,6 +36,7 @@ export default function PrayerScreen() {
       cancelled = true;
       clearInterval(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, state.screen]);
 
   const joinGroup = () => {
@@ -50,11 +59,16 @@ export default function PrayerScreen() {
     const v = text.trim();
     if (!v || !group) return;
     setPosting(true);
-    await addPrayer(group, state.nick || '나', v);
-    setText('');
-    const data = await fetchPrayers(group);
-    setPrayers(data);
-    setPosting(false);
+    try {
+      await addPrayer(group, state.nick || '나', v);
+      setText('');
+      const data = await fetchPrayers(group);
+      setPrayers(data);
+    } catch {
+      toast('저장에 실패했어요. 다시 시도해주세요');
+    } finally {
+      setPosting(false);
+    }
   };
 
   if (!group) {

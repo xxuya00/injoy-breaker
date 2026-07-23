@@ -191,32 +191,39 @@ export default function JourneyScreen() {
             </div>
           );
         })}
-        {state.day === 2 && (
-          <>
-            <NavCard
-              icon={
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
-                </svg>
-              }
-              name="숲의 기록"
-              sub="오늘 마주한 것을 남겨보세요"
-              onClick={() => goScreen('write')}
-            />
-            <NavCard
-              icon={
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="8" />
-                  <circle cx="12" cy="12" r="2.6" />
-                </svg>
-              }
-              name="유형 검사"
-              sub="우상 · 묵상 · 기도 유형 알아보기"
-              onClick={() => goScreen('type')}
-            />
-          </>
-        )}
-        {state.day === 3 && (
+      </div>
+
+      {state.day === 2 && (
+        <>
+          <hr className={styles.sectionDivider} />
+          <div className={styles.sectionLabel}>이 날 더 해보기</div>
+          <NavCard
+            icon={
+              <svg viewBox="0 0 24 24">
+                <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
+              </svg>
+            }
+            name="숲의 기록"
+            sub="오늘 마주한 것을 남겨보세요"
+            onClick={() => goScreen('write')}
+          />
+          <NavCard
+            icon={
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" />
+                <circle cx="12" cy="12" r="2.6" />
+              </svg>
+            }
+            name="유형 검사"
+            sub="우상 · 묵상 · 기도 유형 알아보기"
+            onClick={() => goScreen('type')}
+          />
+        </>
+      )}
+      {state.day === 3 && (
+        <>
+          <hr className={styles.sectionDivider} />
+          <div className={styles.sectionLabel}>이 날 더 해보기</div>
           <NavCard
             icon={
               <svg viewBox="0 0 24 24">
@@ -227,8 +234,8 @@ export default function JourneyScreen() {
             sub="깨어난 집중으로 세상에 나아가요"
             onClick={() => goScreen('decide')}
           />
-        )}
-      </div>
+        </>
+      )}
 
       <Sheet open={sheet !== null} onClose={() => setSheet(null)}>
         {sheet?.kind === 'quiz' && (

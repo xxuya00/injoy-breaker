@@ -29,6 +29,21 @@
   transform: scale(0.95);
 }
 
+.sectionDivider {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 24px 0 14px;
+}
+.sectionLabel {
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
 .progressWrap {
   margin: 4px 0 2px;
 }

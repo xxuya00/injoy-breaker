@@ -2,9 +2,14 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import styles from '../components/Toast.module.css';
 
 const ToastContext = createContext<(msg: string) => void>(() => {});
+const ToastStateContext = createContext<{ msg: string; show: boolean }>({ msg: '', show: false });
 
 export function useToast() {
   return useContext(ToastContext);
+}
+
+function useToastState() {
+  return useContext(ToastStateContext);
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -21,8 +26,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   return (
     <ToastContext.Provider value={toast}>
-      {children}
-      <div className={`${styles.toast} ${show ? styles.toastShow : ''}`}>{msg}</div>
+      <ToastStateContext.Provider value={{ msg, show }}>{children}</ToastStateContext.Provider>
     </ToastContext.Provider>
   );
+}
+
+export function ToastViewport() {
+  const { msg, show } = useToastState();
+  return <div className={`${styles.toast} ${show ? styles.toastShow : ''}`}>{msg}</div>;
 }

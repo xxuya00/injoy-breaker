@@ -23,13 +23,21 @@ export default function RankScreen() {
   const [picked, setPicked] = useState<boolean | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const warnedRef = useRef(false);
   useEffect(() => {
     if (!gasEnabled || state.screen !== 'rank') return;
     let cancelled = false;
     const poll = () => {
-      fetchLeaderboard().then((data) => {
-        if (!cancelled && data.length) setEntries(data);
-      });
+      fetchLeaderboard()
+        .then((data) => {
+          if (!cancelled && data.length) setEntries(data);
+        })
+        .catch(() => {
+          if (!cancelled && !warnedRef.current) {
+            warnedRef.current = true;
+            toast('순위판을 불러오지 못했어요. 네트워크를 확인해주세요');
+          }
+        });
     };
     poll();
     const id = setInterval(poll, 8000);
@@ -37,6 +45,7 @@ export default function RankScreen() {
       cancelled = true;
       clearInterval(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.screen]);
 
   useEffect(() => {

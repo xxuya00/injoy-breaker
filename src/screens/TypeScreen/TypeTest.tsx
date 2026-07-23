@@ -203,20 +203,29 @@ export default function TypeTest() {
             <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--gold-soft)' }}>
               {current.section}
             </div>
-            <h2 style={{ marginBottom: 16 }}>{current.text}</h2>
-            {LIKERT_LABELS.map((label, i) => {
-              const v = i + 1;
-              return (
-                <button
-                  key={v}
-                  className={`opt ${answers[current.key] === v ? 'selected' : ''}`}
-                  onClick={() => answerAndNext(current.key, v)}
-                >
-                  {label}
-                </button>
-              );
-            })}
-            <div className="row" style={{ marginTop: 6 }}>
+            <h2 style={{ marginBottom: 8 }}>{current.text}</h2>
+            <div className={styles.scaleTrack}>
+              <div className={styles.scaleLine} />
+              {LIKERT_LABELS.map((label, i) => {
+                const v = i + 1;
+                const selected = answers[current.key] === v;
+                return (
+                  <button
+                    key={v}
+                    className={`${styles.scaleDot} ${selected ? styles.scaleDotOn : ''}`}
+                    aria-label={label}
+                    onClick={() => answerAndNext(current.key, v)}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+            <div className={styles.scaleEndLabels}>
+              <span>{LIKERT_LABELS[0]}</span>
+              <span>{LIKERT_LABELS[4]}</span>
+            </div>
+            <div className="row" style={{ marginTop: 20 }}>
               <button className="btn ghost" onClick={goPrev}>
                 이전
               </button>
@@ -229,20 +238,37 @@ export default function TypeTest() {
             <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--gold-soft)' }}>
               {current.section}
             </div>
-            <div className={styles.abLabels}>
-              <div className="a">{current.a}</div>
-              <div className="b">{current.b}</div>
+            <div className={styles.abCard}>
+              <div className={styles.abSide}>
+                <span className={styles.abBadge}>A</span>
+                <p>{current.a}</p>
+              </div>
+              <div className={styles.abDivider}>vs</div>
+              <div className={styles.abSide}>
+                <span className={`${styles.abBadge} ${styles.abBadgeB}`}>B</span>
+                <p>{current.b}</p>
+              </div>
             </div>
-            {AB_SCALE.map((o) => (
-              <button
-                key={o.v}
-                className={`opt ${answers[current.key] === o.v ? 'selected' : ''}`}
-                onClick={() => answerAndNext(current.key, o.v)}
-              >
-                {o.label}
-              </button>
-            ))}
-            <div className="row" style={{ marginTop: 6 }}>
+            <div className={styles.scaleTrack}>
+              <div className={styles.scaleLine} />
+              {AB_SCALE.map((o, i) => {
+                const selected = answers[current.key] === o.v;
+                return (
+                  <button
+                    key={o.v}
+                    className={`${styles.scaleDot} ${i === 2 ? styles.scaleDotMid : ''} ${selected ? styles.scaleDotOn : ''}`}
+                    aria-label={o.label}
+                    onClick={() => answerAndNext(current.key, o.v)}
+                  />
+                );
+              })}
+            </div>
+            <div className={styles.scaleEndLabels}>
+              <span>A</span>
+              <span>중립</span>
+              <span>B</span>
+            </div>
+            <div className="row" style={{ marginTop: 20 }}>
               <button className="btn ghost" onClick={goPrev}>
                 이전
               </button>

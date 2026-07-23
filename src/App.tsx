@@ -1,5 +1,5 @@
 import { AppProvider, useApp } from './context/AppContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, ToastViewport } from './context/ToastContext';
 import TabBar from './components/TabBar';
 import LoginScreen from './screens/LoginScreen';
 import BriefScreen from './screens/BriefScreen';
@@ -39,16 +39,17 @@ function Shell() {
         </div>
       ))}
       {showTabbar && <TabBar active={state.activeTab} onSelect={setTab} />}
+      <ToastViewport />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
-      <ToastProvider>
+    <ToastProvider>
+      <AppProvider>
         <Shell />
-      </ToastProvider>
-    </AppProvider>
+      </AppProvider>
+    </ToastProvider>
   );
 }
