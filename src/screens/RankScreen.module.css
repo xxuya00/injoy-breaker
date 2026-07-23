@@ -1,0 +1,30 @@
+.rankItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.no {
+  font-family: 'Bebas Neue';
+  font-size: 20px;
+  width: 26px;
+  color: var(--gold);
+}
+.nick {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.pt {
+  color: var(--mute);
+  font-size: 13px;
+}
+.timer {
+  font-family: 'Bebas Neue';
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: var(--danger);
+  float: right;
+  margin-top: 4px;
+}

@@ -1,0 +1,91 @@
+.abLabels {
+  margin-bottom: 14px;
+}
+.abLabels .a,
+.abLabels .b {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #c9d2f2;
+  margin-bottom: 4px;
+}
+.abLabels .a::before {
+  content: 'A. ';
+  color: var(--gold);
+}
+.abLabels .b::before {
+  content: 'B. ';
+  color: var(--gold);
+}
+
+.ttBars {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 16px 0 4px;
+}
+.ttBarRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ttBarLabel {
+  width: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+.ttBarTrack {
+  flex: 1;
+  height: 7px;
+  border-radius: 6px;
+  background: var(--ink-3);
+  overflow: hidden;
+}
+.ttBarFill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+}
+.ttStatPill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mute);
+  margin-top: 8px;
+}
+.ttResultTag {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.progressWrap {
+  margin: 4px 0 2px;
+}
+.progressLabel {
+  font-family: 'Bebas Neue';
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+.bar {
+  height: 5px;
+  background: var(--ink-3);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.barFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+  transition: width 0.3s ease;
+  border-radius: 99px;
+}

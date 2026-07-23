@@ -1,0 +1,138 @@
+.progressWrap {
+  margin: 4px 0 2px;
+}
+.progressNum {
+  font-family: 'Bebas Neue';
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+.bar {
+  height: 5px;
+  background: var(--ink-3);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.barFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+  transition: width 0.6s ease;
+  border-radius: 99px;
+}
+
+.daytabRow {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 22px;
+}
+.daytab {
+  flex: 1;
+  text-align: center;
+  padding: 12px 4px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.daytabOn {
+  border-color: var(--gold);
+  background: var(--ink-3);
+}
+.d {
+  font-family: 'Bebas Neue';
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+}
+.t {
+  font-size: 10.5px;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.daytabOn .t {
+  color: var(--text);
+}
+
+.dayCaption {
+  margin-bottom: 16px;
+}
+
+.lock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+  opacity: 0.7;
+}
+.lockOpen {
+  opacity: 1;
+  border-color: rgba(233, 184, 114, 0.45);
+}
+.lockOpen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 120% at 100% 0%, rgba(233, 184, 114, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.tapable {
+  cursor: pointer;
+}
+.tapable:active {
+  transform: scale(0.985);
+}
+.ic {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+}
+.lockOpen .ic {
+  background: rgba(233, 184, 114, 0.14);
+  border-color: rgba(233, 184, 114, 0.4);
+}
+.ic svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--mute);
+  fill: none;
+  stroke-width: 1.8;
+}
+.lockOpen .ic svg {
+  stroke: var(--gold);
+}
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.lockLocked .name {
+  color: var(--mute);
+}
+.sub {
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 1px;
+}
+.chev {
+  color: var(--mute);
+  flex: none;
+}

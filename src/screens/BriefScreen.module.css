@@ -1,0 +1,13 @@
+.briefCard {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  margin-top: 8px;
+}
+.q {
+  color: var(--gold-soft);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}

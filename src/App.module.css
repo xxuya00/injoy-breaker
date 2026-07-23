@@ -1,0 +1,28 @@
+.app {
+  max-width: 440px;
+  margin: 0 auto;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(233, 184, 114, 0.1), transparent 60%), var(--ink);
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  padding: 26px 24px calc(90px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.screen::-webkit-scrollbar {
+  width: 0;
+}
+
+.screenActive {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}

@@ -1,0 +1,42 @@
+.sheetBg {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 20, 0.72);
+  backdrop-filter: blur(3px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheetBgShow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 440px;
+  background: var(--ink-2);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid var(--line);
+  padding: 10px 22px calc(28px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-height: 92%;
+  overflow-y: auto;
+}
+.sheetBgShow .sheet {
+  transform: none;
+}
+
+.grab {
+  width: 40px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 9px;
+  margin: 8px auto 18px;
+}
