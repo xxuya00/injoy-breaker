@@ -98,8 +98,12 @@ function computeIdol(answers: Record<string, number>) {
     scores[q.cat] += v;
     if (q.weight) weighted[q.cat] += v;
   });
+  // 카테고리마다 문항 수가 달라서 총점으로 비교하면 문항 많은 카테고리가 유리해진다.
+  // 문항 수와 무관하게 공정하도록 카테고리별 평균(문항당 만점 대비 비율)으로 순위를 매긴다.
   const ranked = [...IDOL_ORDER].sort((a, b) => {
-    if (scores[b] !== scores[a]) return scores[b] - scores[a];
+    const avgA = scores[a] / IDOL_CAT_MAX[a];
+    const avgB = scores[b] / IDOL_CAT_MAX[b];
+    if (avgB !== avgA) return avgB - avgA;
     return weighted[b] - weighted[a];
   });
   return { scores, primary: ranked[0], secondary: ranked[1] };
