@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { addPrayer, fetchPrayers, gasEnabled, type PrayerEntry } from '../lib/gas';
-import { loadGroup, saveGroup } from '../lib/storage';
+import { PRAYER_GROUPS } from '../data/prayerGroups';
+import { loadGroup, loadPrayerName, saveGroup, savePrayerName } from '../lib/storage';
 import styles from './PrayerScreen.module.css';
 
 export default function PrayerScreen() {
   const { state } = useApp();
   const toast = useToast();
   const [group, setGroup] = useState<string | null>(loadGroup());
-  const [groupInput, setGroupInput] = useState('');
+  const [name, setName] = useState(loadPrayerName() ?? '');
   const [prayers, setPrayers] = useState<PrayerEntry[]>([]);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
@@ -39,28 +40,28 @@ export default function PrayerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, state.screen]);
 
-  const joinGroup = () => {
-    const v = groupInput.trim();
-    if (!v) {
-      toast('조 번호를 입력해주세요');
-      return;
-    }
-    saveGroup(v);
-    setGroup(v);
+  const joinGroup = (g: string) => {
+    saveGroup(g);
+    setGroup(g);
   };
 
   const leaveGroup = () => {
     setGroup(null);
-    setGroupInput('');
     setPrayers([]);
   };
 
   const submit = async () => {
     const v = text.trim();
+    const n = name.trim();
     if (!v || !group) return;
+    if (!n) {
+      toast('이름을 입력해주세요');
+      return;
+    }
+    savePrayerName(n);
     setPosting(true);
     try {
-      await addPrayer(group, state.nick || '나', v);
+      await addPrayer(group, n, v);
       setText('');
       const data = await fetchPrayers(group);
       setPrayers(data);
@@ -77,18 +78,15 @@ export default function PrayerScreen() {
         <div className="eyebrow">Prayer Together</div>
         <h1>조별 기도제목</h1>
         <p className="muted" style={{ marginBottom: 18 }}>
-          같은 조원들과 기도제목을 나눠보세요. 조 번호를 입력하면 그 조의 기도제목을 함께 볼 수 있어요.
+          내 조를 선택하면 같은 조원들과 기도제목을 함께 볼 수 있어요.
         </p>
-        <input
-          className="field"
-          placeholder="예: 1조"
-          value={groupInput}
-          onChange={(e) => setGroupInput(e.target.value)}
-          maxLength={10}
-        />
-        <button className="btn" onClick={joinGroup}>
-          입장하기
-        </button>
+        <div className={styles.groupGrid}>
+          {PRAYER_GROUPS.map((g) => (
+            <button key={g} className={styles.groupBtn} onClick={() => joinGroup(g)}>
+              {g}
+            </button>
+          ))}
+        </div>
       </section>
     );
   }
@@ -104,6 +102,13 @@ export default function PrayerScreen() {
         </button>
       </div>
 
+      <input
+        className="field"
+        placeholder="이름(본명)을 입력하세요"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={12}
+      />
       <textarea
         className="field"
         style={{ minHeight: 90, resize: 'none' }}

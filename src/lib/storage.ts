@@ -2,6 +2,7 @@ import type { AppState } from '../types';
 
 const LAST_ID_KEY = 'breaker:lastId';
 const GROUP_KEY = 'breaker:group';
+const PRAYER_NAME_KEY = 'breaker:prayerName';
 
 function stateKey(id: string) {
   return `breaker:state:${id}`;
@@ -35,4 +36,12 @@ export function saveGroup(group: string) {
 
 export function loadGroup(): string | null {
   return localStorage.getItem(GROUP_KEY);
+}
+
+export function savePrayerName(name: string) {
+  localStorage.setItem(PRAYER_NAME_KEY, name);
+}
+
+export function loadPrayerName(): string | null {
+  return localStorage.getItem(PRAYER_NAME_KEY);
 }
