@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SCHEDULE, SCHEDULE_ROWS, type ScheduleSegment } from '../data/schedule';
+import { MERGED_BLOCKS, SCHEDULE, SCHEDULE_ROWS, type ScheduleSegment } from '../data/schedule';
 import styles from './ScheduleScreen.module.css';
 
 type Cell = { render: true; span: number; label: string | null } | { render: false };
@@ -45,23 +45,33 @@ export default function ScheduleScreen() {
             </tr>
           </thead>
           <tbody>
-            {SCHEDULE_ROWS.map((rowLabel, r) => (
-              <tr key={rowLabel}>
-                <td className={styles.timeCell}>{rowLabel}</td>
-                {SCHEDULE.map((day, d) => {
-                  const cell = dayCells[d][r];
-                  if (!cell.render) return null;
-                  if (cell.label === null) {
-                    return <td key={day.date} className={styles.emptyCell} rowSpan={cell.span} />;
-                  }
-                  return (
-                    <td key={day.date} className={styles.labelCell} rowSpan={cell.span}>
-                      {cell.label}
+            {SCHEDULE_ROWS.map((rowLabel, r) => {
+              const merged = MERGED_BLOCKS.find((b) => b.startRow === r);
+              const mergedDates = merged ? new Set(merged.dayDates) : null;
+              return (
+                <tr key={rowLabel}>
+                  <td className={styles.timeCell}>{rowLabel}</td>
+                  {merged && mergedDates && (
+                    <td className={styles.labelCell} colSpan={mergedDates.size} rowSpan={merged.span}>
+                      {merged.label}
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  )}
+                  {SCHEDULE.map((day, d) => {
+                    if (mergedDates?.has(day.date)) return null;
+                    const cell = dayCells[d][r];
+                    if (!cell.render) return null;
+                    if (cell.label === null) {
+                      return <td key={day.date} className={styles.emptyCell} rowSpan={cell.span} />;
+                    }
+                    return (
+                      <td key={day.date} className={styles.labelCell} rowSpan={cell.span}>
+                        {cell.label}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

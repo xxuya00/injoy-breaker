@@ -25,7 +25,7 @@ export const SCHEDULE: ScheduleDay[] = [
       { span: 4, label: null },
       { span: 1, label: '등록 · 점심식사' },
       { span: 2, label: '이동' },
-      { span: 3, label: '여는 예배 및 OT · 활동1' },
+      { span: 3, label: '여는 예배 및 OT (15:00~15:30)\n활동1 (15:30~18:00)' },
       { span: 2, label: '저녁식사' },
       { span: 2, label: '저녁집회' },
       { span: 1, label: '소그룹 모임' },
@@ -58,4 +58,20 @@ export const SCHEDULE: ScheduleDay[] = [
       { span: 10, label: '오후 3:30 닫는 예배' },
     ],
   },
+];
+
+export interface MergedBlock {
+  dayDates: string[]; // 이 날짜들의 칸을 하나로 합쳐서 보여준다
+  startRow: number; // SCHEDULE_ROWS 인덱스
+  span: number;
+  label: string;
+}
+
+// 8/28·8/29 저녁 일정(저녁식사·저녁집회·소그룹모임·자유시간)은 완전히 동일해서
+// 두 날짜 칸을 하나로 합쳐 보여준다. 날짜를 바꾸고 싶으면 dayDates만 수정하면 된다.
+export const MERGED_BLOCKS: MergedBlock[] = [
+  { dayDates: ['8/28', '8/29'], startRow: SCHEDULE_ROWS.indexOf('18:00'), span: 2, label: '저녁식사' },
+  { dayDates: ['8/28', '8/29'], startRow: SCHEDULE_ROWS.indexOf('20:00'), span: 2, label: '저녁집회' },
+  { dayDates: ['8/28', '8/29'], startRow: SCHEDULE_ROWS.indexOf('22:00'), span: 1, label: '소그룹 모임' },
+  { dayDates: ['8/28', '8/29'], startRow: SCHEDULE_ROWS.indexOf('23:00'), span: 1, label: '자유시간' },
 ];
