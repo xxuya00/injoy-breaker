@@ -1,6 +1,6 @@
-// 시간 축 — 8:00부터 24:00까지 1시간 단위 16칸
+// 시간 축 — 8:00부터 24:00까지, 15:30 한 줄만 30분 단위이고 나머지는 1시간 단위 (17칸)
 export const SCHEDULE_ROWS = [
-  '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+  '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '15:30',
   '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
 ];
 
@@ -12,7 +12,7 @@ export interface ScheduleSegment {
 export interface ScheduleDay {
   date: string;
   weekday: string;
-  // segments의 span 합이 SCHEDULE_ROWS.length(16)와 같아야 함
+  // segments의 span 합이 SCHEDULE_ROWS.length(17)와 같아야 함
   segments: ScheduleSegment[];
 }
 
@@ -25,7 +25,8 @@ export const SCHEDULE: ScheduleDay[] = [
       { span: 4, label: null },
       { span: 1, label: '등록 · 점심식사' },
       { span: 2, label: '이동' },
-      { span: 3, label: '여는 예배 및 OT (15:00~15:30)\n활동1 (15:30~18:00)' },
+      { span: 1, label: '여는 예배 및 OT' },
+      { span: 3, label: '활동1' },
       { span: 2, label: '저녁식사' },
       { span: 2, label: '저녁집회' },
       { span: 1, label: '소그룹 모임' },
@@ -40,7 +41,7 @@ export const SCHEDULE: ScheduleDay[] = [
       { span: 1, label: '큐티' },
       { span: 2, label: '활동2' },
       { span: 1, label: '점심식사' },
-      { span: 5, label: '물놀이' },
+      { span: 6, label: '물놀이' },
       { span: 2, label: '저녁식사' },
       { span: 2, label: '저녁집회' },
       { span: 1, label: '소그룹 모임' },
@@ -55,7 +56,7 @@ export const SCHEDULE: ScheduleDay[] = [
       { span: 3, label: '교회로!!' },
       { span: 1, label: '점심식사' },
       { span: 1, label: '활동3' },
-      { span: 10, label: '오후 3:30 닫는 예배' },
+      { span: 11, label: '오후 3:30 닫는 예배' },
     ],
   },
 ];

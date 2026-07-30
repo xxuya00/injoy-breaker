@@ -40,7 +40,6 @@
 .labelCell {
   color: var(--text);
   background: var(--ink-3);
-  white-space: pre-line;
 }
 .emptyCell {
   background: transparent;
