@@ -23,7 +23,7 @@ function json_(obj) {
 }
 
 function nowKST_() {
-  return Utilities.formatDate(new Date(), 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
 }
 
 function sheet_(name, headers) {
@@ -202,6 +202,19 @@ function saveTypeResult_(body) {
     sh.appendRow(row);
   }
   return json_({ ok: true });
+}
+
+// ---- 관리자용: 시트를 미리 다 만들어두고 싶을 때 한 번 실행(▶ 버튼)하세요 ----
+// players/prayers/notices/locks/typeResults/messages 6개 시트를 헤더까지 전부 만들어줍니다.
+// typeResults·messages는 원래 누군가 그 기능을 실제로 써야 자동 생성되는데,
+// 미리 확인해보고 싶을 때 이 함수로 먼저 만들어둘 수 있습니다.
+function setupAllSheets() {
+  playersSheet_();
+  prayersSheet_();
+  noticesSheet_();
+  locksSheet_();
+  typeResultsSheet_();
+  messagesSheet_();
 }
 
 // ---- 관리자용: Apps Script 편집기에서 이 함수만 딱 한 번 수동 실행(▶ 버튼)하세요 ----
