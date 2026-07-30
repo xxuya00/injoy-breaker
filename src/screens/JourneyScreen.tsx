@@ -187,10 +187,13 @@ export default function JourneyScreen() {
     qrHandled.current = true;
     window.history.replaceState({}, '', window.location.pathname);
     let target: { day: Day; item: LockItem } | null = null;
-    ([1, 2, 3] as Day[]).forEach((d) => {
+    for (const d of [1, 2, 3] as Day[]) {
       const found = LOCKS[d].items.find((it) => it.id === qrId);
-      if (found) target = { day: d, item: found };
-    });
+      if (found) {
+        target = { day: d, item: found };
+        break;
+      }
+    }
     if (!target) return;
     selectDay(target.day);
     setTab('journey');
