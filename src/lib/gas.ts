@@ -37,18 +37,6 @@ export async function loadRemoteProgress(id: string): Promise<RemoteProgress | n
   return data ?? null;
 }
 
-export interface LeaderboardEntry {
-  id: string;
-  nick: string;
-  score: number;
-}
-
-export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
-  if (!gasEnabled) return [];
-  const data = await gasGet({ action: 'leaderboard' });
-  return data ?? [];
-}
-
 export interface PrayerEntry {
   id: string;
   group: string;

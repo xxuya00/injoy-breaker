@@ -33,10 +33,17 @@ export interface LeaderboardEntry {
   score: number;
 }
 
-export function subscribeLeaderboard(cb: (entries: LeaderboardEntry[]) => void): () => void {
+export function subscribeLeaderboard(
+  cb: (entries: LeaderboardEntry[]) => void,
+  onError?: (err: unknown) => void,
+): () => void {
   if (!firebaseEnabled || !db) return () => {};
   const q = query(collection(db, 'players'), orderBy('score', 'desc'), limit(20));
-  return onSnapshot(q, (snap) => {
-    cb(snap.docs.map((d) => ({ id: d.id, nick: d.data().nick, score: d.data().score })));
-  });
+  return onSnapshot(
+    q,
+    (snap) => {
+      cb(snap.docs.map((d) => ({ id: d.id, nick: d.data().nick, score: d.data().score })));
+    },
+    onError,
+  );
 }

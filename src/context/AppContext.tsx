@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useReducer, type ReactNode } from
 import type { AppState, Day, ScreenId, TabId } from '../types';
 import { loadLastId, loadState, saveLastId, saveState } from '../lib/storage';
 import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
+import { saveRemoteProgress as saveLeaderboardScore } from '../lib/sync';
 import { useToast } from './ToastContext';
 
 const TAB_SCREEN: Record<TabId, ScreenId> = {
@@ -106,6 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveRemoteProgress(state.id, state.nick, state.day, state.opened).catch(() => {
       toast('저장에 실패했어요. 네트워크를 확인해주세요');
     });
+    // 실시간 순위판(70명 동시 접속에도 안정적)을 위해 점수만 별도로 Firestore에도 기록한다.
+    saveLeaderboardScore(state.id, state.nick, state.day, state.opened).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 

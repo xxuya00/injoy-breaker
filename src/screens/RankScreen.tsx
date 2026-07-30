@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { fetchLeaderboard, gasEnabled, type LeaderboardEntry } from '../lib/gas';
+import { firebaseEnabled, subscribeLeaderboard, type LeaderboardEntry } from '../lib/sync';
 import Sheet from '../components/Sheet';
 import BackLink from '../components/BackLink';
 import styles from './RankScreen.module.css';
@@ -25,26 +25,19 @@ export default function RankScreen() {
 
   const warnedRef = useRef(false);
   useEffect(() => {
-    if (!gasEnabled || state.screen !== 'rank') return;
-    let cancelled = false;
-    const poll = () => {
-      fetchLeaderboard()
-        .then((data) => {
-          if (!cancelled && data.length) setEntries(data);
-        })
-        .catch(() => {
-          if (!cancelled && !warnedRef.current) {
-            warnedRef.current = true;
-            toast('순위판을 불러오지 못했어요. 네트워크를 확인해주세요');
-          }
-        });
-    };
-    poll();
-    const id = setInterval(poll, 8000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
+    if (!firebaseEnabled || state.screen !== 'rank') return;
+    const unsubscribe = subscribeLeaderboard(
+      (data) => {
+        if (data.length) setEntries(data);
+      },
+      () => {
+        if (!warnedRef.current) {
+          warnedRef.current = true;
+          toast('순위판을 불러오지 못했어요. 네트워크를 확인해주세요');
+        }
+      },
+    );
+    return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.screen]);
 
