@@ -2,29 +2,42 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 0;
+  padding: 13px 0;
   border-bottom: 1px solid var(--line);
 }
 .no {
   font-family: 'Bebas Neue';
   font-size: 20px;
   width: 26px;
-  color: var(--gold);
+  color: var(--accent);
+}
+.groupInfo {
+  flex: 1;
+}
+.groupRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 .nick {
-  flex: 1;
-  font-weight: 600;
-  font-size: 14.5px;
+  font-weight: 700;
+  font-size: 15.5px;
 }
 .pt {
   color: var(--mute);
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.timer {
-  font-family: 'Bebas Neue';
-  font-size: 15px;
-  letter-spacing: 0.1em;
-  color: var(--danger);
-  float: right;
-  margin-top: 4px;
+.bar {
+  height: 6px;
+  background: var(--ink-3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.barFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  transition: width 0.6s ease;
+  border-radius: 99px;
 }

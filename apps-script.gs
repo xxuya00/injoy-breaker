@@ -37,7 +37,7 @@ function sheet_(name, headers) {
 }
 
 function playersSheet_() {
-  return sheet_('players', ['id', 'nick', 'day', 'opened', 'score', 'updated_at']);
+  return sheet_('players', ['id', 'nick', 'day', 'opened', 'score', 'updated_at', 'nickname', 'group']);
 }
 
 function prayersSheet_() {
@@ -75,7 +75,19 @@ function savePlayer_(body) {
       break;
     }
   }
-  var row = [body.id, body.nick, body.day, JSON.stringify(body.opened || {}), body.score, nowKST_()];
+  // 닉네임/조는 값이 없이(예: 기존 진행 저장) 넘어오면 기존 값을 지우지 않도록 이어서 채운다.
+  var prevNickname = rowIndex > 0 ? data[rowIndex - 1][6] : '';
+  var prevGroup = rowIndex > 0 ? data[rowIndex - 1][7] : '';
+  var row = [
+    body.id,
+    body.nick,
+    body.day,
+    JSON.stringify(body.opened || {}),
+    body.score,
+    nowKST_(),
+    body.nickname || prevNickname || '',
+    body.group || prevGroup || '',
+  ];
   if (rowIndex > 0) {
     sh.getRange(rowIndex, 1, 1, row.length).setValues([row]);
   } else {
@@ -95,6 +107,8 @@ function getPlayer_(id) {
         day: data[i][2],
         opened: JSON.parse(data[i][3] || '{}'),
         score: data[i][4],
+        nickname: data[i][6] || '',
+        group: data[i][7] || '',
       });
     }
   }

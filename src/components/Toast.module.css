@@ -4,8 +4,8 @@
   top: 22px;
   transform: translate(-50%, -30px);
   background: var(--ink-3);
-  border: 1px solid var(--gold);
-  color: var(--gold-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent-soft);
   padding: 11px 18px;
   border-radius: 99px;
   font-size: 13.5px;

@@ -18,7 +18,7 @@ export default function WriteScreen() {
         계곡과 숲을 걸으며 마주한 것을 남겨보세요. 빠르게 넘길 필요 없어요. 이 화면엔 순위도, 타이머도 없습니다.
       </p>
 
-      <h2 style={{ fontSize: 15, color: 'var(--gold-soft)' }}>① 필사</h2>
+      <h2 style={{ fontSize: 15, color: 'var(--accent-soft)' }}>① 필사</h2>
       <p className="muted" style={{ marginBottom: 8 }}>
         전도서 2:11을 눌러 그대로 옮겨 적어보세요.
       </p>
@@ -33,7 +33,7 @@ export default function WriteScreen() {
         onChange={(e) => setCopy(e.target.value)}
       />
 
-      <h2 style={{ fontSize: 15, color: 'var(--gold-soft)', marginTop: 8 }}>② 마주하기</h2>
+      <h2 style={{ fontSize: 15, color: 'var(--accent-soft)', marginTop: 8 }}>② 마주하기</h2>
       <p className="muted" style={{ marginBottom: 8 }}>
         하나님보다 더 사랑했던 것, 내 안의 자물쇠는 무엇인가요?
       </p>

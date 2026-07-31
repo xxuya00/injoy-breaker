@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 import type { AppState, Day, ScreenId, TabId } from '../types';
-import { loadLastId, loadState, saveLastId, saveState } from '../lib/storage';
+import { loadLastId, loadState, saveLastId, saveState, loadGroup, saveGroup } from '../lib/storage';
 import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
 import { saveRemoteProgress as saveLeaderboardScore } from '../lib/sync';
 import { useToast } from './ToastContext';
@@ -14,7 +14,7 @@ const TAB_SCREEN: Record<TabId, ScreenId> = {
 };
 
 type Action =
-  | { type: 'ENROLL'; id: string; nick: string }
+  | { type: 'ENROLL'; id: string; nick: string; nickname: string }
   | { type: 'RESTORE'; state: Partial<AppState> & { id: string; nick: string } }
   | { type: 'GO_SCREEN'; screen: ScreenId }
   | { type: 'SET_TAB'; tab: TabId }
@@ -24,6 +24,7 @@ type Action =
 const initialState: AppState = {
   id: null,
   nick: '',
+  nickname: '',
   day: 1,
   opened: {},
   screen: 'login',
@@ -33,7 +34,7 @@ const initialState: AppState = {
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ENROLL':
-      return { ...state, id: action.id, nick: action.nick, screen: 'brief' };
+      return { ...state, id: action.id, nick: action.nick, nickname: action.nickname, screen: 'brief' };
     case 'RESTORE':
       return { ...state, ...action.state, screen: 'journey', activeTab: 'journey' };
     case 'GO_SCREEN':
@@ -51,7 +52,7 @@ function reducer(state: AppState, action: Action): AppState {
 
 interface AppContextValue {
   state: AppState;
-  enroll: (nick: string, id: string) => void;
+  enroll: (name: string, nickname: string, group: string, id: string) => void;
   restoreById: (id: string) => Promise<boolean>;
   goScreen: (screen: ScreenId) => void;
   setTab: (tab: TabId) => void;
@@ -83,11 +84,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadRemoteProgress(lastId)
         .then((remote) => {
           if (!remote) return;
+          if (remote.group) saveGroup(remote.group);
           dispatch({
             type: 'RESTORE',
             state: {
               id: lastId,
               nick: remote.nick,
+              nickname: remote.nickname || local?.nickname || '',
               day: (Math.max(local?.day ?? 1, remote.day) as Day) ?? remote.day,
               opened: { ...local?.opened, ...remote.opened },
             },
@@ -104,7 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state.id) return;
     saveState(state.id, state);
-    saveRemoteProgress(state.id, state.nick, state.day, state.opened).catch(() => {
+    const group = loadGroup() ?? undefined;
+    saveRemoteProgress(state.id, state.nick, state.day, state.opened, state.nickname, group).catch(() => {
       toast('저장에 실패했어요. 네트워크를 확인해주세요');
     });
     // 실시간 순위판(70명 동시 접속에도 안정적)을 위해 점수만 별도로 Firestore에도 기록한다.
@@ -112,9 +116,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  const enroll = (nick: string, id: string) => {
+  const enroll = (name: string, nickname: string, group: string, id: string) => {
     saveLastId(id);
-    dispatch({ type: 'ENROLL', id, nick });
+    saveGroup(group);
+    dispatch({ type: 'ENROLL', id, nick: name, nickname });
   };
 
   const restoreById = async (id: string): Promise<boolean> => {
@@ -127,11 +132,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (!local && !remote) return false;
     saveLastId(id);
+    if (remote?.group) saveGroup(remote.group);
     dispatch({
       type: 'RESTORE',
       state: {
         id,
         nick: remote?.nick ?? local?.nick ?? '',
+        nickname: remote?.nickname ?? local?.nickname ?? '',
         day: (Math.max(local?.day ?? 1, remote?.day ?? 1) as Day),
         opened: { ...local?.opened, ...remote?.opened },
       },

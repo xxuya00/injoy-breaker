@@ -8,12 +8,12 @@
 .itemTitle {
   font-weight: 700;
   font-size: 15px;
-  color: var(--gold-soft);
+  color: var(--accent-soft);
   margin-bottom: 6px;
 }
 .itemBody {
   font-size: 14px;
-  color: #c9d2f2;
+  color: #d9cdbb;
   white-space: pre-wrap;
   line-height: 1.55;
 }

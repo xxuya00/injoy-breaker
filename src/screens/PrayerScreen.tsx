@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { addPrayer, fetchPrayers, gasEnabled, type PrayerEntry } from '../lib/gas';
+import { saveRemoteProgress as syncGroupToLeaderboard } from '../lib/sync';
 import { PRAYER_GROUPS } from '../data/prayerGroups';
-import { loadGroup, loadPrayerName, saveGroup, savePrayerName } from '../lib/storage';
+import { loadGroup, saveGroup } from '../lib/storage';
 import styles from './PrayerScreen.module.css';
 
 export default function PrayerScreen() {
   const { state } = useApp();
   const toast = useToast();
   const [group, setGroup] = useState<string | null>(loadGroup());
-  const [name, setName] = useState(loadPrayerName() ?? '');
   const [prayers, setPrayers] = useState<PrayerEntry[]>([]);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
@@ -43,6 +43,8 @@ export default function PrayerScreen() {
   const joinGroup = (g: string) => {
     saveGroup(g);
     setGroup(g);
+    // 조별 순위판에 바로 반영되도록, 조 선택 즉시 한 번 동기화해둔다.
+    if (state.id) syncGroupToLeaderboard(state.id, state.nick, state.day, state.opened).catch(() => {});
   };
 
   const leaveGroup = () => {
@@ -52,16 +54,10 @@ export default function PrayerScreen() {
 
   const submit = async () => {
     const v = text.trim();
-    const n = name.trim();
     if (!v || !group) return;
-    if (!n) {
-      toast('이름을 입력해주세요');
-      return;
-    }
-    savePrayerName(n);
     setPosting(true);
     try {
-      await addPrayer(group, n, v);
+      await addPrayer(group, state.nick, v);
       setText('');
       const data = await fetchPrayers(group);
       setPrayers(data);
@@ -102,13 +98,6 @@ export default function PrayerScreen() {
         </button>
       </div>
 
-      <input
-        className="field"
-        placeholder="이름(본명)을 입력하세요"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={12}
-      />
       <textarea
         className="field"
         style={{ minHeight: 90, resize: 'none' }}

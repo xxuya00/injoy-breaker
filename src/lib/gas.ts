@@ -21,14 +21,23 @@ async function gasPost(body: Record<string, unknown>) {
 
 interface RemoteProgress {
   nick: string;
+  nickname?: string;
+  group?: string;
   day: number;
   opened: Record<string, boolean>;
   score: number;
 }
 
-export async function saveRemoteProgress(id: string, nick: string, day: number, opened: Record<string, boolean>) {
+export async function saveRemoteProgress(
+  id: string,
+  nick: string,
+  day: number,
+  opened: Record<string, boolean>,
+  nickname?: string,
+  group?: string,
+) {
   if (!gasEnabled) return;
-  await gasPost({ action: 'savePlayer', id, nick, day, opened, score: Object.keys(opened).length });
+  await gasPost({ action: 'savePlayer', id, nick, day, opened, score: Object.keys(opened).length, nickname, group });
 }
 
 export async function loadRemoteProgress(id: string): Promise<RemoteProgress | null> {

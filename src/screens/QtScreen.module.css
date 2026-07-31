@@ -15,7 +15,7 @@
   font-size: 14px;
 }
 .dayTabOn {
-  border-color: var(--gold);
+  border-color: var(--accent);
   background: var(--ink-3);
-  color: var(--gold);
+  color: var(--accent);
 }

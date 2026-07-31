@@ -1,7 +1,7 @@
 .sheetBg {
   position: absolute;
   inset: 0;
-  background: rgba(6, 9, 20, 0.72);
+  background: rgba(10, 8, 6, 0.72);
   backdrop-filter: blur(3px);
   z-index: 40;
   opacity: 0;
@@ -17,6 +17,7 @@
 }
 
 .sheet {
+  position: relative;
   width: 100%;
   max-width: 440px;
   background: var(--ink-2);
@@ -39,4 +40,36 @@
   background: var(--line);
   border-radius: 9px;
   margin: 8px auto 18px;
+}
+
+.sheetBgFull {
+  align-items: stretch;
+}
+.sheetBgFull .sheet {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  border-top: 0;
+  padding-top: calc(20px + env(safe-area-inset-top));
+}
+
+.closeBtn {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.closeBtn:active {
+  transform: scale(0.92);
 }

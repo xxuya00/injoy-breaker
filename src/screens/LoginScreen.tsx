@@ -1,48 +1,47 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { generateId } from '../lib/id';
+import { PRAYER_GROUPS } from '../data/prayerGroups';
 import styles from './LoginScreen.module.css';
 
 export default function LoginScreen() {
   const { enroll, restoreById } = useApp();
   const toast = useToast();
   const [mode, setMode] = useState<'new' | 'restore'>('new');
-  const [nick, setNick] = useState('');
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [restoreId, setRestoreId] = useState('');
+  const [name, setName] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [group, setGroup] = useState<string | null>(null);
+  const [restoreName, setRestoreName] = useState('');
   const [restoring, setRestoring] = useState(false);
 
-  const handleGenerate = () => {
-    const v = nick.trim();
+  const handleConfirm = () => {
+    const v = name.trim();
+    const nv = nickname.trim();
     if (!v) {
-      toast('코드네임을 입력해주세요');
+      toast('이름을 입력해주세요');
       return;
     }
-    setPendingId(generateId(v));
-  };
-
-  const handleCopy = async () => {
-    if (!pendingId) return;
-    await navigator.clipboard.writeText(pendingId);
-    toast('아이디가 복사됐어요');
-  };
-
-  const handleConfirm = () => {
-    if (!pendingId) return;
-    enroll(nick.trim(), pendingId);
+    if (!nv) {
+      toast('닉네임을 입력해주세요');
+      return;
+    }
+    if (!group) {
+      toast('조를 선택해주세요');
+      return;
+    }
+    enroll(v, nv, group, v);
   };
 
   const handleRestore = async () => {
-    const v = restoreId.trim();
+    const v = restoreName.trim();
     if (!v) {
-      toast('아이디를 입력해주세요');
+      toast('이름을 입력해주세요');
       return;
     }
     setRestoring(true);
     const ok = await restoreById(v);
     setRestoring(false);
-    if (!ok) toast('해당 아이디를 찾을 수 없어요');
+    if (!ok) toast('해당 이름을 찾을 수 없어요');
   };
 
   if (mode === 'restore') {
@@ -51,18 +50,18 @@ export default function LoginScreen() {
         <div className={styles.brand}>
           BR<span className={styles.crack}>/</span>EAKER
         </div>
-        <div className={styles.tagline}>아이디로 이어하기</div>
+        <div className={styles.tagline}>이름으로 이어하기</div>
         <hr className="divider" />
         <p className="lead" style={{ marginBottom: 22 }}>
-          등록할 때 받은 아이디를 입력하면
+          등록할 때 입력한 이름을 그대로 입력하면
           <br />
           진행 상황을 그대로 이어갈 수 있어요.
         </p>
         <input
           className="field"
-          placeholder="예: 여니-4821"
-          value={restoreId}
-          onChange={(e) => setRestoreId(e.target.value)}
+          placeholder="예: 김여니"
+          value={restoreName}
+          onChange={(e) => setRestoreName(e.target.value)}
           maxLength={20}
         />
         <button className="btn" onClick={handleRestore} disabled={restoring}>
@@ -88,42 +87,52 @@ export default function LoginScreen() {
         <br />
         수많은 자극이 참된 평안과 쉼을 가둬 놓았어요.
         <br />
-        <span style={{ color: 'var(--gold-soft)' }}>앞으로 3일, 당신은 ??? 브레이커입니다.</span>
+        <span style={{ color: 'var(--accent-soft)' }}>앞으로 3일, 당신은 ??? 브레이커입니다.</span>
       </p>
 
-      {!pendingId ? (
-        <>
-          <input
-            className="field"
-            placeholder="코드네임을 입력하세요"
-            maxLength={12}
-            value={nick}
-            onChange={(e) => setNick(e.target.value)}
-          />
-          <button className="btn" onClick={handleGenerate}>
-            브레이커로 등록
+      <div className={styles.fieldLabel}>이름 (본명)</div>
+      <input
+        className="field"
+        placeholder="예: 김여니"
+        maxLength={20}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <p className="tiny" style={{ margin: '-8px 0 16px' }}>
+        기도제목 등에 실명 그대로 쓰여요.
+      </p>
+
+      <div className={styles.fieldLabel}>닉네임</div>
+      <input
+        className="field"
+        placeholder="예: 양파링"
+        maxLength={12}
+        value={nickname}
+        onChange={(e) => setNickname(e.target.value)}
+      />
+      <p className="tiny" style={{ margin: '-8px 0 16px' }}>
+        게임 기록판 등 다른 사람에게 보이는 곳엔 이 닉네임이 쓰여요.
+      </p>
+
+      <div className={styles.fieldLabel}>조 선택</div>
+      <div className={styles.groupGrid}>
+        {PRAYER_GROUPS.map((g) => (
+          <button
+            key={g}
+            className={`${styles.groupBtn} ${group === g ? styles.groupBtnOn : ''}`}
+            onClick={() => setGroup(g)}
+          >
+            {g}
           </button>
-          <p className="tiny">별명·이니셜 무엇이든 좋아요.</p>
-          <button className={styles.switchLink} onClick={() => setMode('restore')}>
-            이미 아이디가 있나요? 이어하기
-          </button>
-        </>
-      ) : (
-        <>
-          <div className={styles.idCard}>
-            <span className={styles.idCode}>{pendingId}</span>
-            <button className={styles.copyBtn} onClick={handleCopy}>
-              복사
-            </button>
-          </div>
-          <p className="tiny" style={{ marginTop: 0, marginBottom: 14 }}>
-            이 아이디를 꼭 저장해두세요. 다른 기기에서도 이 아이디로 이어할 수 있어요.
-          </p>
-          <button className="btn" onClick={handleConfirm}>
-            브레이커로 등록
-          </button>
-        </>
-      )}
+        ))}
+      </div>
+
+      <button className="btn" style={{ marginTop: 18 }} onClick={handleConfirm}>
+        브레이커로 등록
+      </button>
+      <button className={styles.switchLink} onClick={() => setMode('restore')}>
+        이미 등록했나요? 이어하기
+      </button>
     </section>
   );
 }

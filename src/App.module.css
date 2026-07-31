@@ -4,7 +4,7 @@
   height: 100dvh;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(233, 184, 114, 0.1), transparent 60%), var(--ink);
+  background: radial-gradient(120% 60% at 50% -10%, rgba(236, 147, 163, 0.1), transparent 60%), var(--ink);
 }
 
 .screen {

@@ -28,7 +28,7 @@ export default function DecideScreen() {
         </div>
         <p style={{ fontSize: 17, marginTop: 10, position: 'relative', lineHeight: 1.7 }}>
           "일의 결국을 다 들었으니{' '}
-          <b style={{ color: 'var(--gold-soft)' }}>하나님을 경외하고 그의 명령들을 지킬지어다</b> 이것이 모든
+          <b style={{ color: 'var(--accent-soft)' }}>하나님을 경외하고 그의 명령들을 지킬지어다</b> 이것이 모든
           사람의 본분이니라"
         </p>
       </div>
@@ -50,7 +50,7 @@ export default function DecideScreen() {
 
       <Sheet open={done} onClose={() => setDone(false)}>
         <RevealCard pill="마지막 열쇠 · 획득" title={`${state.nick}, 당신은 돌파했습니다`}>
-          솔로몬이 모든 것 끝에 찾은 열쇠는 <b style={{ color: 'var(--gold-soft)' }}>하나님을 경외함</b>이었습니다.
+          솔로몬이 모든 것 끝에 찾은 열쇠는 <b style={{ color: 'var(--accent-soft)' }}>하나님을 경외함</b>이었습니다.
           이제 그 열쇠는 당신의 것입니다.
         </RevealCard>
         <div style={{ height: 20 }} />

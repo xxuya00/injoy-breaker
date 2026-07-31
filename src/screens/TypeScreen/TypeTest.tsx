@@ -205,7 +205,7 @@ export default function TypeTest() {
 
         {current.type === 'likert' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--gold-soft)' }}>
+            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
               {current.section}
             </div>
             <h2 style={{ marginBottom: 8 }}>{current.text}</h2>
@@ -240,7 +240,7 @@ export default function TypeTest() {
 
         {current.type === 'ab' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--gold-soft)' }}>
+            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
               {current.section}
             </div>
             <div className={styles.abCard}>
@@ -283,7 +283,7 @@ export default function TypeTest() {
 
         {current.type === 'choice' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--gold-soft)' }}>
+            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
               {current.section}
             </div>
             <h2 style={{ marginBottom: 16 }}>{current.text}</h2>
@@ -365,7 +365,7 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
           )}
         </div>
         <h2 style={{ position: 'relative', marginBottom: 10 }}>{combo.name}</h2>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>
+        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>
         <div className={styles.ttBars} style={{ position: 'relative' }}>
           {IDOL_ORDER.map((c) => {
             const meta = IDOL_META[c];
@@ -390,8 +390,8 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
           02 · 나의 묵상 유형
         </div>
         <h2 style={{ position: 'relative', marginBottom: 10 }}>{medT.name}</h2>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 2 }}>{medT.desc}</p>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginTop: 8 }}>+ {medSocialNote}</p>
+        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 2 }}>{medT.desc}</p>
+        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {medSocialNote}</p>
         <div className={styles.ttStatPill} style={{ position: 'relative' }}>
           하루 평균 묵상 시간 · {med.time}
         </div>
@@ -402,8 +402,8 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
           03 · 나의 기도 유형
         </div>
         <h2 style={{ position: 'relative', marginBottom: 10 }}>{prayT.name}</h2>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginBottom: 2 }}>{prayT.desc}</p>
-        <p style={{ position: 'relative', color: '#c9d2f2', fontSize: 14.5, marginTop: 8 }}>+ {prayFocusNote}</p>
+        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 2 }}>{prayT.desc}</p>
+        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {prayFocusNote}</p>
         <div className={styles.ttStatPill} style={{ position: 'relative' }}>
           하루 평균 기도 시간 · {pray.time}
         </div>

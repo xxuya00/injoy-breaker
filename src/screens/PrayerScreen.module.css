@@ -16,7 +16,7 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .groupBtn:active {
-  border-color: var(--gold);
+  border-color: var(--accent);
   background: var(--ink-3);
 }
 
@@ -34,12 +34,12 @@
   font-family: 'Bebas Neue';
   font-size: 18px;
   letter-spacing: 0.05em;
-  color: var(--gold-soft);
+  color: var(--accent-soft);
 }
 .switchLink {
   background: none;
   border: 0;
-  color: var(--gold);
+  color: var(--accent);
   font-size: 12.5px;
   text-decoration: underline;
   cursor: pointer;
@@ -55,14 +55,14 @@
 }
 .itemNick {
   font-size: 11px;
-  color: var(--gold);
+  color: var(--accent);
   letter-spacing: 0.08em;
   font-weight: 700;
   margin-bottom: 4px;
 }
 .itemText {
   font-size: 14.5px;
-  color: #c9d2f2;
+  color: #d9cdbb;
   white-space: pre-wrap;
 }
 .empty {

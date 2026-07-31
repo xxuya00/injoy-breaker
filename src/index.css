@@ -1,16 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Gothic+A1:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Do+Hyeon&family=Gothic+A1:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --ink: #0e1428;
-  --ink-2: #161f3d;
-  --ink-3: #1f2a4f;
-  --line: #2c3860;
-  --gold: #e9b872;
-  --gold-soft: #f3d9a8;
-  --mute: #7f8bb0;
-  --text: #e6ebff;
-  --danger: #e97a6b;
-  --ok: #7fcf9e;
+  --ink: #18140f;
+  --ink-2: #221c16;
+  --ink-3: #2c241c;
+  --line: #3d3327;
+  --accent: #ec93a3;
+  --accent-soft: #f6c3cd;
+  --mute: #a89a8a;
+  --text: #f1e9db;
+  --danger: #e2564f;
+  --ok: #93d2a4;
+  --accent-blue: #94c7dd;
+  --accent-yellow: #f0d78a;
+  --accent-purple: #b9a8d6;
 }
 
 * {
@@ -47,12 +50,12 @@ textarea {
   font-family: 'Bebas Neue', sans-serif;
   letter-spacing: 0.32em;
   font-size: 13px;
-  color: var(--gold);
+  color: var(--accent);
   text-transform: uppercase;
 }
 
 h1 {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Do Hyeon', 'Bebas Neue', sans-serif;
   font-weight: 400;
   letter-spacing: 0.04em;
   font-size: 44px;
@@ -68,7 +71,7 @@ h2 {
 }
 
 p.lead {
-  color: #c3ccec;
+  color: #d9cdbb;
   font-size: 15px;
 }
 
@@ -98,7 +101,7 @@ p.lead {
   font-weight: 700;
   font-size: 16px;
   color: var(--ink);
-  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
   letter-spacing: 0.02em;
   transition: transform 0.12s ease, filter 0.12s ease;
 }
@@ -107,7 +110,7 @@ p.lead {
 }
 .btn.ghost {
   background: transparent;
-  color: var(--gold);
+  color: var(--accent);
   border: 1px solid var(--line);
   font-weight: 600;
 }
@@ -132,14 +135,14 @@ p.lead {
   outline: none;
 }
 .field:focus {
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 
 .verse {
-  border-left: 2px solid var(--gold);
+  border-left: 2px solid var(--accent);
   padding-left: 14px;
   margin: 20px 0;
-  color: #c9d2f2;
+  color: #d9cdbb;
   font-size: 14.5px;
   font-style: italic;
 }
@@ -150,7 +153,7 @@ p.lead {
   letter-spacing: 0.18em;
   font-size: 12px;
   color: var(--ink);
-  background: var(--gold);
+  background: var(--accent);
   padding: 4px 12px;
   border-radius: 99px;
   margin-bottom: 10px;
@@ -179,17 +182,17 @@ p.lead {
 }
 .opt.correct {
   border-color: var(--ok);
-  background: rgba(127, 207, 158, 0.14);
+  background: rgba(147, 210, 164, 0.14);
   color: #c8f2d6;
 }
 .opt.wrong {
   border-color: var(--danger);
-  background: rgba(233, 122, 107, 0.14);
+  background: rgba(226, 86, 79, 0.14);
 }
 .opt.selected {
-  border-color: var(--gold);
-  background: rgba(233, 184, 114, 0.14);
-  color: var(--gold-soft);
+  border-color: var(--accent);
+  background: rgba(236, 147, 163, 0.14);
+  color: var(--accent-soft);
 }
 
 .center-min {
@@ -215,7 +218,7 @@ p.lead {
 
 .decision-card {
   background: linear-gradient(160deg, var(--ink-3), var(--ink-2));
-  border: 1px solid rgba(233, 184, 114, 0.35);
+  border: 1px solid rgba(236, 147, 163, 0.35);
   border-radius: 20px;
   padding: 24px;
   position: relative;
@@ -228,5 +231,5 @@ p.lead {
   right: -40px;
   width: 140px;
   height: 140px;
-  background: radial-gradient(circle, rgba(233, 184, 114, 0.16), transparent 70%);
+  background: radial-gradient(circle, rgba(236, 147, 163, 0.16), transparent 70%);
 }

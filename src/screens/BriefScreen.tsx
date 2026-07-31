@@ -12,8 +12,8 @@ export default function BriefScreen() {
         <div className={styles.q}>사건</div>
         <p style={{ fontSize: 15, marginTop: 2 }}>
           3천 년 전, 솔로몬은 세상 모든 것을 누려보았습니다.{' '}
-          <b style={{ color: 'var(--gold-soft)' }}>지혜</b>의 사람이었던 그가, 마지막에 찾아낸{' '}
-          <b style={{ color: 'var(--gold-soft)' }}>단 하나의 진리</b>가 무엇인지— 3일 끝에 당신이 직접 열게 됩니다.
+          <b style={{ color: 'var(--accent-soft)' }}>지혜</b>의 사람이었던 그가, 마지막에 찾아낸{' '}
+          <b style={{ color: 'var(--accent-soft)' }}>단 하나의 진리</b>가 무엇인지— 3일 끝에 당신이 직접 열게 됩니다.
         </p>
       </div>
 

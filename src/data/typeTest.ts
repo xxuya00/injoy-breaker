@@ -86,6 +86,8 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
   { cat: 'people', text: '나는 외로울 때 하나님을 먼저 찾기보다, 당장 내 외로움을 채워줄 사람이나 연인부터 찾는다.', weight: true },
   { cat: 'people', text: '나는 사람의 미움이나 외면을 받는 것이 하나님의 뜻에서 멀어지는 것보다 더 두렵다.', weight: true },
   { cat: 'people', text: '나는 다음날 예배에 지장이 가더라도 토요일 밤 늦게까지 친구들이랑 놀곤 한다.' },
+  { cat: 'people', text: '나의 사적인 고민은 하나님보다 친구/가족에게 말하는 것이 편하다.', weight: true },
+  { cat: 'people', text: '즐거운 셀모임을 위해서는 리더·셀 구성원이 중요하다.' },
   // 인정
   { cat: 'approval', text: '다른 사람과 비교하게 되는 순간이 있다.' },
   { cat: 'approval', text: '다른 사람의 칭찬이나 인정을 받지 못하면 하루 종일 기분이 가라앉는다.' },
@@ -114,6 +116,10 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
     weight: true,
   },
   { cat: 'approval', text: '나는 남들에게 보여지는 사역은 해도, 남들이 알아줄 수 없는 사역(예: 교회 청소, 방송실 등)은 별로 하고 싶지 않다.' },
+  { cat: 'approval', text: '나는 내 이미지가 중요하다.' },
+  { cat: 'approval', text: '섬김의 자리에서 사람의 칭찬을 신경 쓴 적이 많다.' },
+  { cat: 'approval', text: '예배 시간에 늦더라도 꾸미는 것(머리 만지기·옷 고르기·화장하기)이 중요하다.' },
+  { cat: 'approval', text: '내 일정 대신 주일을 지키는 것이 아까웠던 적이 있다.', weight: true },
   // 돈
   { cat: 'money', text: '경제적으로 불안하면 다른 일도 잘 손에 잡히지 않는다.' },
   { cat: 'money', text: '선택할 때 비용을 가장 먼저 생각하는 편이다.' },
@@ -132,6 +138,7 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
     text: '나는 (할 수 있다면) 성경 속 다윗이나 아브라함을 실제로 만나 영적인 지혜를 들을 수 있는 자리보다, 빌 게이츠나 이재용 회장을 만나 부의 비결을 들을 수 있는 식사 자리가 훨씬 더 땡긴다.',
     weight: true,
   },
+  { cat: 'money', text: '나는 십일조가 아까워서 하지 않은 적이 있다.', weight: true },
   // 사랑
   { cat: 'love', text: '연애할 때 스마트폰을 자주 확인한다 (1시간에 10번 이상).' },
   { cat: 'love', text: '누군가와 가까워질수록 다른 일보다 그 사람이 우선이 된다.' },
@@ -145,6 +152,7 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
   { cat: 'love', text: '연애(썸 포함)에 대한 생각이 하루 중 큰 비중을 차지한다.' },
   { cat: 'love', text: '친구들이랑 하는 대화의 대부분이 연애 관련된 이야기다.' },
   { cat: 'love', text: '하나님보다 잘생긴/예쁜 (내 이상형의) 연인이 내 인생을 더 행복하게 해줄 수 있을 것 같다.', weight: true },
+  { cat: 'love', text: '나는 원하는 사람과 잘 안되면 하나님이 원망스럽다.', weight: true },
   // 권력
   { cat: 'power', text: '내 의견이 받아들여지지 않으면 아쉽다.' },
   { cat: 'power', text: '어떤 일을 함에 있어서 내가 주도하는 것이 편하다.' },
@@ -164,6 +172,7 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
   { cat: 'power', text: '사람들이 나를 믿고 따라줄 때 만족스럽다.' },
   { cat: 'power', text: '나는 하나님의 뜻이어도 논리적으로 이해되거나 납득되지 않으면 순종하기 어렵다.', weight: true },
   { cat: 'power', text: '인생이 내 뜻대로 되지 않을 때 많이 불안하다.' },
+  { cat: 'power', text: '내가 하지 않은 일에 대해서도 조직이나 공동체를 위해 나서서 사과할 수 있다.' },
   // 도파민
   { cat: 'dopamine', text: '지루한 시간을 오래 견디기 어렵다.' },
   { cat: 'dopamine', text: '해야 할 일이 있어도 재미있는 것을 먼저 찾을 때가 있다.' },
@@ -186,6 +195,9 @@ export const IDOL_QUESTIONS: IdolQuestion[] = [
     weight: true,
   },
   { cat: 'dopamine', text: '나는 말씀 읽고 기도할 시간은 바쁘다는 핑계로 계속 미루지만, SNS(릴스)는 틈틈이 본다.', weight: true },
+  { cat: 'dopamine', text: '예배 시간에 예배보다 다른 생각을 한 적이 많다.' },
+  { cat: 'dopamine', text: '예배 시간에 카톡·전화가 오면 반드시 확인해야 한다.', weight: true },
+  { cat: 'dopamine', text: '잔잔한 찬양보다 신나는 찬양이 더 좋다.' },
 ];
 
 export const LIKERT_LABELS = ['전혀 아니다', '아니다', '보통이다', '그렇다', '매우 그렇다'];
