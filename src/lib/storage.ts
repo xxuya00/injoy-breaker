@@ -29,6 +29,13 @@ export function loadState(id: string): AppState | null {
   }
 }
 
+// 구글 시트(진짜 DB)에 해당 id의 기록이 없을 때 호출한다.
+// 클리어 여부는 시트가 기준이므로, 시트에 없으면 이 기기에 남아있던 캐시도 전부 지운다.
+export function clearLocalPlayer(id: string) {
+  localStorage.removeItem(stateKey(id));
+  if (loadLastId() === id) localStorage.removeItem(LAST_ID_KEY);
+}
+
 export function saveGroup(group: string) {
   localStorage.setItem(GROUP_KEY, group);
 }
