@@ -232,6 +232,12 @@ function ItemChip({ idx, size = 32 }: { idx: number; size?: number }) {
 
 // 인트로 화면에서 텍스트 설명만으로는 감이 안 오니, 고정된 예시 상황을 CSS 루프로 반복 재생해
 // "이런 식으로 진행된다"를 짧게 보여준다. 실제 랜덤 로직과는 무관한 순수 연출용.
+// 모양·색·배경이 모두 "셋 다 다른" 조합 — 셋 다 같은 쪽보다 이 규칙이 헷갈리기 쉬워 예시로 골랐다.
+const COMBO_DEMO_CARDS: ComboCard[] = [
+  { id: 'demo-0', shape: 0, color: 0, bg: 0 },
+  { id: 'demo-1', shape: 1, color: 1, bg: 1 },
+  { id: 'demo-2', shape: 2, color: 2, bg: 2 },
+];
 const MAZE_DEMO_SAFE = new Set([0, 3, 4, 5, 8]);
 const RX_DEMO_HIT: Record<number, string> = { 4: styles.demoRxHit1, 1: styles.demoRxHit2, 7: styles.demoRxHit3 };
 // 가운데를 누르면 십자 다섯 칸이 "반전"된다는 게 핵심이라, 켜진 칸과 꺼진 칸을 섞어 둔다.
@@ -406,12 +412,16 @@ function GameDemo({ type }: { type: LockType }) {
       return (
         <div className={styles.introDemo}>
           <div className={styles.demoComboRow}>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={styles.demoComboCard}>
-                ▲
+            {COMBO_DEMO_CARDS.map((card, i) => (
+              <div
+                key={card.id}
+                className={`${styles.demoComboCard} ${styles[`comboCardBg${card.bg}`]} ${styles[`demoComboPick${i + 1}`]}`}
+              >
+                <ComboShape card={card} size={26} />
               </div>
             ))}
           </div>
+          <span className={styles.demoComboTag}>결합!</span>
         </div>
       );
     case 'equation':

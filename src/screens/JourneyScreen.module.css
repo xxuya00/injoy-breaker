@@ -1252,33 +1252,64 @@
   93%, 100% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
 }
 
+/* 실제 판과 똑같은 카드(도형·색·배경)를 써서, 셋이 하나씩 선택된 뒤 결합으로 성립하는 흐름을 보여준다.
+   세 장은 모양·색·배경이 모두 "셋 다 다른" 조합이라, 헷갈리기 쉬운 쪽 규칙이 눈에 들어온다. */
 .demoComboRow {
   display: flex;
   gap: 8px;
 }
 .demoComboCard {
-  width: 40px;
-  height: 52px;
-  border-radius: 8px;
-  background: var(--ink-3);
-  border: 1px solid var(--line);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: var(--accent-blue);
-  animation: demoComboFx 4s steps(1) infinite;
+  outline: 2px solid transparent;
+  animation: demoComboOk 5s ease-out infinite;
 }
-.demoComboCard:nth-child(2) {
-  animation-delay: 0.15s;
+/* 선택 표시는 outline, 결합 성립 표시는 box-shadow로 나눠 서로 덮어쓰지 않게 한다. */
+.demoComboPick1 {
+  animation: demoComboOk 5s ease-out infinite, demoComboPick1 5s steps(1) infinite;
 }
-.demoComboCard:nth-child(3) {
-  animation-delay: 0.3s;
+.demoComboPick2 {
+  animation: demoComboOk 5s ease-out infinite, demoComboPick2 5s steps(1) infinite;
 }
-@keyframes demoComboFx {
-  0%, 29% { border-color: var(--line); box-shadow: none; }
-  30%, 60% { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(147, 210, 164, 0.3); }
-  61%, 100% { border-color: var(--line); box-shadow: none; }
+.demoComboPick3 {
+  animation: demoComboOk 5s ease-out infinite, demoComboPick3 5s steps(1) infinite;
+}
+@keyframes demoComboPick1 {
+  0%, 7% { outline-color: transparent; outline-offset: 0; }
+  8%, 54% { outline-color: var(--accent); outline-offset: 3px; }
+  55%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoComboPick2 {
+  0%, 19% { outline-color: transparent; outline-offset: 0; }
+  20%, 54% { outline-color: var(--accent); outline-offset: 3px; }
+  55%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoComboPick3 {
+  0%, 31% { outline-color: transparent; outline-offset: 0; }
+  32%, 54% { outline-color: var(--accent); outline-offset: 3px; }
+  55%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoComboOk {
+  0%, 54% { box-shadow: none; }
+  56%, 88% { box-shadow: 0 0 0 3px rgba(147, 210, 164, 0.55); }
+  89%, 100% { box-shadow: none; }
+}
+.demoComboTag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ok);
+  opacity: 0;
+  animation: demoComboTag 5s steps(1) infinite;
+}
+@keyframes demoComboTag {
+  0%, 55% { opacity: 0; }
+  56%, 88% { opacity: 1; }
+  89%, 100% { opacity: 0; }
 }
 
 .demoEqRow {
