@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
-import { MATH_PUZZLES } from '../data/mathQuiz';
-import { SPOT_DIFF } from '../data/spotDiff';
-import { MEMORY_CHALLENGE } from '../data/memoryGame';
-import { WORD_PUZZLE } from '../data/wordPuzzle';
+import { generateFlashRound, type FlashRound } from '../data/memoryGame';
 import { TILE_PUZZLE } from '../data/tilePuzzle';
-import { MAZE } from '../data/maze';
+import { MAZE_SIZE, MAZE_START, MAZE_END, generateMazePath } from '../data/maze';
 import { generateComboBoard, checkCombo, hasAnyCombo, type ComboCard } from '../data/comboGame';
 import { generateEquationRound, evaluateTokens, type EquationRound, type EqToken } from '../data/equationGame';
 import { generateLightsOut, toggleLight } from '../data/lightsOut';
+import { generateCrossMathRound, checkCrossMath, type CrossMathRound } from '../data/crossMath';
+import { generateCodeBreakRound, type CodeBreakRound, type ShapeId } from '../data/codeBreak';
+import { generateBalanceRound, GEMS, GEM_LABELS, type BalanceRound, type GemId } from '../data/balance';
 import { fetchLockUnlockTimes } from '../lib/gas';
-import { setGameStartIfAbsent, isGameTimeRecorded, markGameTimeRecorded } from '../lib/storage';
+import { getAccumulatedMs, setAccumulatedMs, getGameAttempts, incrementGameAttempts } from '../lib/storage';
 import {
   saveGameTime,
   subscribeGameLeaderboard,
@@ -24,13 +24,37 @@ import type { Day, LockItem } from '../types';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
 import EggCrack from '../components/EggCrack';
+import QrScanner from '../components/QrScanner';
 import { useToast } from '../context/ToastContext';
 import styles from './JourneyScreen.module.css';
 
 const EQ_TARGET_STREAK = 3;
 const LO_STAGES = [3, 4, 5];
 const COMBO_SIZE = 12;
-const TIMED_KINDS = new Set(['equation', 'combo', 'lightsout']);
+const TIMED_KINDS = new Set([
+  'equation',
+  'combo',
+  'lightsout',
+  'reflex',
+  'crossmath',
+  'codebreak',
+  'balance',
+  'maze',
+  'memory',
+]);
+const MAX_RANKED_ATTEMPTS = 3;
+const MAZE_REVEAL_MS = 2000;
+const FLASH_SHOW_MS = 1200;
+const REFLEX_TARGET_HITS = 10;
+const REFLEX_GRID = 9;
+const REFLEX_ON_MS = 650;
+const REFLEX_GAP_MS = 250;
+
+type TimedKind = 'equation' | 'combo' | 'lightsout' | 'reflex' | 'crossmath' | 'codebreak' | 'balance' | 'maze' | 'memory';
+type TimedSheetState = Extract<SheetState, { kind: TimedKind }>;
+function isTimedSheet(s: SheetState | null): s is TimedSheetState {
+  return !!s && TIMED_KINDS.has(s.kind);
+}
 
 function formatElapsed(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -51,15 +75,16 @@ function formatKST(iso: string): string {
 type SheetState =
   | { kind: 'quiz'; item: LockItem }
   | { kind: 'mission'; item: LockItem }
-  | { kind: 'math'; item: LockItem }
-  | { kind: 'spotdiff'; item: LockItem }
   | { kind: 'memory'; item: LockItem }
-  | { kind: 'puzzle'; item: LockItem }
   | { kind: 'tilepuzzle'; item: LockItem }
   | { kind: 'maze'; item: LockItem }
   | { kind: 'combo'; item: LockItem }
   | { kind: 'equation'; item: LockItem }
   | { kind: 'lightsout'; item: LockItem }
+  | { kind: 'crossmath'; item: LockItem }
+  | { kind: 'codebreak'; item: LockItem }
+  | { kind: 'balance'; item: LockItem }
+  | { kind: 'reflex'; item: LockItem }
   | { kind: 'reveal'; item: LockItem }
   | { kind: 'eggComplete'; item: LockItem }
   | { kind: 'finalLocked'; done: number; need: number };
@@ -102,6 +127,9 @@ function NavCard({ icon, name, sub, onClick }: { icon: React.ReactNode; name: st
   );
 }
 
+// Day1의 자물쇠 9개를 하나씩 깰 때마다, 그 칸 안에서 바로 BACKTOGOD의 글자가 순서대로 드러난다.
+const BACKTOGOD_WORD = 'BACKTOGOD'.split('');
+
 const COMBO_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)'];
 
 function ComboShape({ card }: { card: ComboCard }) {
@@ -127,22 +155,60 @@ function ComboShape({ card }: { card: ComboCard }) {
   );
 }
 
-function GameLeaderboard({ gameId }: { gameId: string }) {
+const SHAPE_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)', 'var(--accent-yellow)', 'var(--accent-purple)'];
+
+function ShapeIcon({ shape, size = 30 }: { shape: ShapeId; size?: number }) {
+  const color = SHAPE_COLORS[shape];
+  return (
+    <svg viewBox="0 0 40 40" width={size} height={size}>
+      {shape === 0 && <rect x="7" y="7" width="26" height="26" rx="3" fill={color} />}
+      {shape === 1 && <polygon points="20,6 34,32 6,32" fill={color} />}
+      {shape === 2 && <circle cx="20" cy="20" r="15" fill={color} />}
+      {shape === 3 && (
+        <polygon
+          points="20,4 24.7,15.3 37,16.5 27.7,24.7 30.5,37 20,30.5 9.5,37 12.3,24.7 3,16.5 15.3,15.3"
+          fill={color}
+        />
+      )}
+      {shape === 4 && <rect x="10" y="10" width="20" height="20" rx="2" fill={color} transform="rotate(45 20 20)" />}
+    </svg>
+  );
+}
+
+const GEM_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)', 'var(--accent-yellow)'];
+
+function GemIcon({ gem, size = 32 }: { gem: GemId; size?: number }) {
+  return (
+    <svg viewBox="0 0 40 40" width={size} height={size}>
+      <polygon points="20,4 34,16 28,36 12,36 6,16" fill={GEM_COLORS[gem]} />
+    </svg>
+  );
+}
+
+const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+function GamePodium({ gameId }: { gameId: string }) {
   const [entries, setEntries] = useState<GameTimeEntry[]>([]);
   useEffect(() => {
     const unsub = subscribeGameLeaderboard(gameId, setEntries, () => {});
     return unsub;
   }, [gameId]);
   if (entries.length === 0) return null;
+  const [first, second, third] = entries;
+  const columns = [
+    { place: 2, entry: second },
+    { place: 1, entry: first },
+    { place: 3, entry: third },
+  ].filter((c) => c.entry);
   return (
-    <div className={styles.gameBoard}>
-      <div className={styles.gameBoardTitle}>⏱ 최고 기록</div>
-      {entries.map((e, i) => (
-        <div key={e.id} className={styles.gameBoardRow}>
-          <span>
-            {i + 1}. {e.nick}
-          </span>
-          <span>{formatElapsed(e.elapsedMs)}</span>
+    <div className={styles.podium}>
+      {columns.map(({ place, entry }) => (
+        <div className={styles.podiumCol} key={entry!.id}>
+          <div className={styles.podiumNick}>{entry!.nick}</div>
+          <div className={styles.podiumTime}>{formatElapsed(entry!.elapsedMs)}</div>
+          <div className={`${styles.podiumBlock} ${styles[`podiumBlock${place}`]}`}>
+            <span className={styles.podiumMedal}>{MEDALS[place]}</span>
+          </div>
         </div>
       ))}
     </div>
@@ -150,7 +216,68 @@ function GameLeaderboard({ gameId }: { gameId: string }) {
 }
 
 const DAY_LABELS: Record<Day, string> = { 1: 'BREAK AWAY', 2: 'BREAK DOWN', 3: 'BREAK THROUGH' };
-const DAY2_MISSION_IDS = LOCKS[2].items.filter((i) => i.type === 'mission').map((i) => i.id);
+const DAY2_MISSIONS = LOCKS[2].items.filter((i) => i.type === 'mission');
+const DAY2_MISSION_IDS = DAY2_MISSIONS.map((i) => i.id);
+const ALL_LOCK_IDS = new Set(([1, 2, 3] as Day[]).flatMap((d) => LOCKS[d].items.map((i) => i.id)));
+
+// 카메라로 스캔한 문자열에서 미션 id를 뽑아낸다. 전체 URL(?qr=d2a)이든 id만 담긴 문자열이든 둘 다 받아준다.
+function parseQrText(text: string): string | null {
+  let raw = text.trim();
+  try {
+    const url = new URL(raw);
+    const q = url.searchParams.get('qr');
+    if (q) raw = q;
+  } catch {
+    const m = raw.match(/[?&]qr=([a-zA-Z0-9_-]+)/);
+    if (m) raw = m[1];
+  }
+  return ALL_LOCK_IDS.has(raw) ? raw : null;
+}
+
+function MissionRecordAccordion({ items, answers }: { items: LockItem[]; answers: MissionAnswers }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  return (
+    <div className={styles.recordList}>
+      {items.map((item) => {
+        const answer = answers[item.id];
+        const answered = Boolean(answer);
+        const isOpen = openId === item.id;
+        return (
+          <div key={item.id} className={styles.recordItem}>
+            <button
+              className={styles.recordHead}
+              disabled={!answered}
+              onClick={() => setOpenId(isOpen ? null : item.id)}
+            >
+              <span className={`${styles.recordDot} ${answered ? styles.recordDotOn : ''}`} />
+              <span className={styles.recordName}>{item.name}</span>
+              {answered ? (
+                <svg
+                  className={`${styles.recordChev} ${isOpen ? styles.recordChevOpen : ''}`}
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              ) : (
+                <span className={styles.recordPending}>미발견</span>
+              )}
+            </button>
+            <div className={`${styles.recordBody} ${isOpen ? styles.recordBodyOpen : ''}`}>
+              <div className={styles.recordBodyInner}>
+                <p>{answer?.answer}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function JourneyScreen() {
   const { state, selectDay, openLock, goScreen, setTab } = useApp();
@@ -160,18 +287,44 @@ export default function JourneyScreen() {
   // 처음부터 다시 만들지 않고 하던 판을 그대로 이어서 보여준다.
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
-  const [mathIdx, setMathIdx] = useState(0);
-  const [mathAnswered, setMathAnswered] = useState<{ value: number; correct: boolean } | null>(null);
-  const [spotWrong, setSpotWrong] = useState(false);
-  const [memPhase, setMemPhase] = useState<'show' | 'ask'>('show');
-  const [memAnswered, setMemAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
-  const memTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [puzzleWords, setPuzzleWords] = useState<{ word: string; idx: number }[]>([]);
-  const [puzzlePicked, setPuzzlePicked] = useState<number[]>([]);
-  const [puzzleWrong, setPuzzleWrong] = useState(false);
   const [tileOrder, setTileOrder] = useState<number[]>([]);
   const [tileSelected, setTileSelected] = useState<number | null>(null);
-  const [mazePos, setMazePos] = useState<[number, number]>(MAZE.start);
+
+  // 기억의 미로
+  const [mazePath, setMazePath] = useState<Set<string>>(new Set());
+  const [mazePos, setMazePos] = useState<[number, number]>(MAZE_START);
+  const [mazePhase, setMazePhase] = useState<'reveal' | 'move'>('reveal');
+  const [mazeWrong, setMazeWrong] = useState(false);
+  const mazeRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 플래시 기억
+  const [flashRound, setFlashRound] = useState<FlashRound | null>(null);
+  const [flashPhase, setFlashPhase] = useState<'ready' | 'show' | 'choose'>('ready');
+  const [flashProgress, setFlashProgress] = useState(0);
+  const [flashWrong, setFlashWrong] = useState(false);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 성경 십자 연산
+  const [cmRound, setCmRound] = useState<CrossMathRound | null>(null);
+  const [cmValues, setCmValues] = useState<(number | null)[]>(new Array(9).fill(null));
+  const [cmSelected, setCmSelected] = useState<number | null>(null);
+
+  // 시각 부호 해독
+  const [cbRound, setCbRound] = useState<CodeBreakRound | null>(null);
+  const [cbInput, setCbInput] = useState('');
+  const [cbWrong, setCbWrong] = useState(false);
+
+  // 저울 무게 추론
+  const [balRound, setBalRound] = useState<BalanceRound | null>(null);
+  const [balPicked, setBalPicked] = useState<GemId[]>([]);
+  const [balWrong, setBalWrong] = useState(false);
+
+  // 순발력 타격
+  const [reflexHits, setReflexHits] = useState(0);
+  const [reflexActiveCell, setReflexActiveCell] = useState<number | null>(null);
+  const reflexSpawnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reflexClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [comboBoard, setComboBoard] = useState<ComboCard[]>([]);
   const [comboCleared, setComboCleared] = useState<boolean[]>([]);
   const [comboSelected, setComboSelected] = useState<number[]>([]);
@@ -183,12 +336,16 @@ export default function JourneyScreen() {
   const [loGrid, setLoGrid] = useState<boolean[][] | null>(null);
   const [loSize, setLoSize] = useState(5);
   const [loStageIdx, setLoStageIdx] = useState(0);
-  const [gameStartedAt, setGameStartedAt] = useState<number | null>(null);
+  // 타임어택 게임의 누적 경과시간(ms) + 지금 보고 있는 세션이 시작된 시각.
+  // 화면을 벗어나면 accumulatedBase에 지금까지의 시간을 더해두고 sessionStart를 비워 "정지"시킨다.
+  const [accumulatedBase, setAccumulatedBase] = useState(0);
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const [lastElapsed, setLastElapsed] = useState<number | null>(null);
   const [lockTimes, setLockTimes] = useState<Record<string, string>>({});
   const [missionAnswers, setMissionAnswers] = useState<MissionAnswers>({});
   const [answerDraft, setAnswerDraft] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
   const qrHandled = useRef(false);
 
   // QR 미션에 남긴 답변은 기기가 바뀌어도 볼 수 있도록 DB에서 불러온다.
@@ -203,7 +360,10 @@ export default function JourneyScreen() {
 
   useEffect(() => {
     return () => {
-      if (memTimer.current) clearTimeout(memTimer.current);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
+      if (reflexSpawnTimer.current) clearTimeout(reflexSpawnTimer.current);
+      if (reflexClearTimer.current) clearTimeout(reflexClearTimer.current);
     };
   }, []);
 
@@ -229,12 +389,31 @@ export default function JourneyScreen() {
     };
   }, []);
 
-  // 타임어택형 게임(수식 만들기/결합/라이트아웃)이 열려있는 동안만 시계를 째깍인다.
+  // 타임어택형 게임(9개 미니게임 전부)이 열려있는 동안만 시계를 째깍이고,
+  // 0.5초마다 누적시간을 로컬에 흘려써서 앱을 그냥 꺼버려도 직전 지점까지는 저장돼 있게 한다.
   useEffect(() => {
-    if (!sheet || !TIMED_KINDS.has(sheet.kind)) return;
-    const id = setInterval(() => setNowTick(Date.now()), 500);
+    if (!isTimedSheet(sheet) || sessionStart === null) return;
+    const itemId = sheet.item.id;
+    const base = accumulatedBase;
+    const start = sessionStart;
+    const id = setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+      if (getGameAttempts(itemId) < MAX_RANKED_ATTEMPTS) {
+        setAccumulatedMs(itemId, base + (now - start));
+      }
+    }, 500);
     return () => clearInterval(id);
-  }, [sheet?.kind]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet, sessionStart, accumulatedBase]);
+
+  // 순발력 타격 시트를 벗어나면 다음 타깃 예약을 멈춘다.
+  useEffect(() => {
+    if (sheet?.kind === 'reflex') return;
+    if (reflexSpawnTimer.current) clearTimeout(reflexSpawnTimer.current);
+    if (reflexClearTimer.current) clearTimeout(reflexClearTimer.current);
+    setReflexActiveCell(null);
+  }, [sheet]);
 
   const dayData = LOCKS[state.day];
   const openedCount = Object.keys(state.opened).length;
@@ -271,7 +450,12 @@ export default function JourneyScreen() {
       return;
     }
     if (activeItemId === item.id) {
-      // 이미 진행 중인 판이 있으면 초기화하지 않고 그대로 이어서 보여준다.
+      // 이미 진행 중인 판이 있으면 초기화하지 않고 그대로 이어서 보여준다. 타임어택형이면
+      // 여기서 세션을 다시 시작해 "나가있던 동안"은 시간에서 빠지도록 한다.
+      if (TIMED_KINDS.has(item.type)) {
+        setSessionStart(Date.now());
+        setNowTick(Date.now());
+      }
       const kind = item.type === 'quiz' ? 'quiz' : item.type === 'mission' ? 'mission' : (item.type as SheetState['kind']);
       setSheet({ kind, item } as SheetState);
       return;
@@ -280,55 +464,123 @@ export default function JourneyScreen() {
     startGame(item);
   };
 
-  // 이미 기록이 확정된 뒤(다시 플레이)라면 매번 새 타이머로, 아직이라면 저장된 최초 시작 시각을 이어서 쓴다 —
-  // 그래야 앱을 나갔다 들어와도 처음 도전한 시점 기준으로 경과시간이 흐른다.
+  // 화면을 벗어날 때(X, 배경 탭) 지금까지 경과한 시간을 누적값에 더해 "정지"시킨다.
+  const closeSheet = () => {
+    if (isTimedSheet(sheet) && sessionStart !== null) {
+      const total = accumulatedBase + (Date.now() - sessionStart);
+      setAccumulatedBase(total);
+      if (getGameAttempts(sheet.item.id) < MAX_RANKED_ATTEMPTS) setAccumulatedMs(sheet.item.id, total);
+      setSessionStart(null);
+    }
+    setSheet(null);
+  };
+
+  // 순위에 반영되는 시도(처음 3번)가 남아있다면 지난번에 멈춰둔 누적시간부터, 다 썼다면 0부터 이어서 흐른다.
   const beginTimedGame = (item: LockItem) => {
-    const start = isGameTimeRecorded(item.id) ? Date.now() : setGameStartIfAbsent(item.id);
-    setGameStartedAt(start);
+    const base = getGameAttempts(item.id) >= MAX_RANKED_ATTEMPTS ? 0 : getAccumulatedMs(item.id);
+    setAccumulatedBase(base);
+    setSessionStart(Date.now());
     setNowTick(Date.now());
   };
 
+  // 처음 3번의 시도까지만 순위에 반영되고, 그중 가장 빠른 기록이 순위판에 남는다.
   const finishTimedGame = (item: LockItem) => {
-    const elapsed = gameStartedAt ? Date.now() - gameStartedAt : 0;
+    const elapsed = sessionStart !== null ? accumulatedBase + (Date.now() - sessionStart) : accumulatedBase;
     openLock(item.id);
-    if (!isGameTimeRecorded(item.id)) {
-      markGameTimeRecorded(item.id);
+    if (getGameAttempts(item.id) < MAX_RANKED_ATTEMPTS) {
+      incrementGameAttempts(item.id);
       if (state.id)
         saveGameTime(item.type, state.id, state.nickname || state.nick, elapsed).catch((e) =>
           console.error('saveGameTime failed', e),
         );
     }
+    setAccumulatedMs(item.id, 0);
+    setSessionStart(null);
     setLastElapsed(elapsed);
     setSheet({ kind: 'reveal', item });
+  };
+
+  const beginMazeRound = () => {
+    const path = generateMazePath();
+    setMazePath(new Set(path.map(([r, c]) => `${r},${c}`)));
+    setMazePos(MAZE_START);
+    setMazePhase('reveal');
+    if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
+    mazeRevealTimer.current = setTimeout(() => setMazePhase('move'), MAZE_REVEAL_MS);
+  };
+
+  const mazeFail = () => {
+    setMazeWrong(true);
+    setTimeout(() => {
+      setMazeWrong(false);
+      beginMazeRound();
+    }, 500);
+  };
+
+  const scheduleReflexSpawn = () => {
+    if (reflexSpawnTimer.current) clearTimeout(reflexSpawnTimer.current);
+    reflexSpawnTimer.current = setTimeout(() => spawnReflexTarget(), REFLEX_GAP_MS);
+  };
+
+  const spawnReflexTarget = () => {
+    setReflexActiveCell((prev) => {
+      let next = Math.floor(Math.random() * REFLEX_GRID);
+      let tries = 0;
+      while (next === prev && tries < 5) {
+        next = Math.floor(Math.random() * REFLEX_GRID);
+        tries++;
+      }
+      return next;
+    });
+    if (reflexClearTimer.current) clearTimeout(reflexClearTimer.current);
+    reflexClearTimer.current = setTimeout(() => {
+      setReflexActiveCell(null);
+      scheduleReflexSpawn();
+    }, REFLEX_ON_MS);
   };
 
   const startGame = (item: LockItem) => {
     setAnswered(null);
     setLastElapsed(null);
-    if (item.type === 'math') {
-      setMathIdx(0);
-      setMathAnswered(null);
-      setSheet({ kind: 'math', item });
+    if (item.type === 'crossmath') {
+      beginTimedGame(item);
+      setCmRound(generateCrossMathRound());
+      setCmValues(new Array(9).fill(null));
+      setCmSelected(null);
+      setSheet({ kind: 'crossmath', item });
       return;
     }
-    if (item.type === 'spotdiff') {
-      setSpotWrong(false);
-      setSheet({ kind: 'spotdiff', item });
+    if (item.type === 'codebreak') {
+      beginTimedGame(item);
+      setCbRound(generateCodeBreakRound());
+      setCbInput('');
+      setCbWrong(false);
+      setSheet({ kind: 'codebreak', item });
+      return;
+    }
+    if (item.type === 'balance') {
+      beginTimedGame(item);
+      setBalRound(generateBalanceRound());
+      setBalPicked([]);
+      setBalWrong(false);
+      setSheet({ kind: 'balance', item });
+      return;
+    }
+    if (item.type === 'reflex') {
+      beginTimedGame(item);
+      setReflexHits(0);
+      setReflexActiveCell(null);
+      setSheet({ kind: 'reflex', item });
+      scheduleReflexSpawn();
       return;
     }
     if (item.type === 'memory') {
-      setMemPhase('show');
-      setMemAnswered(null);
+      // 실제 타이머는 '시작' 버튼을 눌러 플래시가 뜨는 순간(beginFlashShow)부터 시작한다.
+      setFlashRound(generateFlashRound());
+      setFlashPhase('ready');
+      setFlashProgress(0);
+      setFlashWrong(false);
       setSheet({ kind: 'memory', item });
-      if (memTimer.current) clearTimeout(memTimer.current);
-      memTimer.current = setTimeout(() => setMemPhase('ask'), 3000);
-      return;
-    }
-    if (item.type === 'puzzle') {
-      setPuzzleWords(shuffleArr(WORD_PUZZLE.words.map((word, idx) => ({ word, idx }))));
-      setPuzzlePicked([]);
-      setPuzzleWrong(false);
-      setSheet({ kind: 'puzzle', item });
       return;
     }
     if (item.type === 'tilepuzzle') {
@@ -342,7 +594,8 @@ export default function JourneyScreen() {
       return;
     }
     if (item.type === 'maze') {
-      setMazePos(MAZE.start);
+      beginTimedGame(item);
+      beginMazeRound();
       setSheet({ kind: 'maze', item });
       return;
     }
@@ -378,13 +631,8 @@ export default function JourneyScreen() {
     setSheet({ kind: item.type === 'quiz' ? 'quiz' : 'mission', item });
   };
 
-  // 현장 곳곳에 붙여둔 QR(예: ?qr=d2a)을 스캔하면 로그인된 사용자를 해당 자물쇠로 바로 데려간다.
-  useEffect(() => {
-    if (qrHandled.current || !state.id) return;
-    const qrId = new URLSearchParams(window.location.search).get('qr');
-    if (!qrId) return;
-    qrHandled.current = true;
-    window.history.replaceState({}, '', window.location.pathname);
+  // id로 해당 자물쇠를 찾아 그 자리에서 바로 연다. URL의 ?qr= 파라미터와 인앱 카메라 스캐너가 함께 쓴다.
+  const openMissionById = (qrId: string) => {
     let target: { day: Day; item: LockItem } | null = null;
     for (const d of [1, 2, 3] as Day[]) {
       const found = LOCKS[d].items.find((it) => it.id === qrId);
@@ -397,49 +645,50 @@ export default function JourneyScreen() {
     selectDay(target.day);
     setTab('journey');
     handleLockClick(target.item);
+  };
+
+  // 현장 곳곳에 붙여둔 QR(예: ?qr=d2a)을 스캔하면 로그인된 사용자를 해당 자물쇠로 바로 데려간다.
+  useEffect(() => {
+    if (qrHandled.current || !state.id) return;
+    const qrId = new URLSearchParams(window.location.search).get('qr');
+    if (!qrId) return;
+    qrHandled.current = true;
+    window.history.replaceState({}, '', window.location.pathname);
+    openMissionById(qrId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id]);
 
-  const answerSpotDiff = (item: LockItem, index: number) => {
-    if (index === SPOT_DIFF.diffIndex) {
-      openLock(item.id);
-      setSheet({ kind: 'reveal', item });
-    } else {
-      setSpotWrong(true);
-      setTimeout(() => setSpotWrong(false), 400);
-    }
+  const handleScanDetect = (id: string) => {
+    setScannerOpen(false);
+    openMissionById(id);
   };
 
-  const answerMemory = (item: LockItem, idx: number) => {
-    const correct = idx === MEMORY_CHALLENGE.correctIndex;
-    setMemAnswered({ idx, correct });
-    if (correct) {
-      setTimeout(() => {
-        openLock(item.id);
-        setSheet({ kind: 'reveal', item });
-      }, 550);
-    } else {
-      setTimeout(() => setMemAnswered(null), 500);
-    }
+  const beginFlashShow = (item: LockItem) => {
+    beginTimedGame(item);
+    setFlashPhase('show');
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashPhase('choose'), FLASH_SHOW_MS);
   };
 
-  const pickPuzzleWord = (item: LockItem, wordIdx: number) => {
-    const nextPicked = [...puzzlePicked, wordIdx];
-    setPuzzlePicked(nextPicked);
-    if (nextPicked.length === WORD_PUZZLE.words.length) {
-      const correct = nextPicked.every((v, i) => v === i);
-      if (correct) {
+  const pickFlashWord = (item: LockItem, word: string) => {
+    if (!flashRound) return;
+    const expected = flashRound.sequence[flashProgress];
+    if (word === expected) {
+      const nextProgress = flashProgress + 1;
+      setFlashProgress(nextProgress);
+      if (nextProgress >= flashRound.sequence.length) {
         setTimeout(() => {
-          openLock(item.id);
-          setSheet({ kind: 'reveal', item });
+          finishTimedGame(item);
         }, 400);
-      } else {
-        setPuzzleWrong(true);
-        setTimeout(() => {
-          setPuzzleWrong(false);
-          setPuzzlePicked([]);
-        }, 800);
       }
+    } else {
+      setFlashWrong(true);
+      setTimeout(() => {
+        setFlashWrong(false);
+        setFlashRound(generateFlashRound());
+        setFlashProgress(0);
+        setFlashPhase('ready');
+      }, 500);
     }
   };
 
@@ -465,17 +714,98 @@ export default function JourneyScreen() {
   };
 
   const moveMaze = (item: LockItem, dr: number, dc: number) => {
+    if (mazePhase !== 'move') return;
     const [r, c] = mazePos;
     const nr = r + dr;
     const nc = c + dc;
-    if (nr < 0 || nc < 0 || nr >= MAZE.grid.length || nc >= MAZE.grid[0].length) return;
-    if (MAZE.grid[nr][nc] === 1) return;
+    if (nr < 0 || nc < 0 || nr >= MAZE_SIZE || nc >= MAZE_SIZE) return;
+    if (!mazePath.has(`${nr},${nc}`)) {
+      mazeFail();
+      return;
+    }
     setMazePos([nr, nc]);
-    if (nr === MAZE.end[0] && nc === MAZE.end[1]) {
+    if (nr === MAZE_END[0] && nc === MAZE_END[1]) {
+      if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
       setTimeout(() => {
-        openLock(item.id);
-        setSheet({ kind: 'reveal', item });
-      }, 400);
+        finishTimedGame(item);
+      }, 300);
+    }
+  };
+
+  const tapCmCell = (idx: number) => {
+    if (cmValues[idx] !== null) {
+      const next = [...cmValues];
+      next[idx] = null;
+      setCmValues(next);
+      setCmSelected(null);
+      return;
+    }
+    setCmSelected(idx);
+  };
+
+  const tapCmDigit = (item: LockItem, d: number) => {
+    if (cmSelected === null || cmValues.includes(d)) return;
+    const next = [...cmValues];
+    next[cmSelected] = d;
+    setCmValues(next);
+    setCmSelected(null);
+    if (cmRound && checkCrossMath(next, cmRound)) {
+      setTimeout(() => {
+        finishTimedGame(item);
+      }, 300);
+    }
+  };
+
+  const tapCbDigit = (d: number) => {
+    setCbInput((v) => (v.length >= 2 ? v : v + String(d)));
+  };
+
+  const cbBackspace = () => setCbInput((v) => v.slice(0, -1));
+
+  const cbSubmit = (item: LockItem) => {
+    if (!cbRound || cbInput === '') return;
+    if (Number(cbInput) === cbRound.answer) {
+      finishTimedGame(item);
+    } else {
+      toast('정답이 아니에요');
+      setCbWrong(true);
+      setTimeout(() => setCbWrong(false), 400);
+      setCbInput('');
+    }
+  };
+
+  const tapGem = (item: LockItem, gem: GemId) => {
+    if (balPicked.includes(gem)) {
+      setBalPicked(balPicked.filter((g) => g !== gem));
+      return;
+    }
+    const next = [...balPicked, gem];
+    setBalPicked(next);
+    if (next.length === GEMS.length) {
+      if (balRound && next.every((g, i) => g === balRound.order[i])) {
+        setTimeout(() => {
+          finishTimedGame(item);
+        }, 400);
+      } else {
+        setBalWrong(true);
+        setTimeout(() => {
+          setBalWrong(false);
+          setBalPicked([]);
+        }, 500);
+      }
+    }
+  };
+
+  const tapReflexCell = (item: LockItem, idx: number) => {
+    if (idx !== reflexActiveCell) return;
+    if (reflexClearTimer.current) clearTimeout(reflexClearTimer.current);
+    setReflexActiveCell(null);
+    const nextHits = reflexHits + 1;
+    setReflexHits(nextHits);
+    if (nextHits >= REFLEX_TARGET_HITS) {
+      finishTimedGame(item);
+    } else {
+      scheduleReflexSpawn();
     }
   };
 
@@ -577,25 +907,6 @@ export default function JourneyScreen() {
     }
   };
 
-  const answerMath = (item: LockItem, value: number) => {
-    const puzzle = MATH_PUZZLES[mathIdx];
-    const correct = value === puzzle.answer;
-    setMathAnswered({ value, correct });
-    if (correct) {
-      setTimeout(() => {
-        if (mathIdx < MATH_PUZZLES.length - 1) {
-          setMathIdx((i) => i + 1);
-          setMathAnswered(null);
-        } else {
-          openLock(item.id);
-          setSheet({ kind: 'reveal', item });
-        }
-      }, 550);
-    } else {
-      setTimeout(() => setMathAnswered(null), 500);
-    }
-  };
-
   const answerQuiz = (item: LockItem, idx: number) => {
     const correct = item.answer === -1 || idx === item.answer;
     setAnswered({ idx, correct });
@@ -673,26 +984,40 @@ export default function JourneyScreen() {
       <div className={`muted ${styles.dayCaption}`}>{dayData.caption}</div>
 
       {state.day === 2 && (
+        <NavCard
+          icon={
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8" />
+              <circle cx="12" cy="12" r="2.6" />
+            </svg>
+          }
+          name="유형 검사"
+          sub="아침 큐티 직후, 가장 먼저 해보세요"
+          onClick={() => goScreen('type')}
+        />
+      )}
+
+      {state.day === 2 && (
         <div className={styles.eggHero}>
           <EggCrack count={day2CrackCount} total={DAY2_MISSION_IDS.length} />
-          {DAY2_MISSION_IDS.some((id) => missionAnswers[id]) && (
-            <div className={styles.myRecords}>
-              <div className={styles.myRecordsTitle}>나의 기록</div>
-              {DAY2_MISSION_IDS.filter((id) => missionAnswers[id]).map((id) => (
-                <div key={id} className={styles.myRecordRow}>
-                  <span className={styles.myRecordName}>{missionAnswers[id].name}</span>
-                  <span className={styles.myRecordText}>{missionAnswers[id].answer}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <button className="btn" onClick={() => setScannerOpen(true)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 8a2 2 0 0 1 2-2h1.6l1.2-1.6h6.4L16.4 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
+              <circle cx="12" cy="13" r="3.4" />
+            </svg>
+            QR 스캔하기
+          </button>
+          <p className="muted" style={{ textAlign: 'center', marginTop: 8 }}>
+            물놀이 전후로 숲과 계곡 곳곳의 QR을 찾아보세요
+          </p>
         </div>
       )}
 
       {state.day !== 2 && (
         <div className={styles.lockGrid}>
-          {dayData.items.map((item) => {
+          {dayData.items.map((item, idx) => {
             const open = !!state.opened[item.id];
+            const letter = state.day === 1 ? BACKTOGOD_WORD[idx] : null;
             return (
               <div
                 key={item.id}
@@ -700,7 +1025,7 @@ export default function JourneyScreen() {
                 onClick={() => handleLockClick(item)}
                 aria-label={open ? `${item.name} · 열림` : '잠긴 자물쇠'}
               >
-                <LockIcon open={open} />
+                {open && letter ? <span className={styles.lockLetter}>{letter}</span> : <LockIcon open={open} />}
               </div>
             );
           })}
@@ -721,17 +1046,6 @@ export default function JourneyScreen() {
             sub="오늘 마주한 것을 남겨보세요"
             onClick={() => goScreen('write')}
           />
-          <NavCard
-            icon={
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="8" />
-                <circle cx="12" cy="12" r="2.6" />
-              </svg>
-            }
-            name="유형 검사"
-            sub="우상 · 묵상 · 기도 유형 알아보기"
-            onClick={() => goScreen('type')}
-          />
         </>
       )}
       {state.day === 3 && (
@@ -751,7 +1065,19 @@ export default function JourneyScreen() {
         </>
       )}
 
-      <Sheet open={sheet !== null} onClose={() => setSheet(null)} fullscreen>
+      {state.day === 2 && (
+        <>
+          <hr className={styles.sectionDivider} />
+          <div className={styles.sectionLabel}>
+            나의 기록 · {day2CrackCount}/{DAY2_MISSION_IDS.length}
+          </div>
+          <MissionRecordAccordion items={DAY2_MISSIONS} answers={missionAnswers} />
+        </>
+      )}
+
+      {scannerOpen && <QrScanner parse={parseQrText} onDetect={handleScanDetect} onClose={() => setScannerOpen(false)} />}
+
+      <Sheet open={sheet !== null} onClose={closeSheet} fullscreen>
         {sheet?.kind === 'quiz' && (
           <>
             <span className="pill">{sheet.item.pill ?? '성경 자물쇠'}</span>
@@ -797,48 +1123,206 @@ export default function JourneyScreen() {
           </>
         )}
 
-        {sheet?.kind === 'math' && (
+        {sheet?.kind === 'crossmath' && cmRound && (
           <>
-            <span className="pill">🧮 숫자 퍼즐 · {mathIdx + 1}/{MATH_PUZZLES.length}</span>
-            <h2 style={{ margin: '6px 0 16px' }}>{MATH_PUZZLES[mathIdx].question}</h2>
-            <div className="row" style={{ flexWrap: 'wrap' }}>
-              {MATH_PUZZLES[mathIdx].options.map((opt) => (
+            <div className={styles.timerRow}>
+              <span className="pill">✝️ 성경 십자 연산</span>
+              <span className={styles.timerBadge}>
+                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+              </span>
+            </div>
+            <h2 style={{ margin: '6px 0 4px' }}>1~9를 겹치지 않게 채워 합을 맞추세요</h2>
+            <p className="muted" style={{ marginBottom: 6 }}>
+              {cmRound.hint}
+            </p>
+            <p className="muted" style={{ marginBottom: 14 }}>
+              빈칸을 탭해 선택하고, 아래 숫자패드로 채워보세요. 오른쪽·아래 숫자가 목표 합이에요.
+            </p>
+            <div className={styles.cmGrid}>
+              {Array.from({ length: 4 }).map((_, r) =>
+                Array.from({ length: 4 }).map((_, c) => {
+                  if (r < 3 && c < 3) {
+                    const idx = r * 3 + c;
+                    const val = cmValues[idx];
+                    return (
+                      <button
+                        key={`${r}-${c}`}
+                        className={`${styles.cmCell} ${cmSelected === idx ? styles.cmCellSelected : ''} ${
+                          val !== null ? styles.cmCellFilled : ''
+                        }`}
+                        onClick={() => tapCmCell(idx)}
+                      >
+                        {val ?? ''}
+                      </button>
+                    );
+                  }
+                  if (r < 3 && c === 3) {
+                    return (
+                      <div key={`${r}-${c}`} className={styles.cmTarget}>
+                        {cmRound.rowTargets[r]}
+                      </div>
+                    );
+                  }
+                  if (r === 3 && c < 3) {
+                    return (
+                      <div key={`${r}-${c}`} className={styles.cmTarget}>
+                        {cmRound.colTargets[c]}
+                      </div>
+                    );
+                  }
+                  return <div key={`${r}-${c}`} className={styles.cmCorner} />;
+                }),
+              )}
+            </div>
+            <div className={styles.eqNumRow}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
                 <button
-                  key={opt}
-                  className={`opt ${mathAnswered?.value === opt ? (mathAnswered.correct ? 'correct' : 'wrong') : ''}`}
-                  style={{ flex: '0 0 47%' }}
-                  onClick={() => answerMath(sheet.item, opt)}
+                  key={d}
+                  className={styles.eqNumBtn}
+                  disabled={cmValues.includes(d) || cmSelected === null}
+                  onClick={() => tapCmDigit(sheet.item, d)}
                 >
-                  {opt}
+                  {d}
                 </button>
               ))}
             </div>
           </>
         )}
 
-        {sheet?.kind === 'spotdiff' && (
+        {sheet?.kind === 'codebreak' && cbRound && (
           <>
-            <span className="pill">🔍 틀린그림찾기</span>
-            <h2 style={{ margin: '6px 0 4px' }}>아래 줄에서 다른 하나를 찾아 탭하세요</h2>
+            <div className={styles.timerRow}>
+              <span className="pill">🔺 부호 해독</span>
+              <span className={styles.timerBadge}>
+                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+              </span>
+            </div>
+            <h2 style={{ margin: '6px 0 4px' }}>도형마다 숨은 숫자를 추리하세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
-              두 줄은 똑같아요. 딱 하나만 다릅니다.
+              5개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 두 식을 보고 최종식을 풀어보세요.
             </p>
-            <div className={styles.emojiRow}>
-              {SPOT_DIFF.items.map((e, i) => (
-                <div key={i} className={styles.emojiCell}>
-                  {e}
+            <div className={styles.cbHintRow}>
+              <ShapeIcon shape={cbRound.hint1.a} />
+              <span className={styles.cbOp}>{cbRound.hint1.op}</span>
+              <ShapeIcon shape={cbRound.hint1.b} />
+              <span className={styles.cbOp}>=</span>
+              <span className={styles.cbNum}>{cbRound.hint1.result}</span>
+            </div>
+            <div className={styles.cbHintRow}>
+              <ShapeIcon shape={cbRound.hint2.a} />
+              <span className={styles.cbOp}>{cbRound.hint2.op}</span>
+              <ShapeIcon shape={cbRound.hint2.b} />
+              <span className={styles.cbOp}>=</span>
+              <span className={styles.cbNum}>{cbRound.hint2.result}</span>
+            </div>
+            <div className={`${styles.cbHintRow} ${styles.cbFinalRow} ${cbWrong ? styles.cbWrong : ''}`}>
+              <ShapeIcon shape={cbRound.final.a} />
+              <span className={styles.cbOp}>+</span>
+              <ShapeIcon shape={cbRound.final.b} />
+              <span className={styles.cbOp}>=</span>
+              <span className={styles.cbInputDisplay}>{cbInput || '?'}</span>
+            </div>
+            <div className={styles.eqNumRow}>
+              {[1, 2, 3, 4, 5].map((d) => (
+                <button key={d} className={styles.eqNumBtn} onClick={() => tapCbDigit(d)}>
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div className={styles.eqNumRow}>
+              {[6, 7, 8, 9, 0].map((d) => (
+                <button key={d} className={styles.eqNumBtn} onClick={() => tapCbDigit(d)}>
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div className="row" style={{ marginTop: 4 }}>
+              <button className="btn ghost" onClick={cbBackspace}>
+                지우기
+              </button>
+              <button className="btn" onClick={() => cbSubmit(sheet.item)}>
+                확인
+              </button>
+            </div>
+          </>
+        )}
+
+        {sheet?.kind === 'balance' && balRound && (
+          <>
+            <div className={styles.timerRow}>
+              <span className="pill">⚖️ 저울 무게 추론</span>
+              <span className={styles.timerBadge}>
+                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+              </span>
+            </div>
+            <h2 style={{ margin: '6px 0 4px' }}>무거운 순서대로 탭해 나열하세요</h2>
+            <p className="muted" style={{ marginBottom: 14 }}>
+              저울 힌트를 보고 1위(가장 무거움)부터 4위까지 순서대로 골라보세요.
+            </p>
+            {balRound.hints.map((h, i) => (
+              <div key={i} className={styles.balHintRow}>
+                <div className={styles.balHintGem}>
+                  <GemIcon gem={h.heavy} size={26} />
+                  <span>{GEM_LABELS[h.heavy]}</span>
+                </div>
+                <span className={styles.cbOp}>{'>'}</span>
+                <div className={styles.balHintGem}>
+                  <GemIcon gem={h.light} size={26} />
+                  <span>{GEM_LABELS[h.light]}</span>
+                </div>
+              </div>
+            ))}
+            <div className={`${styles.balSlots} ${balWrong ? styles.balWrong : ''}`}>
+              {Array.from({ length: GEMS.length }).map((_, i) => (
+                <div key={i} className={styles.balSlot}>
+                  {balPicked[i] !== undefined ? (
+                    <>
+                      <GemIcon gem={balPicked[i]} size={24} />
+                      <span>{GEM_LABELS[balPicked[i]]}</span>
+                    </>
+                  ) : (
+                    <span className={styles.balSlotNum}>{i + 1}</span>
+                  )}
                 </div>
               ))}
             </div>
-            <div className={`${styles.emojiRow} ${spotWrong ? styles.emojiRowWrong : ''}`} style={{ marginTop: 10 }}>
-              {SPOT_DIFF.items.map((e, i) => (
+            <div className={styles.balGemRow}>
+              {GEMS.map((gem) => (
+                <button
+                  key={gem}
+                  className={`${styles.balGemBtn} ${balPicked.includes(gem) ? styles.balGemBtnUsed : ''}`}
+                  disabled={balPicked.includes(gem)}
+                  onClick={() => tapGem(sheet.item, gem)}
+                >
+                  <GemIcon gem={gem} />
+                  <span>{GEM_LABELS[gem]}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {sheet?.kind === 'reflex' && (
+          <>
+            <div className={styles.timerRow}>
+              <span className="pill">
+                ⚡ 순발력 타격 · {reflexHits}/{REFLEX_TARGET_HITS}
+              </span>
+              <span className={styles.timerBadge}>
+                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+              </span>
+            </div>
+            <h2 style={{ margin: '6px 0 4px' }}>빛나는 칸을 최대한 빠르게 탭하세요</h2>
+            <p className="muted" style={{ marginBottom: 16 }}>
+              {REFLEX_TARGET_HITS}번 맞히면 열려요. 속도가 곧 실력!
+            </p>
+            <div className={styles.reflexGrid}>
+              {Array.from({ length: REFLEX_GRID }).map((_, i) => (
                 <button
                   key={i}
-                  className={styles.emojiCellBtn}
-                  onClick={() => answerSpotDiff(sheet.item, i)}
-                >
-                  {i === SPOT_DIFF.diffIndex ? SPOT_DIFF.diffItem : e}
-                </button>
+                  className={`${styles.reflexCell} ${reflexActiveCell === i ? styles.reflexCellOn : ''}`}
+                  onClick={() => tapReflexCell(sheet.item, i)}
+                />
               ))}
             </div>
           </>
@@ -846,59 +1330,57 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'memory' && (
           <>
-            <span className="pill">🧠 암기 자물쇠</span>
-            {memPhase === 'show' ? (
+            <div className={styles.timerRow}>
+              <span className="pill">🧠 플래시 기억</span>
+              {flashPhase !== 'ready' && (
+                <span className={styles.timerBadge}>
+                  ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+                </span>
+              )}
+            </div>
+            {flashPhase === 'ready' && (
               <>
-                <h2 style={{ margin: '6px 0 16px' }}>이 순서를 기억하세요</h2>
-                <div className={styles.emojiRow}>
-                  {MEMORY_CHALLENGE.sequence.map((e, i) => (
-                    <div key={i} className={styles.emojiCellBig}>
-                      {e}
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 style={{ margin: '6px 0 16px' }}>방금 본 순서와 같은 것은?</h2>
-                {MEMORY_CHALLENGE.options.map((opt, i) => (
-                  <button
-                    key={i}
-                    className={`opt ${memAnswered?.idx === i ? (memAnswered.correct ? 'correct' : 'wrong') : ''}`}
-                    onClick={() => answerMemory(sheet.item, i)}
-                  >
-                    {opt.join(' ')}
-                  </button>
-                ))}
+                <h2 style={{ margin: '6px 0 4px' }}>단어 4개가 순식간에 나타났다 사라져요</h2>
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  준비되면 시작을 눌러보세요. 순서까지 기억해야 해요.
+                </p>
+                <button className="btn" onClick={() => beginFlashShow(sheet.item)}>
+                  시작
+                </button>
               </>
             )}
-          </>
-        )}
-
-        {sheet?.kind === 'puzzle' && (
-          <>
-            <span className="pill">🧩 퍼즐 자물쇠</span>
-            <h2 style={{ margin: '6px 0 4px' }}>말씀 순서를 맞춰보세요</h2>
-            <p className="muted" style={{ marginBottom: 12 }}>
-              {WORD_PUZZLE.reference}
-            </p>
-            <div className={`${styles.puzzleAnswerRow} ${puzzleWrong ? styles.puzzleWrong : ''}`}>
-              {puzzlePicked.length === 0
-                ? '탭한 단어가 여기에 순서대로 쌓여요'
-                : puzzlePicked.map((wi) => WORD_PUZZLE.words[wi]).join(' ')}
-            </div>
-            <div className={styles.puzzleChipRow}>
-              {puzzleWords.map(({ word, idx }) => (
-                <button
-                  key={idx}
-                  className={styles.puzzleChip}
-                  disabled={puzzlePicked.includes(idx)}
-                  onClick={() => pickPuzzleWord(sheet.item, idx)}
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
+            {flashPhase === 'show' && flashRound && (
+              <div className={styles.flashShowBox}>
+                {flashRound.sequence.map((w, i) => (
+                  <div key={i} className={styles.flashWord}>
+                    {w}
+                  </div>
+                ))}
+              </div>
+            )}
+            {flashPhase === 'choose' && flashRound && (
+              <>
+                <h2 style={{ margin: '6px 0 4px' }}>방금 본 순서대로 탭하세요</h2>
+                <p className="muted" style={{ marginBottom: 12 }}>
+                  {flashProgress}/{flashRound.sequence.length}개 선택함
+                </p>
+                <div className={`${styles.flashChoiceGrid} ${flashWrong ? styles.flashWrong : ''}`}>
+                  {flashRound.choices.map((w) => {
+                    const used = flashRound.sequence.slice(0, flashProgress).includes(w);
+                    return (
+                      <button
+                        key={w}
+                        className={styles.flashChoice}
+                        disabled={used}
+                        onClick={() => pickFlashWord(sheet.item, w)}
+                      >
+                        {w}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -925,49 +1407,66 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'maze' && (
           <>
-            <span className="pill">🧭 미로 찾기</span>
-            <h2 style={{ margin: '6px 0 4px' }}>출구까지 길을 찾아보세요</h2>
-            <p className="muted" style={{ marginBottom: 16 }}>
-              화살표로 이동해서 깃발까지 도착하면 열려요.
-            </p>
+            <div className={styles.timerRow}>
+              <span className="pill">🧭 기억의 미로</span>
+              <span className={styles.timerBadge}>
+                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
+              </span>
+            </div>
+            {mazePhase === 'reveal' ? (
+              <>
+                <h2 style={{ margin: '6px 0 4px' }}>안전한 길을 잘 기억하세요</h2>
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  초록색 칸이 곧 사라집니다. 잠시 후 기억으로만 이동해야 해요.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 style={{ margin: '6px 0 4px' }}>출구까지 길을 찾아보세요</h2>
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 처음부터 다시예요.
+                </p>
+              </>
+            )}
             <div
-              className={styles.mazeGrid}
-              style={{ gridTemplateColumns: `repeat(${MAZE.grid[0].length}, 1fr)` }}
+              className={`${styles.mazeGrid} ${mazeWrong ? styles.mazeWrongFx : ''}`}
+              style={{ gridTemplateColumns: `repeat(${MAZE_SIZE}, 1fr)` }}
             >
-              {MAZE.grid.map((row, r) =>
-                row.map((cell, c) => {
+              {Array.from({ length: MAZE_SIZE }).map((_, r) =>
+                Array.from({ length: MAZE_SIZE }).map((_, c) => {
+                  const key = `${r},${c}`;
                   const isPlayer = mazePos[0] === r && mazePos[1] === c;
-                  const isEnd = MAZE.end[0] === r && MAZE.end[1] === c;
+                  const isEnd = MAZE_END[0] === r && MAZE_END[1] === c;
+                  const showSafe = mazePhase === 'reveal' && mazePath.has(key);
                   return (
-                    <div
-                      key={`${r}-${c}`}
-                      className={`${styles.mazeCell} ${cell === 1 ? styles.mazeWall : ''}`}
-                    >
-                      {isPlayer ? '🧍' : isEnd ? '🚩' : ''}
+                    <div key={key} className={`${styles.mazeCell} ${showSafe ? styles.mazeSafe : ''}`}>
+                      {isPlayer ? '🧍' : isEnd ? '🚩' : mazePhase === 'move' ? '❓' : ''}
                     </div>
                   );
-                })
+                }),
               )}
             </div>
-            <div className={styles.mazeControls}>
-              <div />
-              <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, -1, 0)}>
-                ▲
-              </button>
-              <div />
-              <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 0, -1)}>
-                ◀
-              </button>
-              <div />
-              <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 0, 1)}>
-                ▶
-              </button>
-              <div />
-              <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 1, 0)}>
-                ▼
-              </button>
-              <div />
-            </div>
+            {mazePhase === 'move' && (
+              <div className={styles.mazeControls}>
+                <div />
+                <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, -1, 0)}>
+                  ▲
+                </button>
+                <div />
+                <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 0, -1)}>
+                  ◀
+                </button>
+                <div />
+                <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 0, 1)}>
+                  ▶
+                </button>
+                <div />
+                <button className={styles.mazeBtn} onClick={() => moveMaze(sheet.item, 1, 0)}>
+                  ▼
+                </button>
+                <div />
+              </div>
+            )}
           </>
         )}
 
@@ -975,7 +1474,7 @@ export default function JourneyScreen() {
           <>
             <div className={styles.timerRow}>
               <span className="pill">🎴 결합 찾기</span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(nowTick - (gameStartedAt ?? nowTick))}</span>
+              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
             </div>
             <h2 style={{ margin: '6px 0 4px' }}>보이는 합을 전부 찾아보세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
@@ -997,7 +1496,6 @@ export default function JourneyScreen() {
                 )
               )}
             </div>
-            <GameLeaderboard gameId="combo" />
           </>
         )}
 
@@ -1007,7 +1505,7 @@ export default function JourneyScreen() {
               <span className="pill">
                 🔢 수식 만들기 · {eqStreak}/{EQ_TARGET_STREAK}
               </span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(nowTick - (gameStartedAt ?? nowTick))}</span>
+              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
             </div>
             <h2 style={{ margin: '6px 0 4px' }}>목표 숫자: {eqRound.target}</h2>
             <p className="muted" style={{ marginBottom: 12 }}>
@@ -1040,7 +1538,6 @@ export default function JourneyScreen() {
                 확인
               </button>
             </div>
-            <GameLeaderboard gameId="equation" />
           </>
         )}
 
@@ -1050,7 +1547,7 @@ export default function JourneyScreen() {
               <span className="pill">
                 💡 라이트 아웃 · {loStageIdx + 1}/{LO_STAGES.length}단계
               </span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(nowTick - (gameStartedAt ?? nowTick))}</span>
+              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
             </div>
             <h2 style={{ margin: '6px 0 4px' }}>
               {loSize}×{loSize} 불을 전부 꺼보세요
@@ -1069,7 +1566,6 @@ export default function JourneyScreen() {
                 ))
               )}
             </div>
-            <GameLeaderboard gameId="lightsout" />
           </>
         )}
 
@@ -1087,6 +1583,9 @@ export default function JourneyScreen() {
             {lastElapsed !== null && (
               <p className="muted" style={{ marginTop: -4, marginBottom: 4 }}>
                 완료 시간 {formatElapsed(lastElapsed)}
+                {TIMED_KINDS.has(sheet.item.type) && getGameAttempts(sheet.item.id) >= MAX_RANKED_ATTEMPTS
+                  ? ' · 순위 기록은 처음 3번의 도전까지만 반영돼요'
+                  : ''}
               </p>
             )}
             <div style={{ height: 18 }} />
@@ -1103,6 +1602,14 @@ export default function JourneyScreen() {
             >
               다시 플레이
             </button>
+            {TIMED_KINDS.has(sheet.item.type) && (
+              <div style={{ marginTop: 22 }}>
+                <div className={styles.sectionLabel} style={{ textAlign: 'center' }}>
+                  🏆 이 게임 랭킹 TOP 3
+                </div>
+                <GamePodium gameId={sheet.item.type} />
+              </div>
+            )}
           </>
         )}
 

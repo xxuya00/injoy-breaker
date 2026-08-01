@@ -1,0 +1,126 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hiddenCanvas {
+  display: none;
+}
+
+.closeBtn {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 18px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(20, 16, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.closeBtn:active {
+  transform: scale(0.92);
+}
+
+.frameWrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.scanFrame {
+  position: relative;
+  width: min(64vw, 260px);
+  height: min(64vw, 260px);
+}
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--accent);
+}
+.corner[data-pos='tl'] {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 8px;
+}
+.corner[data-pos='tr'] {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-top-right-radius: 8px;
+}
+.corner[data-pos='bl'] {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom-left-radius: 8px;
+}
+.corner[data-pos='br'] {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 8px;
+}
+
+.guide {
+  color: #fff;
+  font-size: 13.5px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.hintMsg {
+  color: var(--accent-soft);
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(20, 16, 12, 0.7);
+  padding: 6px 14px;
+  border-radius: 99px;
+}
+
+.statusMsg {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 30px;
+}
+.statusBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.statusSub {
+  color: var(--mute);
+  font-size: 13px;
+  text-align: center;
+  padding: 0 36px;
+  line-height: 1.6;
+}

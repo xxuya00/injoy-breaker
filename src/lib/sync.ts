@@ -59,11 +59,12 @@ export interface GameTimeEntry {
   elapsedMs: number;
 }
 
+// 처음 3번의 시도까지만 호출되며(JourneyScreen 쪽에서 제한), 그중 가장 빠른 기록만 남긴다.
 export async function saveGameTime(gameId: string, playerId: string, nick: string, elapsedMs: number) {
   if (!firebaseEnabled || !db) return;
   const ref = doc(db, `gameTimes_${gameId}`, playerId);
   const existing = await getDoc(ref);
-  if (existing.exists()) return;
+  if (existing.exists() && (existing.data().elapsedMs as number) <= elapsedMs) return;
   await setDoc(ref, { nick, elapsedMs, updatedAt: serverTimestamp() });
 }
 
@@ -95,7 +96,7 @@ export function subscribeGameLeaderboard(
   onError?: (err: unknown) => void,
 ): () => void {
   if (!firebaseEnabled || !db) return () => {};
-  const q = query(collection(db, `gameTimes_${gameId}`), orderBy('elapsedMs', 'asc'), limit(5));
+  const q = query(collection(db, `gameTimes_${gameId}`), orderBy('elapsedMs', 'asc'), limit(3));
   return onSnapshot(
     q,
     (snap) => {

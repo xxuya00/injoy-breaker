@@ -1,15 +1,16 @@
 export type LockType =
   | 'quiz'
   | 'mission'
-  | 'math'
-  | 'spotdiff'
   | 'memory'
-  | 'puzzle'
   | 'tilepuzzle'
   | 'maze'
   | 'combo'
   | 'equation'
   | 'lightsout'
+  | 'crossmath'
+  | 'codebreak'
+  | 'balance'
+  | 'reflex'
   | 'locked-until'
   | 'final';
 
