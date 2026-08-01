@@ -232,11 +232,33 @@ function ItemChip({ idx, size = 32 }: { idx: number; size?: number }) {
 
 // 인트로 화면에서 텍스트 설명만으로는 감이 안 오니, 고정된 예시 상황을 CSS 루프로 반복 재생해
 // "이런 식으로 진행된다"를 짧게 보여준다. 실제 랜덤 로직과는 무관한 순수 연출용.
-// 모양·색·배경이 모두 "셋 다 다른" 조합 — 셋 다 같은 쪽보다 이 규칙이 헷갈리기 쉬워 예시로 골랐다.
-const COMBO_DEMO_CARDS: ComboCard[] = [
-  { id: 'demo-0', shape: 0, color: 0, bg: 0 },
-  { id: 'demo-1', shape: 1, color: 1, bg: 1 },
-  { id: 'demo-2', shape: 2, color: 2, bg: 2 },
+// "셋 다 달라도" / "색만 같아도" / "모양만 같아도" 전부 결합이라는 걸 예시 셋으로 차례차례 보여준다.
+// 한 가지 경우만 보여주면 나머지도 결합인 줄 모르고 지나치기 쉬워서, 세 유형을 모두 돌린다.
+const COMBO_DEMO_SETS: { cards: ComboCard[]; label: string }[] = [
+  {
+    cards: [
+      { id: 'demo-a0', shape: 0, color: 0, bg: 0 },
+      { id: 'demo-a1', shape: 1, color: 1, bg: 1 },
+      { id: 'demo-a2', shape: 2, color: 2, bg: 2 },
+    ],
+    label: '모양·색·배경이 셋 다 달라요',
+  },
+  {
+    cards: [
+      { id: 'demo-b0', shape: 0, color: 0, bg: 0 },
+      { id: 'demo-b1', shape: 1, color: 0, bg: 1 },
+      { id: 'demo-b2', shape: 2, color: 0, bg: 2 },
+    ],
+    label: '색이 셋 다 같아요',
+  },
+  {
+    cards: [
+      { id: 'demo-c0', shape: 0, color: 0, bg: 0 },
+      { id: 'demo-c1', shape: 0, color: 1, bg: 1 },
+      { id: 'demo-c2', shape: 0, color: 2, bg: 2 },
+    ],
+    label: '모양이 셋 다 같아요',
+  },
 ];
 const MAZE_DEMO_SAFE = new Set([0, 3, 4, 5, 8]);
 const RX_DEMO_HIT: Record<number, string> = { 4: styles.demoRxHit1, 1: styles.demoRxHit2, 7: styles.demoRxHit3 };
@@ -411,17 +433,29 @@ function GameDemo({ type }: { type: LockType }) {
     case 'combo':
       return (
         <div className={styles.introDemo}>
-          <div className={styles.demoComboRow}>
-            {COMBO_DEMO_CARDS.map((card, i) => (
-              <div
-                key={card.id}
-                className={`${styles.demoComboCard} ${styles[`comboCardBg${card.bg}`]} ${styles[`demoComboPick${i + 1}`]}`}
-              >
-                <ComboShape card={card} size={26} />
+          <div className={styles.demoComboStage}>
+            {COMBO_DEMO_SETS.map((set, p) => (
+              <div key={set.label} className={`${styles.demoComboPhase} ${styles[`demoComboPhase${p + 1}`]}`}>
+                <div className={styles.demoComboRow}>
+                  {set.cards.map((card, i) => (
+                    <div
+                      key={card.id}
+                      className={`${styles.demoComboCard} ${styles[`comboCardBg${card.bg}`]} ${
+                        styles[`demoComboPick${i + 1}`]
+                      } ${styles[`demoComboOk${p + 1}`]}`}
+                    >
+                      <ComboShape card={card} size={26} />
+                    </div>
+                  ))}
+                </div>
+                <span className={`${styles.demoComboCaption} ${styles[`demoComboCaptionOk${p + 1}`]}`}>{set.label}</span>
               </div>
             ))}
+            <div className={`${styles.demoComboPhase} ${styles.demoComboPhase4}`}>
+              <span className={styles.demoComboPassBtn}>결</span>
+              <span className={styles.demoComboCaption}>더 찾을 결합이 없으면 → 다음 세트</span>
+            </div>
           </div>
-          <span className={styles.demoComboTag}>결합!</span>
         </div>
       );
     case 'equation':
