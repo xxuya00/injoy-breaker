@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 플레이어 진행도(조별 실시간 순위판에 쓰임)
+    match /players/{playerId} {
+      allow read, write: if true;
+    }
+
+    // QR 미션 답변
+    match /missionAnswers/{playerId} {
+      allow read, write: if true;
+    }
+
+    // 게임별 개인 기록(gameTimes_crossmath, gameTimes_combo 등 게임마다 컬렉션이 동적으로 생김)
+    match /{collection}/{playerId} {
+      allow read, write: if collection.matches('^gameTimes_.*$');
+    }
+  }
+}

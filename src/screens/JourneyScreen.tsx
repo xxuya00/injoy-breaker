@@ -4,7 +4,7 @@ import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
 import { generateFlashRound, type FlashRound } from '../data/memoryGame';
 import { TILE_PUZZLE } from '../data/tilePuzzle';
 import { MAZE_SIZE, MAZE_START, MAZE_END, generateMazePath } from '../data/maze';
-import { generateComboBoard, checkCombo, hasAnyCombo, type ComboCard } from '../data/comboGame';
+import { generateComboRounds, checkCombo, findAllCombos, type ComboCard } from '../data/comboGame';
 import { generateEquationRound, evaluateTokens, type EquationRound, type EqToken } from '../data/equationGame';
 import { generateLightsOut, toggleLight } from '../data/lightsOut';
 import { generateCrossMathRound, checkCrossMath, type CrossMathRound } from '../data/crossMath';
@@ -20,7 +20,7 @@ import {
   type GameTimeEntry,
   type MissionAnswers,
 } from '../lib/sync';
-import type { Day, LockItem } from '../types';
+import type { Day, LockItem, LockType } from '../types';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
 import EggCrack from '../components/EggCrack';
@@ -30,7 +30,8 @@ import styles from './JourneyScreen.module.css';
 
 const EQ_TARGET_STREAK = 3;
 const LO_STAGES = [3, 4, 5];
-const COMBO_SIZE = 12;
+const COMBO_ROUNDS = 3;
+const COMBO_PENALTY_MS = 10000;
 const TIMED_KINDS = new Set([
   'equation',
   'combo',
@@ -45,6 +46,7 @@ const TIMED_KINDS = new Set([
 const MAX_RANKED_ATTEMPTS = 3;
 const MAZE_REVEAL_MS = 2000;
 const FLASH_SHOW_MS = 1200;
+const FLASH_ROUNDS = [4, 6, 8];
 const REFLEX_TARGET_HITS = 10;
 const REFLEX_GRID = 9;
 const REFLEX_ON_MS = 650;
@@ -85,9 +87,59 @@ type SheetState =
   | { kind: 'codebreak'; item: LockItem }
   | { kind: 'balance'; item: LockItem }
   | { kind: 'reflex'; item: LockItem }
+  | { kind: 'intro'; item: LockItem }
   | { kind: 'reveal'; item: LockItem }
   | { kind: 'eggComplete'; item: LockItem }
   | { kind: 'finalLocked'; done: number; need: number };
+
+// 9개 미니게임은 탭하면 바로 시작하지 않고, 먼저 이 설명을 보여주고 "게임 시작"을 눌러야 시작한다.
+const GAME_INTRO: Partial<Record<LockType, { pill: string; title: string; desc: string }>> = {
+  crossmath: {
+    pill: '십자 연산',
+    title: '1~9를 겹치지 않게 채워 합을 맞추세요',
+    desc: '빈칸을 탭해 선택하고, 아래 숫자패드로 채워보세요. 오른쪽·아래 숫자가 목표 합이에요.',
+  },
+  maze: {
+    pill: '기억의 미로',
+    title: '안전한 길을 기억해서 출구까지 가보세요',
+    desc: '초록색 칸이 2초간 보였다가 사라져요. 화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 처음부터 다시예요.',
+  },
+  codebreak: {
+    pill: '부호 해독',
+    title: '도형마다 숨은 숫자를 추리하세요',
+    desc: '5개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 두 식을 보고 최종식을 풀어보세요.',
+  },
+  memory: {
+    pill: '플래시 기억',
+    title: '단어들이 순식간에 나타났다 사라져요',
+    desc: `순서까지 기억해서, 사라진 뒤 방금 본 순서대로 탭해야 해요. ${FLASH_ROUNDS.join('개 → ')}개로 라운드가 갈수록 단어 수가 늘어나요.`,
+  },
+  reflex: {
+    pill: '순발력',
+    title: '빛나는 칸을 최대한 빠르게 탭하세요',
+    desc: `${REFLEX_TARGET_HITS}번 맞히면 열려요. 속도가 곧 실력!`,
+  },
+  balance: {
+    pill: '저울 무게 추론',
+    title: '무거운 순서대로 나열하세요',
+    desc: '저울 힌트를 보고 1위(가장 무거움)부터 4위까지 순서대로 골라보세요.',
+  },
+  combo: {
+    pill: '결합 찾기',
+    title: '보이는 결합을 모두 찾으세요',
+    desc: `모양·색·배경이 각각 셋 다 같거나 셋 다 달라야 결합이에요. 더 찾을 결합이 없으면 "결" 버튼을 눌러 다음 세트로 넘어가세요. 오답이면 리셋 없이 경과시간에 10초가 더해져요. ${COMBO_ROUNDS}세트를 모두 넘기면 열려요.`,
+  },
+  equation: {
+    pill: '수식 만들기',
+    title: '숫자 4개로 목표 숫자를 만드세요',
+    desc: `숫자 4개를 전부 한 번씩만 써서 목표를 만드세요. ${EQ_TARGET_STREAK}문제 연속 성공하면 열려요.`,
+  },
+  lightsout: {
+    pill: '라이트 아웃',
+    title: '불을 전부 꺼보세요',
+    desc: '칸을 누르면 자신과 상하좌우가 함께 반전돼요. 3→4→5단계를 전부 깨야 열려요.',
+  },
+};
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -130,27 +182,17 @@ function NavCard({ icon, name, sub, onClick }: { icon: React.ReactNode; name: st
 // Day1의 자물쇠 9개를 하나씩 깰 때마다, 그 칸 안에서 바로 BACKTOGOD의 글자가 순서대로 드러난다.
 const BACKTOGOD_WORD = 'BACKTOGOD'.split('');
 
-const COMBO_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)'];
+const COMBO_COLORS = ['var(--danger)', 'var(--accent-blue)', 'var(--accent-yellow)'];
 
-function ComboShape({ card }: { card: ComboCard }) {
+function ComboShape({ card, size = 36 }: { card: ComboCard; size?: number }) {
   const color = COMBO_COLORS[card.color];
-  const patternId = `combo-stripe-${card.color}`;
-  const fillProps =
-    card.fill === 0
-      ? { fill: color, stroke: color, strokeWidth: 2 }
-      : card.fill === 1
-      ? { fill: 'none', stroke: color, strokeWidth: 3 }
-      : { fill: `url(#${patternId})`, stroke: color, strokeWidth: 2 };
+  // 카드 배경이 흰색/회색/검정으로 바뀌어도 도형이 또렷이 보이도록 옅은 외곽선을 둔다.
+  const stroke = { stroke: 'rgba(0, 0, 0, 0.3)', strokeWidth: 1.5 };
   return (
-    <svg viewBox="0 0 40 40" width="36" height="36">
-      <defs>
-        <pattern id={patternId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="5" stroke={color} strokeWidth="2" />
-        </pattern>
-      </defs>
-      {card.shape === 0 && <circle cx="20" cy="20" r="14" {...fillProps} />}
-      {card.shape === 1 && <rect x="7" y="7" width="26" height="26" rx="3" {...fillProps} />}
-      {card.shape === 2 && <polygon points="20,6 34,32 6,32" {...fillProps} />}
+    <svg viewBox="0 0 40 40" width={size} height={size}>
+      {card.shape === 0 && <circle cx="20" cy="20" r="14" fill={color} {...stroke} />}
+      {card.shape === 1 && <polygon points="20,6 34,32 6,32" fill={color} {...stroke} />}
+      {card.shape === 2 && <rect x="7" y="7" width="26" height="26" rx="3" fill={color} {...stroke} />}
     </svg>
   );
 }
@@ -298,6 +340,7 @@ export default function JourneyScreen() {
   const mazeRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 플래시 기억
+  const [flashRoundIdx, setFlashRoundIdx] = useState(0);
   const [flashRound, setFlashRound] = useState<FlashRound | null>(null);
   const [flashPhase, setFlashPhase] = useState<'ready' | 'show' | 'choose'>('ready');
   const [flashProgress, setFlashProgress] = useState(0);
@@ -325,9 +368,10 @@ export default function JourneyScreen() {
   const reflexSpawnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reflexClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [comboBoard, setComboBoard] = useState<ComboCard[]>([]);
-  const [comboCleared, setComboCleared] = useState<boolean[]>([]);
+  const [comboRounds, setComboRounds] = useState<ComboCard[][]>([]);
+  const [comboRoundIdx, setComboRoundIdx] = useState(0);
   const [comboSelected, setComboSelected] = useState<number[]>([]);
+  const [comboFound, setComboFound] = useState<[number, number, number][]>([]);
   const [comboWrong, setComboWrong] = useState(false);
   const [eqRound, setEqRound] = useState<EquationRound | null>(null);
   const [eqTokens, setEqTokens] = useState<EqToken[]>([]);
@@ -460,7 +504,10 @@ export default function JourneyScreen() {
       setSheet({ kind, item } as SheetState);
       return;
     }
-    setActiveItemId(item.id);
+    if (GAME_INTRO[item.type]) {
+      setSheet({ kind: 'intro', item });
+      return;
+    }
     startGame(item);
   };
 
@@ -540,6 +587,7 @@ export default function JourneyScreen() {
   };
 
   const startGame = (item: LockItem) => {
+    setActiveItemId(item.id);
     setAnswered(null);
     setLastElapsed(null);
     if (item.type === 'crossmath') {
@@ -576,7 +624,8 @@ export default function JourneyScreen() {
     }
     if (item.type === 'memory') {
       // 실제 타이머는 '시작' 버튼을 눌러 플래시가 뜨는 순간(beginFlashShow)부터 시작한다.
-      setFlashRound(generateFlashRound());
+      setFlashRoundIdx(0);
+      setFlashRound(generateFlashRound(FLASH_ROUNDS[0]));
       setFlashPhase('ready');
       setFlashProgress(0);
       setFlashWrong(false);
@@ -601,9 +650,10 @@ export default function JourneyScreen() {
     }
     if (item.type === 'combo') {
       beginTimedGame(item);
-      setComboBoard(generateComboBoard(COMBO_SIZE));
-      setComboCleared(new Array(COMBO_SIZE).fill(false));
+      setComboRounds(generateComboRounds(COMBO_ROUNDS));
+      setComboRoundIdx(0);
       setComboSelected([]);
+      setComboFound([]);
       setComboWrong(false);
       setSheet({ kind: 'combo', item });
       return;
@@ -664,7 +714,8 @@ export default function JourneyScreen() {
   };
 
   const beginFlashShow = (item: LockItem) => {
-    beginTimedGame(item);
+    // 라운드가 바뀔 때마다 다시 시작을 누르지만, 타이머는 첫 라운드에서만 시작해 계속 이어서 흐르게 한다.
+    if (flashRoundIdx === 0) beginTimedGame(item);
     setFlashPhase('show');
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashPhase('choose'), FLASH_SHOW_MS);
@@ -678,14 +729,22 @@ export default function JourneyScreen() {
       setFlashProgress(nextProgress);
       if (nextProgress >= flashRound.sequence.length) {
         setTimeout(() => {
-          finishTimedGame(item);
+          const nextRoundIdx = flashRoundIdx + 1;
+          if (nextRoundIdx >= FLASH_ROUNDS.length) {
+            finishTimedGame(item);
+          } else {
+            setFlashRoundIdx(nextRoundIdx);
+            setFlashRound(generateFlashRound(FLASH_ROUNDS[nextRoundIdx]));
+            setFlashProgress(0);
+            setFlashPhase('ready');
+          }
         }, 400);
       }
     } else {
       setFlashWrong(true);
       setTimeout(() => {
         setFlashWrong(false);
-        setFlashRound(generateFlashRound());
+        setFlashRound(generateFlashRound(FLASH_ROUNDS[flashRoundIdx]));
         setFlashProgress(0);
         setFlashPhase('ready');
       }, 500);
@@ -809,35 +868,66 @@ export default function JourneyScreen() {
     }
   };
 
-  const tapCombo = (item: LockItem, idx: number) => {
-    if (comboCleared[idx] || comboSelected.includes(idx)) {
+  // 오답 패널티: 게임을 리셋하지 않고 경과시간에 10초를 더한다(세션 시작시각을 앞당기는 방식).
+  const applyComboPenalty = () => {
+    setSessionStart((s) => (s !== null ? s - COMBO_PENALTY_MS : s));
+  };
+
+  const comboPenalize = (message: string) => {
+    applyComboPenalty();
+    setComboWrong(true);
+    toast(message);
+    setTimeout(() => {
+      setComboWrong(false);
+      setComboSelected([]);
+    }, 500);
+  };
+
+  const advanceComboRound = (item: LockItem) => {
+    setComboSelected([]);
+    setComboFound([]);
+    const nextRound = comboRoundIdx + 1;
+    if (nextRound >= comboRounds.length) {
+      finishTimedGame(item);
+    } else {
+      setComboRoundIdx(nextRound);
+    }
+  };
+
+  const tapCombo = (idx: number) => {
+    if (comboSelected.includes(idx)) {
       setComboSelected(comboSelected.filter((i) => i !== idx));
       return;
     }
+    const board = comboRounds[comboRoundIdx];
     const next = [...comboSelected, idx];
     setComboSelected(next);
     if (next.length === 3) {
-      const picked = next.map((i) => comboBoard[i]);
+      const picked = next.map((i) => board[i]) as [ComboCard, ComboCard, ComboCard];
       if (checkCombo(picked)) {
-        setTimeout(() => {
-          const nextCleared = [...comboCleared];
-          next.forEach((i) => {
-            nextCleared[i] = true;
-          });
-          setComboCleared(nextCleared);
+        const sorted = [...next].sort((a, b) => a - b) as [number, number, number];
+        const already = comboFound.some((t) => t[0] === sorted[0] && t[1] === sorted[1] && t[2] === sorted[2]);
+        if (already) {
+          toast('이미 찾은 결합이에요');
           setComboSelected([]);
-          const remaining = comboBoard.filter((_, i) => !nextCleared[i]);
-          if (!hasAnyCombo(remaining)) {
-            finishTimedGame(item);
-          }
-        }, 400);
+        } else {
+          setComboFound([...comboFound, sorted]);
+          setComboSelected([]);
+        }
       } else {
-        setComboWrong(true);
-        setTimeout(() => {
-          setComboWrong(false);
-          setComboSelected([]);
-        }, 500);
+        comboPenalize('결합이 아니에요 · 10초 페널티');
       }
+    }
+  };
+
+  // "결" 선언: 지금 보드에 아직 못 찾은 결합이 없다고 주장한다. 실제로 다 찾았으면 다음 세트로, 남아있으면 페널티.
+  const declareNoCombo = (item: LockItem) => {
+    const board = comboRounds[comboRoundIdx];
+    const total = findAllCombos(board).length;
+    if (comboFound.length >= total) {
+      advanceComboRound(item);
+    } else {
+      comboPenalize('아직 못 찾은 결합이 있어요 · 10초 페널티');
     }
   };
 
@@ -950,7 +1040,7 @@ export default function JourneyScreen() {
       <div className={styles.header}>
         <div>
           <div className="eyebrow">The Journey</div>
-          <h1>3일의 자물쇠</h1>
+          <h1>3일 간 여정</h1>
         </div>
         <button className={styles.rankBtn} onClick={() => goScreen('rank')} aria-label="순위 보기">
           <svg viewBox="0 0 24 24">
@@ -1078,6 +1168,24 @@ export default function JourneyScreen() {
       {scannerOpen && <QrScanner parse={parseQrText} onDetect={handleScanDetect} onClose={() => setScannerOpen(false)} />}
 
       <Sheet open={sheet !== null} onClose={closeSheet} fullscreen>
+        {sheet?.kind === 'intro' &&
+          (() => {
+            const intro = GAME_INTRO[sheet.item.type];
+            if (!intro) return null;
+            return (
+              <>
+                <span className="pill">{intro.pill}</span>
+                <h2 style={{ margin: '6px 0 10px' }}>{intro.title}</h2>
+                <p className="muted" style={{ marginBottom: 24, lineHeight: 1.7 }}>
+                  {intro.desc}
+                </p>
+                <button className="btn" onClick={() => startGame(sheet.item)}>
+                  게임 시작
+                </button>
+              </>
+            );
+          })()}
+
         {sheet?.kind === 'quiz' && (
           <>
             <span className="pill">{sheet.item.pill ?? '성경 자물쇠'}</span>
@@ -1331,7 +1439,9 @@ export default function JourneyScreen() {
         {sheet?.kind === 'memory' && (
           <>
             <div className={styles.timerRow}>
-              <span className="pill">🧠 플래시 기억</span>
+              <span className="pill">
+                🧠 플래시 기억 · {flashRoundIdx + 1}/{FLASH_ROUNDS.length}세트
+              </span>
               {flashPhase !== 'ready' && (
                 <span className={styles.timerBadge}>
                   ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
@@ -1340,7 +1450,7 @@ export default function JourneyScreen() {
             </div>
             {flashPhase === 'ready' && (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>단어 4개가 순식간에 나타났다 사라져요</h2>
+                <h2 style={{ margin: '6px 0 4px' }}>단어 {FLASH_ROUNDS[flashRoundIdx]}개가 순식간에 나타났다 사라져요</h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
                   준비되면 시작을 눌러보세요. 순서까지 기억해야 해요.
                 </p>
@@ -1470,32 +1580,54 @@ export default function JourneyScreen() {
           </>
         )}
 
-        {sheet?.kind === 'combo' && (
+        {sheet?.kind === 'combo' && comboRounds[comboRoundIdx] && (
           <>
             <div className={styles.timerRow}>
-              <span className="pill">🎴 결합 찾기</span>
+              <span className="pill">
+                🎴 결합 찾기 · {comboRoundIdx + 1}/{comboRounds.length}세트
+              </span>
               <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
             </div>
-            <h2 style={{ margin: '6px 0 4px' }}>보이는 합을 전부 찾아보세요</h2>
+            <h2 style={{ margin: '6px 0 4px' }}>보이는 결합을 모두 찾아보세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
-              모양·색·채우기가 각각 셋 다 같거나 셋 다 달라야 해요. 더 이상 합이 없으면 클리어!
-              ({comboCleared.filter(Boolean).length}/{COMBO_SIZE}장 정리됨)
+              모양·색·배경이 각각 셋 다 같거나 셋 다 달라야 결합이에요. 더 찾을 결합이 없으면 아래 "결" 버튼을 눌러
+              다음 세트로 넘어가세요. 오답이면 리셋 없이 경과시간에 10초가 더해져요.
             </p>
             <div className={`${styles.comboGrid} ${comboWrong ? styles.comboWrong : ''}`}>
-              {comboBoard.map((card, i) =>
-                comboCleared[i] ? (
-                  <div key={i} className={styles.comboCardCleared} />
-                ) : (
-                  <button
-                    key={i}
-                    className={`${styles.comboCard} ${comboSelected.includes(i) ? styles.comboCardSelected : ''}`}
-                    onClick={() => tapCombo(sheet.item, i)}
-                  >
-                    <ComboShape card={card} />
-                  </button>
-                )
-              )}
+              {comboRounds[comboRoundIdx].map((card, i) => (
+                <button
+                  key={card.id}
+                  className={`${styles.comboCard} ${styles[`comboCardBg${card.bg}`]} ${
+                    comboSelected.includes(i) ? styles.comboCardSelected : ''
+                  }`}
+                  onClick={() => tapCombo(i)}
+                >
+                  <ComboShape card={card} />
+                </button>
+              ))}
             </div>
+            <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => declareNoCombo(sheet.item)}>
+              결 (더 이상 결합 없음)
+            </button>
+            {comboFound.length > 0 && (
+              <div className={styles.comboFoundWrap}>
+                <div className={styles.comboFoundLabel}>찾은 결합 {comboFound.length}개</div>
+                <div className={styles.comboFoundRow}>
+                  {comboFound.map((triple, ti) => (
+                    <div key={ti} className={styles.comboFoundChip}>
+                      {triple.map((idx) => {
+                        const card = comboRounds[comboRoundIdx][idx];
+                        return (
+                          <div key={idx} className={`${styles.comboFoundSwatch} ${styles[`comboCardBg${card.bg}`]}`}>
+                            <ComboShape card={card} size={14} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -1592,14 +1724,7 @@ export default function JourneyScreen() {
             <button className="btn" onClick={() => setSheet(null)}>
               여정으로 돌아가기
             </button>
-            <button
-              className="btn ghost"
-              style={{ marginTop: 10 }}
-              onClick={() => {
-                setActiveItemId(sheet.item.id);
-                startGame(sheet.item);
-              }}
-            >
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => startGame(sheet.item)}>
               다시 플레이
             </button>
             {TIMED_KINDS.has(sheet.item.type) && (
