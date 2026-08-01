@@ -3,13 +3,13 @@ import { useApp } from '../context/AppContext';
 import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
 import { generateFlashRound, type FlashRound } from '../data/memoryGame';
 import { TILE_PUZZLE } from '../data/tilePuzzle';
-import { MAZE_SIZE, MAZE_START, MAZE_END, generateMazePath } from '../data/maze';
+import { MAZE_STAGES, generateMazePath } from '../data/maze';
 import { generateComboRounds, checkCombo, findAllCombos, type ComboCard } from '../data/comboGame';
 import { generateEquationRound, evaluateTokens, type EquationRound, type EqToken } from '../data/equationGame';
 import { generateLightsOut, toggleLight } from '../data/lightsOut';
 import { generateCrossMathRound, checkCrossMath, type CrossMathRound } from '../data/crossMath';
 import { generateCodeBreakRound, type CodeBreakRound, type ShapeId } from '../data/codeBreak';
-import { generateBalanceRound, GEMS, GEM_LABELS, type BalanceRound, type GemId } from '../data/balance';
+import { generateBalanceRound, BALANCE_STAGES, ITEM_LABELS, type BalanceRound } from '../data/balance';
 import { fetchLockUnlockTimes } from '../lib/gas';
 import { getAccumulatedMs, setAccumulatedMs, getGameAttempts, incrementGameAttempts } from '../lib/storage';
 import {
@@ -102,7 +102,7 @@ const GAME_INTRO: Partial<Record<LockType, { pill: string; title: string; desc: 
   maze: {
     pill: '기억의 미로',
     title: '안전한 길을 기억해서 출구까지 가보세요',
-    desc: '초록색 칸이 2초간 보였다가 사라져요. 화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 처음부터 다시예요.',
+    desc: `초록색 칸이 2초간 보였다가 사라져요. 화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 그 단계부터 다시예요. ${MAZE_STAGES.map((s) => `${s.rows}x${s.cols}`).join(' → ')}로 단계가 오를수록 판이 커져요.`,
   },
   codebreak: {
     pill: '부호 해독',
@@ -120,9 +120,9 @@ const GAME_INTRO: Partial<Record<LockType, { pill: string; title: string; desc: 
     desc: `${REFLEX_TARGET_HITS}번 맞히면 열려요. 속도가 곧 실력!`,
   },
   balance: {
-    pill: '저울 무게 추론',
-    title: '무거운 순서대로 나열하세요',
-    desc: '저울 힌트를 보고 1위(가장 무거움)부터 4위까지 순서대로 골라보세요.',
+    pill: '가짜 찾기',
+    title: '무게가 다른 가짜 하나를 찾아내세요',
+    desc: `이미 진행된 저울질 결과를 보고 어떤 것이 가짜(더 무거운 것)인지 추리하세요. ${BALANCE_STAGES.map((s) => `${s.items}개`).join(' → ')}로 단계가 오를수록 어려워져요.`,
   },
   combo: {
     pill: '결합 찾기',
@@ -217,14 +217,219 @@ function ShapeIcon({ shape, size = 30 }: { shape: ShapeId; size?: number }) {
   );
 }
 
-const GEM_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)', 'var(--accent-yellow)'];
+const ITEM_COLORS = ['var(--accent)', 'var(--ok)', 'var(--accent-blue)', 'var(--accent-yellow)', 'var(--accent-purple)'];
 
-function GemIcon({ gem, size = 32 }: { gem: GemId; size?: number }) {
+function ItemChip({ idx, size = 32 }: { idx: number; size?: number }) {
   return (
-    <svg viewBox="0 0 40 40" width={size} height={size}>
-      <polygon points="20,4 34,16 28,36 12,36 6,16" fill={GEM_COLORS[gem]} />
-    </svg>
+    <span
+      className={styles.balItemChip}
+      style={{ width: size, height: size, fontSize: size * 0.4, background: ITEM_COLORS[idx % ITEM_COLORS.length] }}
+    >
+      {ITEM_LABELS[idx]}
+    </span>
   );
+}
+
+// 인트로 화면에서 텍스트 설명만으로는 감이 안 오니, 고정된 예시 상황을 CSS 루프로 반복 재생해
+// "이런 식으로 진행된다"를 짧게 보여준다. 실제 랜덤 로직과는 무관한 순수 연출용.
+const MAZE_DEMO_SAFE = new Set([0, 3, 4, 5, 8]);
+const RX_DEMO_HIT: Record<number, string> = { 4: styles.demoRxHit1, 1: styles.demoRxHit2, 7: styles.demoRxHit3 };
+// 가운데를 누르면 십자 다섯 칸이 "반전"된다는 게 핵심이라, 켜진 칸과 꺼진 칸을 섞어 둔다.
+const LO_DEMO_ON = new Set([0, 3, 4, 6, 7]);
+const LO_DEMO_CROSS = new Set([1, 3, 4, 5, 7]);
+// 1~9를 한 번씩 쓴 배치. 오른쪽엔 행 합, 아래엔 열 합이 붙는 실제 판과 같은 모양.
+const CM_DEMO_CELLS = [1, 5, 9, 8, 2, 4, 3, 7, 6];
+const CM_DEMO_BLANK = 1;
+const CM_DEMO_ROW_SUMS = [15, 14, 16];
+const CM_DEMO_COL_SUMS = [12, 14, 19];
+
+function GameDemo({ type }: { type: LockType }) {
+  switch (type) {
+    case 'maze':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoMzGrid}>
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className={`${styles.demoMzCell} ${MAZE_DEMO_SAFE.has(i) ? styles.demoMzSafe : ''}`} />
+            ))}
+            <span className={styles.demoMzFlag}>🚩</span>
+            <span className={styles.demoMzDot}>🧍</span>
+          </div>
+        </div>
+      );
+    case 'lightsout':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoLoGrid}>
+            {Array.from({ length: 9 }).map((_, i) => {
+              const on = LO_DEMO_ON.has(i);
+              const flip = LO_DEMO_CROSS.has(i) ? (on ? styles.demoLoFlipOff : styles.demoLoFlipOn) : '';
+              return (
+                <div
+                  key={i}
+                  className={`${styles.demoLoCell} ${on ? styles.demoLoOn : ''} ${i === 4 ? styles.demoLoTap : flip}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      );
+    case 'crossmath':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoCmGrid}>
+            {Array.from({ length: 4 }).map((_, r) =>
+              Array.from({ length: 4 }).map((_, c) => {
+                const key = `${r}-${c}`;
+                if (r < 3 && c < 3) {
+                  const idx = r * 3 + c;
+                  if (idx === CM_DEMO_BLANK) {
+                    return (
+                      <div key={key} className={`${styles.demoCmCell} ${styles.demoCmBlank}`}>
+                        <span className={styles.demoCmQ}>?</span>
+                        <span className={styles.demoCmFill}>{CM_DEMO_CELLS[idx]}</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={key} className={styles.demoCmCell}>
+                      {CM_DEMO_CELLS[idx]}
+                    </div>
+                  );
+                }
+                if (r < 3 && c === 3) {
+                  return (
+                    <div key={key} className={`${styles.demoCmTarget} ${r === 0 ? styles.demoCmTargetHit : ''}`}>
+                      {CM_DEMO_ROW_SUMS[r]}
+                    </div>
+                  );
+                }
+                if (r === 3 && c < 3) {
+                  return (
+                    <div key={key} className={`${styles.demoCmTarget} ${c === 1 ? styles.demoCmTargetHit : ''}`}>
+                      {CM_DEMO_COL_SUMS[c]}
+                    </div>
+                  );
+                }
+                return <div key={key} />;
+              }),
+            )}
+          </div>
+          <div className={styles.demoCmPad}>
+            {[3, 4, 5, 6, 7].map((n) => (
+              <div key={n} className={`${styles.demoCmKey} ${n === CM_DEMO_CELLS[CM_DEMO_BLANK] ? styles.demoCmKeyTap : ''}`}>
+                {n}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case 'codebreak':
+      // ▲+●=12, ■-▲=2 이면 ▲ 값을 몰라도 ●+■는 항상 14로 결정된다.
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoCbList}>
+            <div className={styles.demoCbRow}>
+              <ShapeIcon shape={1} size={20} />
+              <span className={styles.demoCbOp}>+</span>
+              <ShapeIcon shape={2} size={20} />
+              <span className={styles.demoCbOp}>=</span>
+              <span className={styles.demoCbNum}>12</span>
+            </div>
+            <div className={styles.demoCbRow}>
+              <ShapeIcon shape={0} size={20} />
+              <span className={styles.demoCbOp}>−</span>
+              <ShapeIcon shape={1} size={20} />
+              <span className={styles.demoCbOp}>=</span>
+              <span className={styles.demoCbNum}>2</span>
+            </div>
+            <div className={`${styles.demoCbRow} ${styles.demoCbFinal}`}>
+              <ShapeIcon shape={2} size={20} />
+              <span className={styles.demoCbOp}>+</span>
+              <ShapeIcon shape={0} size={20} />
+              <span className={styles.demoCbOp}>=</span>
+              <span className={styles.demoCbAnsWrap}>
+                <span className={styles.demoCbQ}>?</span>
+                <span className={styles.demoCbAns}>14</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    case 'memory':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoMemRow}>
+            {['해', '달', '별'].map((w, i) => (
+              <div key={w} className={`${styles.demoMemChip} ${i === 1 ? styles.demoMemChip1 : i === 2 ? styles.demoMemChip2 : ''}`}>
+                {w}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case 'reflex':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoRxGrid}>
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className={`${styles.demoRxCell} ${RX_DEMO_HIT[i] ?? ''}`} />
+            ))}
+          </div>
+        </div>
+      );
+    case 'balance':
+      // A를 올린 왼쪽 접시가 내려가므로 A가 더 무거운 가짜 — 아래 A가 정답으로 표시된다.
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoScale}>
+            <div className={styles.demoScalePivot} />
+            <div className={styles.demoScaleBeam}>
+              <div className={`${styles.demoScalePan} ${styles.demoScalePanL}`}>
+                <ItemChip idx={0} size={20} />
+              </div>
+              <div className={`${styles.demoScalePan} ${styles.demoScalePanR}`}>
+                <ItemChip idx={1} size={20} />
+              </div>
+            </div>
+          </div>
+          <div className={styles.demoBalItems}>
+            {[0, 1, 2, 3].map((idx) => (
+              <div key={idx} className={`${styles.demoBalItem} ${idx === 0 ? styles.demoBalFound : ''}`}>
+                <ItemChip idx={idx} size={22} />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case 'combo':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoComboRow}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.demoComboCard}>
+                ▲
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    case 'equation':
+      return (
+        <div className={styles.introDemo}>
+          <div className={styles.demoEqRow}>
+            {['3', '×', '5', '-', '2', '-', '4'].map((t, i) => (
+              <span key={i} className={styles.demoEqTok} style={{ animationDelay: `${i * 0.35}s` }}>
+                {t}
+              </span>
+            ))}
+            <span className={styles.demoEqEq}>= 9</span>
+          </div>
+        </div>
+      );
+    default:
+      return null;
+  }
 }
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -333,8 +538,10 @@ export default function JourneyScreen() {
   const [tileSelected, setTileSelected] = useState<number | null>(null);
 
   // 기억의 미로
+  const [mazeStageIdx, setMazeStageIdx] = useState(0);
+  const mazeStage = MAZE_STAGES[mazeStageIdx] ?? MAZE_STAGES[MAZE_STAGES.length - 1];
   const [mazePath, setMazePath] = useState<Set<string>>(new Set());
-  const [mazePos, setMazePos] = useState<[number, number]>(MAZE_START);
+  const [mazePos, setMazePos] = useState<[number, number]>([0, 0]);
   const [mazePhase, setMazePhase] = useState<'reveal' | 'move'>('reveal');
   const [mazeWrong, setMazeWrong] = useState(false);
   const mazeRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -357,9 +564,9 @@ export default function JourneyScreen() {
   const [cbInput, setCbInput] = useState('');
   const [cbWrong, setCbWrong] = useState(false);
 
-  // 저울 무게 추론
+  // 가짜 찾기(저울)
+  const [balStageIdx, setBalStageIdx] = useState(0);
   const [balRound, setBalRound] = useState<BalanceRound | null>(null);
-  const [balPicked, setBalPicked] = useState<GemId[]>([]);
   const [balWrong, setBalWrong] = useState(false);
 
   // 순발력 타격
@@ -547,10 +754,10 @@ export default function JourneyScreen() {
     setSheet({ kind: 'reveal', item });
   };
 
-  const beginMazeRound = () => {
-    const path = generateMazePath();
+  const beginMazeRound = (stageIdx: number) => {
+    const path = generateMazePath(stageIdx);
     setMazePath(new Set(path.map(([r, c]) => `${r},${c}`)));
-    setMazePos(MAZE_START);
+    setMazePos([0, 0]);
     setMazePhase('reveal');
     if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
     mazeRevealTimer.current = setTimeout(() => setMazePhase('move'), MAZE_REVEAL_MS);
@@ -560,7 +767,7 @@ export default function JourneyScreen() {
     setMazeWrong(true);
     setTimeout(() => {
       setMazeWrong(false);
-      beginMazeRound();
+      beginMazeRound(mazeStageIdx);
     }, 500);
   };
 
@@ -608,8 +815,8 @@ export default function JourneyScreen() {
     }
     if (item.type === 'balance') {
       beginTimedGame(item);
-      setBalRound(generateBalanceRound());
-      setBalPicked([]);
+      setBalStageIdx(0);
+      setBalRound(generateBalanceRound(0));
       setBalWrong(false);
       setSheet({ kind: 'balance', item });
       return;
@@ -644,7 +851,8 @@ export default function JourneyScreen() {
     }
     if (item.type === 'maze') {
       beginTimedGame(item);
-      beginMazeRound();
+      setMazeStageIdx(0);
+      beginMazeRound(0);
       setSheet({ kind: 'maze', item });
       return;
     }
@@ -777,16 +985,22 @@ export default function JourneyScreen() {
     const [r, c] = mazePos;
     const nr = r + dr;
     const nc = c + dc;
-    if (nr < 0 || nc < 0 || nr >= MAZE_SIZE || nc >= MAZE_SIZE) return;
+    if (nr < 0 || nc < 0 || nr >= mazeStage.rows || nc >= mazeStage.cols) return;
     if (!mazePath.has(`${nr},${nc}`)) {
       mazeFail();
       return;
     }
     setMazePos([nr, nc]);
-    if (nr === MAZE_END[0] && nc === MAZE_END[1]) {
+    if (nr === mazeStage.rows - 1 && nc === mazeStage.cols - 1) {
       if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
       setTimeout(() => {
-        finishTimedGame(item);
+        const nextStage = mazeStageIdx + 1;
+        if (nextStage >= MAZE_STAGES.length) {
+          finishTimedGame(item);
+        } else {
+          setMazeStageIdx(nextStage);
+          beginMazeRound(nextStage);
+        }
       }, 300);
     }
   };
@@ -833,25 +1047,24 @@ export default function JourneyScreen() {
     }
   };
 
-  const tapGem = (item: LockItem, gem: GemId) => {
-    if (balPicked.includes(gem)) {
-      setBalPicked(balPicked.filter((g) => g !== gem));
-      return;
-    }
-    const next = [...balPicked, gem];
-    setBalPicked(next);
-    if (next.length === GEMS.length) {
-      if (balRound && next.every((g, i) => g === balRound.order[i])) {
-        setTimeout(() => {
+  const tapBalanceItem = (item: LockItem, idx: number) => {
+    if (!balRound) return;
+    if (idx === balRound.fakeIndex) {
+      setTimeout(() => {
+        const nextStage = balStageIdx + 1;
+        if (nextStage >= BALANCE_STAGES.length) {
           finishTimedGame(item);
-        }, 400);
-      } else {
-        setBalWrong(true);
-        setTimeout(() => {
-          setBalWrong(false);
-          setBalPicked([]);
-        }, 500);
-      }
+        } else {
+          setBalStageIdx(nextStage);
+          setBalRound(generateBalanceRound(nextStage));
+        }
+      }, 400);
+    } else {
+      setBalWrong(true);
+      setTimeout(() => {
+        setBalWrong(false);
+        setBalRound(generateBalanceRound(balStageIdx));
+      }, 500);
     }
   };
 
@@ -1176,9 +1389,10 @@ export default function JourneyScreen() {
               <>
                 <span className="pill">{intro.pill}</span>
                 <h2 style={{ margin: '6px 0 10px' }}>{intro.title}</h2>
-                <p className="muted" style={{ marginBottom: 24, lineHeight: 1.7 }}>
+                <p className="muted" style={{ marginBottom: 12, lineHeight: 1.7 }}>
                   {intro.desc}
                 </p>
+                <GameDemo type={sheet.item.type} />
                 <button className="btn" onClick={() => startGame(sheet.item)}>
                   게임 시작
                 </button>
@@ -1358,52 +1572,39 @@ export default function JourneyScreen() {
         {sheet?.kind === 'balance' && balRound && (
           <>
             <div className={styles.timerRow}>
-              <span className="pill">⚖️ 저울 무게 추론</span>
+              <span className="pill">
+                ⚖️ 가짜 찾기 · {balStageIdx + 1}/{BALANCE_STAGES.length}단계 ({balRound.itemCount}개)
+              </span>
               <span className={styles.timerBadge}>
                 ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
               </span>
             </div>
-            <h2 style={{ margin: '6px 0 4px' }}>무거운 순서대로 탭해 나열하세요</h2>
+            <h2 style={{ margin: '6px 0 4px' }}>딱 하나, 무게가 다른 가짜를 찾으세요</h2>
             <p className="muted" style={{ marginBottom: 14 }}>
-              저울 힌트를 보고 1위(가장 무거움)부터 4위까지 순서대로 골라보세요.
+              아래는 이미 진행된 저울질 결과예요. 결과를 보고 어떤 것이 가짜(더 무거운 것)인지 아래에서 골라보세요.
             </p>
-            {balRound.hints.map((h, i) => (
-              <div key={i} className={styles.balHintRow}>
-                <div className={styles.balHintGem}>
-                  <GemIcon gem={h.heavy} size={26} />
-                  <span>{GEM_LABELS[h.heavy]}</span>
-                </div>
-                <span className={styles.cbOp}>{'>'}</span>
-                <div className={styles.balHintGem}>
-                  <GemIcon gem={h.light} size={26} />
-                  <span>{GEM_LABELS[h.light]}</span>
-                </div>
-              </div>
-            ))}
-            <div className={`${styles.balSlots} ${balWrong ? styles.balWrong : ''}`}>
-              {Array.from({ length: GEMS.length }).map((_, i) => (
-                <div key={i} className={styles.balSlot}>
-                  {balPicked[i] !== undefined ? (
-                    <>
-                      <GemIcon gem={balPicked[i]} size={24} />
-                      <span>{GEM_LABELS[balPicked[i]]}</span>
-                    </>
-                  ) : (
-                    <span className={styles.balSlotNum}>{i + 1}</span>
-                  )}
+            <div className={styles.balWeighList}>
+              {balRound.weighings.map((w, i) => (
+                <div key={i} className={styles.balWeighRow}>
+                  <span className={styles.balWeighNum}>{i + 1}차</span>
+                  <div className={styles.balPan}>
+                    {w.left.map((idx) => (
+                      <ItemChip key={idx} idx={idx} size={24} />
+                    ))}
+                  </div>
+                  <span className={styles.balTilt}>{w.result === 'left' ? '◀' : w.result === 'right' ? '▶' : '='}</span>
+                  <div className={styles.balPan}>
+                    {w.right.map((idx) => (
+                      <ItemChip key={idx} idx={idx} size={24} />
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-            <div className={styles.balGemRow}>
-              {GEMS.map((gem) => (
-                <button
-                  key={gem}
-                  className={`${styles.balGemBtn} ${balPicked.includes(gem) ? styles.balGemBtnUsed : ''}`}
-                  disabled={balPicked.includes(gem)}
-                  onClick={() => tapGem(sheet.item, gem)}
-                >
-                  <GemIcon gem={gem} />
-                  <span>{GEM_LABELS[gem]}</span>
+            <div className={`${styles.balItemGrid} ${balWrong ? styles.balWrong : ''}`}>
+              {Array.from({ length: balRound.itemCount }).map((_, idx) => (
+                <button key={idx} className={styles.balItemBtn} onClick={() => tapBalanceItem(sheet.item, idx)}>
+                  <ItemChip idx={idx} size={36} />
                 </button>
               ))}
             </div>
@@ -1518,7 +1719,9 @@ export default function JourneyScreen() {
         {sheet?.kind === 'maze' && (
           <>
             <div className={styles.timerRow}>
-              <span className="pill">🧭 기억의 미로</span>
+              <span className="pill">
+                🧭 기억의 미로 · {mazeStageIdx + 1}/{MAZE_STAGES.length}단계 ({mazeStage.rows}x{mazeStage.cols})
+              </span>
               <span className={styles.timerBadge}>
                 ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
               </span>
@@ -1534,19 +1737,19 @@ export default function JourneyScreen() {
               <>
                 <h2 style={{ margin: '6px 0 4px' }}>출구까지 길을 찾아보세요</h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
-                  화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 처음부터 다시예요.
+                  화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 이 단계부터 다시예요.
                 </p>
               </>
             )}
             <div
               className={`${styles.mazeGrid} ${mazeWrong ? styles.mazeWrongFx : ''}`}
-              style={{ gridTemplateColumns: `repeat(${MAZE_SIZE}, 1fr)` }}
+              style={{ gridTemplateColumns: `repeat(${mazeStage.cols}, 1fr)` }}
             >
-              {Array.from({ length: MAZE_SIZE }).map((_, r) =>
-                Array.from({ length: MAZE_SIZE }).map((_, c) => {
+              {Array.from({ length: mazeStage.rows }).map((_, r) =>
+                Array.from({ length: mazeStage.cols }).map((_, c) => {
                   const key = `${r},${c}`;
                   const isPlayer = mazePos[0] === r && mazePos[1] === c;
-                  const isEnd = MAZE_END[0] === r && MAZE_END[1] === c;
+                  const isEnd = mazeStage.rows - 1 === r && mazeStage.cols - 1 === c;
                   const showSafe = mazePhase === 'reveal' && mazePath.has(key);
                   return (
                     <div key={key} className={`${styles.mazeCell} ${showSafe ? styles.mazeSafe : ''}`}>

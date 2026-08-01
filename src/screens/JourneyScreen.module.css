@@ -714,75 +714,73 @@
   margin-left: auto;
 }
 
-/* ---------- 저울 무게 추론 ---------- */
-.balHintRow {
-  display: flex;
+/* ---------- 가짜 찾기(저울) ---------- */
+.balItemChip {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 8px 0;
+  border-radius: 8px;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
 }
-.balHintGem {
+.balWeighList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.balWeighRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
 }
-.balSlots {
+.balWeighNum {
+  font-size: 11px;
+  color: var(--mute);
+  font-weight: 700;
+  width: 26px;
+  flex-shrink: 0;
+}
+.balPan {
+  flex: 1;
   display: flex;
-  gap: 8px;
-  margin: 14px 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+}
+.balTilt {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 16px;
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+.balItemGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 .balWrong {
   animation: shake 0.4s;
 }
-.balSlot {
-  flex: 1;
+.balItemBtn {
   aspect-ratio: 1;
-  border-radius: 12px;
-  background: var(--ink-2);
-  border: 1px dashed var(--line);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-}
-.balSlotNum {
-  color: var(--mute);
-  font-size: 18px;
-  font-family: 'Bebas Neue', sans-serif;
-}
-.balGemRow {
-  display: flex;
-  gap: 8px;
-}
-.balGemBtn {
-  flex: 1;
-  padding: 12px 0;
   border-radius: 12px;
   background: var(--ink-3);
   border: 1px solid var(--line);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
+  justify-content: center;
   cursor: pointer;
 }
-.balGemBtn:active {
+.balItemBtn:active {
   transform: scale(0.95);
-}
-.balGemBtnUsed {
-  opacity: 0.25;
-  pointer-events: none;
 }
 
 /* ---------- 순발력 타격 ---------- */
@@ -847,4 +845,467 @@
 }
 .flashWrong {
   animation: shake 0.4s;
+}
+
+/* ---------- 인트로 동작 미리보기 ---------- */
+.introDemo {
+  margin: 4px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.demoMzGrid {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: repeat(3, 36px);
+  gap: 8px;
+}
+.demoMzCell {
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.demoMzSafe {
+  animation: demoMzSafe 6s steps(1) infinite;
+}
+@keyframes demoMzSafe {
+  0%, 16% { background: rgba(147, 210, 164, 0.35); border-color: var(--ok); }
+  16.5%, 100% { background: var(--ink-3); border-color: var(--line); }
+}
+.demoMzFlag {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.demoMzDot {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  animation: demoMzMove 6s ease-in-out infinite;
+}
+@keyframes demoMzMove {
+  0%, 30% { transform: translate(0, 0); }
+  38%, 46% { transform: translate(0, 44px); }
+  54%, 62% { transform: translate(44px, 44px); }
+  70%, 78% { transform: translate(88px, 44px); }
+  86%, 100% { transform: translate(88px, 88px); }
+}
+
+.demoLoGrid {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: repeat(3, 36px);
+  gap: 8px;
+}
+.demoLoCell {
+  border-radius: 6px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+}
+.demoLoOn {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(236, 147, 163, 0.6);
+}
+/* "반전"이 핵심이라, 꺼짐→켜짐과 켜짐→꺼짐을 한 화면에서 동시에 보여준다. */
+.demoLoFlipOn {
+  animation: demoLoFlipOn 4s steps(1) infinite;
+}
+.demoLoFlipOff {
+  animation: demoLoFlipOff 4s steps(1) infinite;
+}
+@keyframes demoLoFlipOn {
+  0%, 29% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+  30%, 92% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+  93%, 100% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+}
+@keyframes demoLoFlipOff {
+  0%, 29% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+  30%, 92% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+  93%, 100% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+}
+/* 탭 위치 표시는 box-shadow가 위 반전 애니메이션과 충돌하므로 outline으로 그린다. */
+.demoLoTap {
+  animation: demoLoFlipOff 4s steps(1) infinite, demoLoTapFx 4s ease-out infinite;
+}
+@keyframes demoLoTapFx {
+  0%, 18% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
+  23% { outline: 2px solid rgba(236, 147, 163, 0.9); outline-offset: 6px; }
+  32%, 100% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 10px; }
+}
+
+/* 실제 판과 똑같이 3x3 칸 + 오른쪽/아래 목표합 형태로 축소해서 보여준다. */
+.demoCmGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  grid-template-rows: repeat(4, 28px);
+  gap: 5px;
+}
+.demoCmCell {
+  border-radius: 7px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.demoCmBlank {
+  position: relative;
+  border-color: var(--accent);
+  background: rgba(236, 147, 163, 0.14);
+}
+.demoCmQ {
+  position: absolute;
+  color: var(--mute);
+  animation: demoCmFadeOut 4s steps(1) infinite;
+}
+.demoCmFill {
+  position: absolute;
+  color: var(--accent-soft);
+  animation: demoCmFadeIn 4s steps(1) infinite;
+}
+@keyframes demoCmFadeOut {
+  0%, 44% { opacity: 1; }
+  45%, 92% { opacity: 0; }
+  93%, 100% { opacity: 1; }
+}
+@keyframes demoCmFadeIn {
+  0%, 44% { opacity: 0; }
+  45%, 92% { opacity: 1; }
+  93%, 100% { opacity: 0; }
+}
+.demoCmTarget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.demoCmTargetHit {
+  animation: demoCmTargetFx 4s steps(1) infinite;
+}
+@keyframes demoCmTargetFx {
+  0%, 44% { color: var(--accent); }
+  45%, 92% { color: var(--ok); }
+  93%, 100% { color: var(--accent); }
+}
+.demoCmPad {
+  display: flex;
+  gap: 5px;
+}
+.demoCmKey {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mute);
+}
+.demoCmKeyTap {
+  animation: demoCmKeyFx 4s steps(1) infinite;
+}
+@keyframes demoCmKeyFx {
+  0%, 24% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+  25%, 44% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  45%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+}
+
+/* 도형의 숫자는 끝까지 밝히지 않는다 — 실제 게임처럼 힌트 두 줄에서 최종식 답만 나온다. */
+.demoCbList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 216px;
+}
+.demoCbRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.demoCbFinal {
+  border-color: rgba(236, 147, 163, 0.4);
+  background: rgba(236, 147, 163, 0.08);
+}
+.demoCbOp {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mute);
+}
+.demoCbNum {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-soft);
+  margin-left: auto;
+}
+.demoCbAnsWrap {
+  position: relative;
+  margin-left: auto;
+  min-width: 20px;
+  height: 18px;
+}
+.demoCbQ {
+  position: absolute;
+  right: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-soft);
+  animation: demoCbFadeOut 5s steps(1) infinite;
+}
+.demoCbAns {
+  position: absolute;
+  right: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ok);
+  animation: demoCbFadeIn 5s steps(1) infinite;
+}
+@keyframes demoCbFadeOut {
+  0%, 57% { opacity: 1; }
+  58%, 92% { opacity: 0; }
+  93%, 100% { opacity: 1; }
+}
+@keyframes demoCbFadeIn {
+  0%, 57% { opacity: 0; }
+  58%, 92% { opacity: 1; }
+  93%, 100% { opacity: 0; }
+}
+
+.demoMemRow {
+  display: flex;
+  gap: 8px;
+}
+.demoMemChip {
+  width: 44px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mute);
+  animation: demoMemFlash 5s steps(1) infinite, demoMemTap 5s steps(1) infinite;
+}
+.demoMemChip1 {
+  animation-delay: 0s, 0.5s;
+}
+.demoMemChip2 {
+  animation-delay: 0s, 1s;
+}
+@keyframes demoMemFlash {
+  0%, 18% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  19%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+}
+@keyframes demoMemTap {
+  0%, 39% { box-shadow: none; }
+  40%, 48% { box-shadow: 0 0 0 2px var(--accent-soft); }
+  49%, 100% { box-shadow: none; }
+}
+
+.demoRxGrid {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: repeat(3, 36px);
+  gap: 8px;
+}
+.demoRxCell {
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.demoRxHit1 {
+  animation: demoRxFx 3s steps(1) infinite;
+}
+.demoRxHit2 {
+  animation: demoRxFx 3s steps(1) infinite 1s;
+}
+.demoRxHit3 {
+  animation: demoRxFx 3s steps(1) infinite 2s;
+}
+@keyframes demoRxFx {
+  0%, 4% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+  5%, 22% { background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(236, 147, 163, 0.3); }
+  23%, 100% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+}
+
+/* 기호(◀▶) 대신 실제로 기우는 저울을 그려서 "무거운 쪽이 내려간다"를 눈으로 보여준다. */
+.demoScale {
+  position: relative;
+  width: 152px;
+  height: 62px;
+}
+.demoScaleBeam {
+  position: absolute;
+  top: 6px;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  transform-origin: 50% 50%;
+  animation: demoScaleTilt 4s ease-in-out infinite;
+}
+.demoScalePan {
+  position: absolute;
+  top: 12px;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  border-radius: 8px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: demoScaleCounter 4s ease-in-out infinite;
+}
+/* 접시가 저울대에 매달려 있다는 걸 알려주는 짧은 줄 */
+.demoScalePan::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 1px;
+  height: 10px;
+  background: var(--line);
+}
+.demoScalePanL {
+  left: 0;
+}
+.demoScalePanR {
+  left: 100%;
+}
+.demoScalePivot {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  margin-left: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 26px solid var(--line);
+}
+@keyframes demoScaleTilt {
+  0%, 22% { transform: rotate(0deg); }
+  40%, 92% { transform: rotate(-9deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes demoScaleCounter {
+  0%, 22% { transform: rotate(0deg); }
+  40%, 92% { transform: rotate(9deg); }
+  100% { transform: rotate(0deg); }
+}
+.demoBalItems {
+  display: flex;
+  gap: 8px;
+}
+.demoBalItem {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.demoBalFound {
+  animation: demoBalFoundFx 4s ease-out infinite;
+}
+@keyframes demoBalFoundFx {
+  0%, 44% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
+  56%, 92% { outline: 2px solid rgba(236, 147, 163, 0.9); outline-offset: 3px; }
+  93%, 100% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
+}
+
+.demoComboRow {
+  display: flex;
+  gap: 8px;
+}
+.demoComboCard {
+  width: 40px;
+  height: 52px;
+  border-radius: 8px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--accent-blue);
+  animation: demoComboFx 4s steps(1) infinite;
+}
+.demoComboCard:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.demoComboCard:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes demoComboFx {
+  0%, 29% { border-color: var(--line); box-shadow: none; }
+  30%, 60% { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(147, 210, 164, 0.3); }
+  61%, 100% { border-color: var(--line); box-shadow: none; }
+}
+
+.demoEqRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.demoEqTok {
+  opacity: 0;
+  color: var(--text);
+  animation: demoEqReveal 5s steps(1) infinite;
+}
+@keyframes demoEqReveal {
+  0%, 4% { opacity: 0; }
+  5%, 100% { opacity: 1; }
+}
+.demoEqEq {
+  color: var(--ok);
+  margin-left: 6px;
+  opacity: 0;
+  animation: demoEqResult 5s steps(1) infinite;
+}
+@keyframes demoEqResult {
+  0%, 79% { opacity: 0; }
+  80%, 100% { opacity: 1; }
 }
