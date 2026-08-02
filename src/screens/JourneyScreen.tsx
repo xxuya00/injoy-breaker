@@ -262,9 +262,17 @@ const COMBO_DEMO_SETS: { cards: ComboCard[]; label: string }[] = [
 ];
 const MAZE_DEMO_SAFE = new Set([0, 3, 4, 5, 8]);
 const RX_DEMO_HIT: Record<number, string> = { 4: styles.demoRxHit1, 1: styles.demoRxHit2, 7: styles.demoRxHit3 };
-// 가운데를 누르면 십자 다섯 칸이 "반전"된다는 게 핵심이라, 켜진 칸과 꺼진 칸을 섞어 둔다.
-const LO_DEMO_ON = new Set([0, 3, 4, 6, 7]);
-const LO_DEMO_CROSS = new Set([1, 3, 4, 5, 7]);
+// 두 번 탭해서 실제로 전부 꺼지는 것(=클리어)까지 보여준다.
+// 점등 {0,4,5,7} → 가운데(4) 탭 → {0,1,3} → 좌상단(0) 탭 → 전부 꺼짐.
+// 칸마다 "켜짐/꺼짐"이 세 단계로 어떻게 바뀌는지에 따라 A~C 세 패턴으로 나뉜다.
+const LO_DEMO_CELL: Record<number, 'demoLoTap2' | 'demoLoB' | 'demoLoTap1' | 'demoLoC'> = {
+  0: 'demoLoTap2', // 켜짐 → 켜짐 → 꺼짐 (두 번째 탭 위치)
+  1: 'demoLoB', // 꺼짐 → 켜짐 → 꺼짐
+  3: 'demoLoB',
+  4: 'demoLoTap1', // 켜짐 → 꺼짐 → 꺼짐 (첫 번째 탭 위치)
+  5: 'demoLoC',
+  7: 'demoLoC',
+};
 // 1~9를 한 번씩 쓴 배치. 오른쪽엔 행 합, 아래엔 열 합이 붙는 실제 판과 같은 모양.
 const CM_DEMO_CELLS = [1, 5, 9, 8, 2, 4, 3, 7, 6];
 const CM_DEMO_BLANK = 1;
@@ -289,17 +297,11 @@ function GameDemo({ type }: { type: LockType }) {
       return (
         <div className={styles.introDemo}>
           <div className={styles.demoLoGrid}>
-            {Array.from({ length: 9 }).map((_, i) => {
-              const on = LO_DEMO_ON.has(i);
-              const flip = LO_DEMO_CROSS.has(i) ? (on ? styles.demoLoFlipOff : styles.demoLoFlipOn) : '';
-              return (
-                <div
-                  key={i}
-                  className={`${styles.demoLoCell} ${on ? styles.demoLoOn : ''} ${i === 4 ? styles.demoLoTap : flip}`}
-                />
-              );
-            })}
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className={`${styles.demoLoCell} ${LO_DEMO_CELL[i] ? styles[LO_DEMO_CELL[i]] : ''}`} />
+            ))}
           </div>
+          <span className={styles.demoLoTag}>전부 꺼짐 · 클리어</span>
         </div>
       );
     case 'crossmath':
@@ -1628,22 +1630,33 @@ export default function JourneyScreen() {
               아래는 이미 진행된 저울질 결과예요. 결과를 보고 어떤 것이 가짜(더 무거운 것)인지 아래에서 골라보세요.
             </p>
             <div className={styles.balWeighList}>
-              {balRound.weighings.map((w, i) => (
-                <div key={i} className={styles.balWeighRow}>
-                  <span className={styles.balWeighNum}>{i + 1}차</span>
-                  <div className={styles.balPan}>
-                    {w.left.map((idx) => (
-                      <ItemChip key={idx} idx={idx} size={24} />
-                    ))}
+              {balRound.weighings.map((w, i) => {
+                // 기운 쪽이 더 무겁다. 저울대는 기울이고 접시는 반대로 돌려 수평을 유지한다.
+                const beamTilt =
+                  w.result === 'left' ? styles.balBeamLeft : w.result === 'right' ? styles.balBeamRight : '';
+                const panTilt =
+                  w.result === 'left' ? styles.balPanLeft : w.result === 'right' ? styles.balPanRight : '';
+                return (
+                  <div key={i} className={styles.balWeighRow}>
+                    <span className={styles.balWeighNum}>{i + 1}차</span>
+                    <div className={styles.balScale}>
+                      <div className={styles.balScalePivot} />
+                      <div className={`${styles.balScaleBeam} ${beamTilt}`}>
+                        <div className={`${styles.balScalePan} ${styles.balScalePanL} ${panTilt}`}>
+                          {w.left.map((idx) => (
+                            <ItemChip key={idx} idx={idx} size={20} />
+                          ))}
+                        </div>
+                        <div className={`${styles.balScalePan} ${styles.balScalePanR} ${panTilt}`}>
+                          {w.right.map((idx) => (
+                            <ItemChip key={idx} idx={idx} size={20} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className={styles.balTilt}>{w.result === 'left' ? '◀' : w.result === 'right' ? '▶' : '='}</span>
-                  <div className={styles.balPan}>
-                    {w.right.map((idx) => (
-                      <ItemChip key={idx} idx={idx} size={24} />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className={`${styles.balItemGrid} ${balWrong ? styles.balWrong : ''}`}>
               {Array.from({ length: balRound.itemCount }).map((_, idx) => (

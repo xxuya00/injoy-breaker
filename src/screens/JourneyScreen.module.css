@@ -733,8 +733,8 @@
 .balWeighRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px 10px 10px;
   border-radius: 12px;
   background: var(--ink-2);
   border: 1px solid var(--line);
@@ -746,20 +746,79 @@
   width: 26px;
   flex-shrink: 0;
 }
-.balPan {
+/* 부등호 대신 실제 저울 모양으로 보여준다. 기운 쪽이 더 무거운 쪽. */
+/* 저울대가 길어지면 같은 각도라도 접시가 위아래로 크게 튀어 행을 벗어난다. 폭을 묶어둔다. */
+.balScale {
+  position: relative;
   flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-height: 24px;
+  max-width: 200px;
+  margin: 0 auto;
+  height: 72px;
 }
-.balTilt {
-  width: 20px;
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 16px;
-  color: var(--accent-soft);
-  font-weight: 700;
+.balScaleBeam {
+  position: absolute;
+  top: 10px;
+  left: 34px;
+  right: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  transform-origin: 50% 50%;
+}
+.balBeamLeft {
+  transform: rotate(-9deg);
+}
+.balBeamRight {
+  transform: rotate(9deg);
+}
+.balScalePan {
+  position: absolute;
+  top: 14px;
+  width: 60px;
+  margin-left: -30px;
+  min-height: 30px;
+  padding: 4px;
+  border-radius: 9px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+/* 접시가 저울대에 매달려 있다는 걸 알려주는 짧은 줄 */
+.balScalePan::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 1px;
+  height: 10px;
+  background: var(--line);
+}
+.balScalePanL {
+  left: 0;
+}
+.balScalePanR {
+  left: 100%;
+}
+/* 저울대가 기울어도 접시와 그 안의 물건은 수평을 유지한다. */
+.balPanLeft {
+  transform: rotate(9deg);
+}
+.balPanRight {
+  transform: rotate(-9deg);
+}
+.balScalePivot {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  margin-left: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 30px solid var(--line);
 }
 .balItemGrid {
   display: grid;
@@ -920,37 +979,62 @@
   border-radius: 6px;
   background: var(--ink-3);
   border: 1px solid var(--line);
+  outline: 2px solid transparent;
 }
-.demoLoOn {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 10px rgba(236, 147, 163, 0.6);
+/* 두 번 탭해서 전부 꺼지기까지가 한 바퀴(6초).
+   ~21% 첫 탭 전 / 22~51% 첫 탭 후 / 52~92% 두 번째 탭 후(전부 꺼짐) / 93%~ 처음으로 되감기 */
+.demoLoA {
+  animation: demoLoA 6s steps(1) infinite;
 }
-/* "반전"이 핵심이라, 꺼짐→켜짐과 켜짐→꺼짐을 한 화면에서 동시에 보여준다. */
-.demoLoFlipOn {
-  animation: demoLoFlipOn 4s steps(1) infinite;
+.demoLoB {
+  animation: demoLoB 6s steps(1) infinite;
 }
-.demoLoFlipOff {
-  animation: demoLoFlipOff 4s steps(1) infinite;
+.demoLoC {
+  animation: demoLoC 6s steps(1) infinite;
 }
-@keyframes demoLoFlipOn {
-  0%, 29% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
-  30%, 92% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
-  93%, 100% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
-}
-@keyframes demoLoFlipOff {
-  0%, 29% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
-  30%, 92% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+@keyframes demoLoA {
+  0%, 51% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+  52%, 92% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
   93%, 100% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
 }
-/* 탭 위치 표시는 box-shadow가 위 반전 애니메이션과 충돌하므로 outline으로 그린다. */
-.demoLoTap {
-  animation: demoLoFlipOff 4s steps(1) infinite, demoLoTapFx 4s ease-out infinite;
+@keyframes demoLoB {
+  0%, 21% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+  22%, 51% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+  52%, 100% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
 }
-@keyframes demoLoTapFx {
-  0%, 18% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
-  23% { outline: 2px solid rgba(236, 147, 163, 0.9); outline-offset: 6px; }
-  32%, 100% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 10px; }
+@keyframes demoLoC {
+  0%, 21% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+  22%, 92% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
+  93%, 100% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
+}
+/* 탭 위치 표시는 box-shadow가 위 반전 애니메이션과 충돌하므로 outline으로 그린다.
+   한 요소에 animation 단축속성을 두 번 쓸 수 없어, 탭 칸은 반전+물결을 한 줄에 묶는다. */
+.demoLoTap1 {
+  animation: demoLoC 6s steps(1) infinite, demoLoTapFx1 6s ease-out infinite;
+}
+.demoLoTap2 {
+  animation: demoLoA 6s steps(1) infinite, demoLoTapFx2 6s ease-out infinite;
+}
+@keyframes demoLoTapFx1 {
+  0%, 13% { outline-color: rgba(236, 147, 163, 0); outline-offset: 0; }
+  17% { outline-color: rgba(236, 147, 163, 0.9); outline-offset: 6px; }
+  24%, 100% { outline-color: rgba(236, 147, 163, 0); outline-offset: 10px; }
+}
+@keyframes demoLoTapFx2 {
+  0%, 43% { outline-color: rgba(236, 147, 163, 0); outline-offset: 0; }
+  47% { outline-color: rgba(236, 147, 163, 0.9); outline-offset: 6px; }
+  54%, 100% { outline-color: rgba(236, 147, 163, 0); outline-offset: 10px; }
+}
+.demoLoTag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ok);
+  animation: demoLoTag 6s steps(1) infinite;
+}
+@keyframes demoLoTag {
+  0%, 54% { opacity: 0; }
+  55%, 90% { opacity: 1; }
+  91%, 100% { opacity: 0; }
 }
 
 /* 실제 판과 똑같이 3x3 칸 + 오른쪽/아래 목표합 형태로 축소해서 보여준다. */
