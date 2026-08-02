@@ -389,8 +389,7 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
         <div className={styles.ttResultTag} style={{ position: 'relative' }}>
           02 · 나의 묵상 유형
         </div>
-        <h2 style={{ position: 'relative', marginBottom: 10 }}>{medT.name}</h2>
-        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 2 }}>{medT.desc}</p>
+        <p style={{ position: 'relative', color: '#f5ede0', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{medT.desc}</p>
         <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {medSocialNote}</p>
         <div className={styles.ttStatPill} style={{ position: 'relative' }}>
           하루 평균 묵상 시간 · {med.time}
@@ -401,8 +400,7 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
         <div className={styles.ttResultTag} style={{ position: 'relative' }}>
           03 · 나의 기도 유형
         </div>
-        <h2 style={{ position: 'relative', marginBottom: 10 }}>{prayT.name}</h2>
-        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 2 }}>{prayT.desc}</p>
+        <p style={{ position: 'relative', color: '#f5ede0', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{prayT.desc}</p>
         <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {prayFocusNote}</p>
         <div className={styles.ttStatPill} style={{ position: 'relative' }}>
           하루 평균 기도 시간 · {pray.time}
