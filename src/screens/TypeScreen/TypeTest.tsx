@@ -23,18 +23,6 @@ import { saveTypeResult } from '../../lib/gas';
 import BackLink from '../../components/BackLink';
 import styles from './TypeTest.module.css';
 
-const COMBO_ICONS = import.meta.glob('../../assets/idol-icons/*.svg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}) as Record<string, string>;
-
-function comboIconUrl(primary: IdolKey, secondary: IdolKey): string | null {
-  const key = `${primary}-${secondary}`;
-  const path = Object.keys(COMBO_ICONS).find((p) => p.endsWith(`/${key}.svg`));
-  return path ? COMBO_ICONS[path] : null;
-}
-
 function shuffledIndices(length: number): number[] {
   const arr = Array.from({ length }, (_, i) => i);
   for (let i = arr.length - 1; i > 0; i--) {
@@ -208,7 +196,7 @@ export default function TypeTest() {
             <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
               {current.section}
             </div>
-            <h2 style={{ marginBottom: 8 }}>{current.text}</h2>
+            <h2 className={styles.qHeading}>{current.text}</h2>
             <div className={styles.scaleTrack}>
               <div className={styles.scaleLine} />
               {LIKERT_LABELS.map((label, i) => {
@@ -286,7 +274,7 @@ export default function TypeTest() {
             <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
               {current.section}
             </div>
-            <h2 style={{ marginBottom: 16 }}>{current.text}</h2>
+            <h2 className={styles.qHeading} style={{ marginBottom: 16 }}>{current.text}</h2>
             {current.options.map((o, i) => (
               <button
                 key={i}
@@ -317,7 +305,6 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
   const pray = computePray(answers);
   const pMeta = IDOL_META[idol.primary];
   const combo = IDOL_COMBOS[idol.primary][idol.secondary]!;
-  const iconUrl = comboIconUrl(idol.primary, idol.secondary);
   const medT = MED_TYPES[med.type];
   const prayT = PRAY_TYPES[pray.type];
   const savedRef = useRef(false);
@@ -354,18 +341,18 @@ function ResultView({ answers, onRestart }: { answers: Record<string, number>; o
         <div className={styles.ttResultTag} style={{ position: 'relative' }}>
           01 · 나의 우상 유형
         </div>
-        <div className={styles.comboIconWrap} style={{ position: 'relative' }}>
-          {iconUrl ? (
-            <img src={iconUrl} alt="" className={styles.comboIcon} />
-          ) : (
-            <svg className={styles.comboIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="2.6" />
-            </svg>
-          )}
-        </div>
         <h2 style={{ position: 'relative', marginBottom: 10 }}>{combo.name}</h2>
         <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>
+        <div className={styles.rankBadges}>
+          <div className={`${styles.rankBadge} ${styles.rankBadgePrimary}`}>
+            <span className={styles.rankBadgeRank}>1위</span>
+            <span className={styles.rankBadgeLabel}>{IDOL_META[idol.primary].label}</span>
+          </div>
+          <div className={styles.rankBadge}>
+            <span className={styles.rankBadgeRank}>2위</span>
+            <span className={styles.rankBadgeLabel}>{IDOL_META[idol.secondary].label}</span>
+          </div>
+        </div>
         <div className={styles.ttBars} style={{ position: 'relative' }}>
           {IDOL_ORDER.map((c) => {
             const meta = IDOL_META[c];
