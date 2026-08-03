@@ -1,0 +1,38 @@
+.outer {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+}
+
+/* 최대 배율까지 키워도 높이가 남는 화면은, 남는 만큼을 위아래로 나눠 가운데에 놓는다. */
+.center {
+  justify-content: center;
+}
+
+/* 최소 배율로도 담기지 않는 화면에서만 열리는 비상용 스크롤. */
+.scrolls {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.scrolls::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* 축소된 뒤의 실제 높이. inner는 축소 전 크기로 자리를 잡으므로,
+   바깥 레이아웃(가운데 정렬·스크롤 범위)은 이 상자의 높이를 기준으로 한다. */
+.sizer {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* 줄여 담을 때 폭도 같은 비율로 넓혀두면, 축소 후 폭이 화면에 딱 맞는다.
+   (글씨만 작아지고 여백이 생기지 않는다) */
+.inner {
+  width: calc(100% / var(--fit-scale, 1));
+  transform: scale(var(--fit-scale, 1));
+  transform-origin: top left;
+}

@@ -64,12 +64,14 @@ export default function NoticeScreen() {
       {notices.length === 0 ? (
         <p className={styles.empty}>아직 공지사항이 없어요.</p>
       ) : (
-        notices.map((n) => (
-          <div className={styles.item} key={n.id}>
-            <div className={styles.itemTitle}>{n.title}</div>
-            <div className={styles.itemBody}>{n.body}</div>
-          </div>
-        ))
+        <div className={styles.list}>
+          {notices.map((n) => (
+            <div className={styles.item} key={n.id}>
+              <div className={styles.itemTitle}>{n.title}</div>
+              <div className={styles.itemBody}>{n.body}</div>
+            </div>
+          ))}
+        </div>
       )}
 
       <hr className={styles.divider} />

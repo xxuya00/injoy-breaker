@@ -52,6 +52,8 @@ export interface AppState {
   id: string | null;
   nick: string;
   nickname: string;
+  // 등록할 때 고른 내 조. 기도제목 화면이 이 조로 바로 열린다.
+  group: string;
   day: Day;
   opened: Record<string, boolean>;
   screen: ScreenId;

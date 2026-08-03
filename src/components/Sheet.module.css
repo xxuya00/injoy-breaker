@@ -10,6 +10,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  /* 닫힌 시트는 translateY(100%)로 화면 아래에 대기한다. 이걸 잘라내지 않으면
+     그만큼 앱 껍데기에 스크롤 여백이 생겨, 입력칸에 포커스가 갈 때 화면이 통째로 밀린다. */
+  overflow: hidden;
 }
 .sheetBgShow {
   opacity: 1;
@@ -45,14 +48,30 @@
 .sheetBgFull {
   align-items: stretch;
 }
+/* 전체화면 시트는 높이가 딱 정해져 있고, 그 안의 FitBox가 남는 높이를 다 쓴다.
+   시트 자체는 절대 스크롤하지 않는다. */
 .sheetBgFull .sheet {
-  max-width: none;
   width: 100%;
   height: 100%;
   max-height: none;
   border-radius: 0;
   border-top: 0;
-  padding-top: calc(20px + env(safe-area-inset-top));
+  padding: calc(20px + env(safe-area-inset-top)) 22px calc(20px + env(safe-area-inset-bottom));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.sheetBgFull .sheet > :last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 닫기 버튼(34px) 바로 왼쪽 자리. 여기 달리는 메뉴가 시트 내용 위로 뜨도록 z-index를 준다. */
+.actionSlot {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 60px;
+  z-index: 5;
 }
 
 .closeBtn {

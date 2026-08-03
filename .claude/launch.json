@@ -4,8 +4,17 @@
     {
       "name": "breaker-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5180"],
-      "port": 5180
+      "runtimeArgs": ["run", "dev"],
+      "port": 5180,
+      "autoPort": true
+    },
+    {
+      "//": "구글 시트·Firestore를 끈 채로 띄운다. 레이아웃을 확인하려고 등록/진행하는 동안 실제 명단에 시험용 행이 쌓이지 않는다.",
+      "name": "breaker-dev-offline",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "VITE_GAS_URL= VITE_FIREBASE_API_KEY= VITE_FIREBASE_PROJECT_ID= npm run dev"],
+      "port": 5181,
+      "autoPort": true
     }
   ]
 }

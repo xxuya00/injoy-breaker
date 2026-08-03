@@ -1,13 +1,15 @@
 import type { TabId } from '../types';
 import styles from './TabBar.module.css';
 
+// 여정이 이 여정 앱의 중심이므로 5칸 중 정가운데(3번째)에 둔다.
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   {
-    id: 'journey',
-    label: '여정',
+    id: 'schedule',
+    label: '일정',
     icon: (
       <svg viewBox="0 0 24 24">
-        <path d="M4 7h16M4 12h16M4 17h10" />
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M4 9h16M8 3v4M16 3v4" />
       </svg>
     ),
   },
@@ -21,12 +23,11 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    id: 'schedule',
-    label: '일정',
+    id: 'journey',
+    label: '여정',
     icon: (
       <svg viewBox="0 0 24 24">
-        <rect x="4" y="5" width="16" height="15" rx="2" />
-        <path d="M4 9h16M8 3v4M16 3v4" />
+        <path d="M4 7h16M4 12h16M4 17h10" />
       </svg>
     ),
   },

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import jsQR from 'jsqr';
+import { useOverlayRoot } from './OverlayRoot';
 import styles from './QrScanner.module.css';
 
 interface Props {
@@ -19,6 +21,7 @@ export default function QrScanner({ onDetect, onClose, parse }: Props) {
   const [camState, setCamState] = useState<CamState>('starting');
   const [hint, setHint] = useState<string | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overlayRoot = useOverlayRoot();
 
   useEffect(() => {
     doneRef.current = false;
@@ -96,7 +99,8 @@ export default function QrScanner({ onDetect, onClose, parse }: Props) {
     };
   }, [onDetect, parse]);
 
-  return (
+  // 화면 축소(transform) 안쪽이면 position:fixed 기준이 어긋나므로 덮개 전용 자리에 그린다.
+  const overlay = (
     <div className={styles.overlay}>
       <button className={styles.closeBtn} onClick={onClose} aria-label="닫기">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
@@ -138,4 +142,6 @@ export default function QrScanner({ onDetect, onClose, parse }: Props) {
       <canvas ref={canvasRef} className={styles.hiddenCanvas} />
     </div>
   );
+
+  return overlayRoot ? createPortal(overlay, overlayRoot) : overlay;
 }

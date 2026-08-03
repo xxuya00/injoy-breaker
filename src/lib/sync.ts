@@ -1,4 +1,15 @@
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+} from 'firebase/firestore';
 import { db, firebaseEnabled } from './firebase';
 import { loadGroup } from './storage';
 import type { Day } from '../types';
@@ -19,6 +30,14 @@ export async function saveRemoteProgress(id: string, nick: string, day: Day, ope
     { nick, day, opened, score: Object.keys(opened).length, group: loadGroup() ?? null, updatedAt: serverTimestamp() },
     { merge: true },
   );
+}
+
+// 순위판은 구글 시트가 아니라 Firestore를 보고 그린다.
+// 관리자가 시트에서 참가자를 지워도 이 문서가 남아 있으면 조별 순위판에 계속 인원·점수로 잡히므로,
+// 시트에 기록이 없는 것이 확인되면 이 문서도 함께 지운다.
+export async function deleteRemotePlayer(id: string) {
+  if (!firebaseEnabled || !db) return;
+  await deleteDoc(doc(db, 'players', id));
 }
 
 export async function loadRemoteProgress(id: string): Promise<RemoteProgress | null> {

@@ -1,5 +1,7 @@
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider, ToastViewport } from './context/ToastContext';
+import { OverlayProvider } from './components/OverlayRoot';
+import FitBox from './components/FitBox';
 import TabBar from './components/TabBar';
 import LoginScreen from './screens/LoginScreen';
 import BriefScreen from './screens/BriefScreen';
@@ -15,6 +17,7 @@ import NoticeScreen from './screens/NoticeScreen';
 import type { ScreenId } from './types';
 import styles from './App.module.css';
 
+// 탭바가 없는 화면(login/brief)은 아래 여백을 줄여 그만큼 더 크게 담는다.
 const SCREENS: { id: ScreenId; render: () => React.ReactNode }[] = [
   { id: 'login', render: () => <LoginScreen /> },
   { id: 'brief', render: () => <BriefScreen /> },
@@ -35,12 +38,23 @@ function Shell() {
 
   return (
     <div className={styles.app}>
-      {SCREENS.map(({ id, render }) => (
-        <div key={id} className={`${styles.screen} ${state.screen === id ? styles.screenActive : ''}`}>
-          {render()}
-        </div>
-      ))}
-      {showTabbar && <TabBar active={state.activeTab} onSelect={setTab} />}
+      <OverlayProvider>
+        {SCREENS.map(({ id, render }) => (
+          <div
+            key={id}
+            className={[
+              styles.screen,
+              id === 'login' || id === 'brief' ? styles.screenBare : '',
+              state.screen === id ? styles.screenActive : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <FitBox>{render()}</FitBox>
+          </div>
+        ))}
+        {showTabbar && <TabBar active={state.activeTab} onSelect={setTab} />}
+      </OverlayProvider>
       <ToastViewport />
     </div>
   );

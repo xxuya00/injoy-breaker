@@ -1,15 +1,20 @@
 /* ---------- likert / AB scale (dot track) ---------- */
 .scaleTrack {
+  --dot: 44px;
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin: 28px 6px 12px;
 }
+/* 7점 척도는 점이 7개라 좁은 화면에서 44px로는 한 줄에 안 들어간다. 화면 너비에 맞춰 줄인다. */
+.scaleTrackLikert {
+  --dot: clamp(30px, 10.5vw, 42px);
+}
 .scaleLine {
   position: absolute;
-  left: 22px;
-  right: 22px;
+  left: calc(var(--dot) / 2);
+  right: calc(var(--dot) / 2);
   top: 50%;
   height: 2px;
   background: var(--line);
@@ -19,14 +24,15 @@
 .scaleDot {
   position: relative;
   z-index: 1;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 auto;
+  width: var(--dot);
+  height: var(--dot);
   border-radius: 50%;
   background: var(--ink-2);
   border: 1.5px solid var(--line);
   color: var(--mute);
   font-family: 'Bebas Neue';
-  font-size: 16px;
+  font-size: clamp(13px, 3.6vw, 16px);
   cursor: pointer;
   transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
   display: flex;
@@ -115,11 +121,20 @@
   gap: 10px;
 }
 .ttBarLabel {
-  width: 50px;
+  width: 74px;
   font-size: 12px;
   font-weight: 600;
   color: var(--mute);
   flex-shrink: 0;
+}
+/* 유형 이름 아래에 붙는 분류명(관계지향형 등) */
+.ttBarLabel em {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgba(168, 154, 138, 0.62);
 }
 .ttBarTrack {
   flex: 1;
@@ -150,23 +165,46 @@
   color: var(--accent);
   margin-bottom: 6px;
 }
+/* 묵상·기도를 한 카드에 합쳐 담으면서, 카드 안에서 둘을 구분해주는 소제목 */
+.ttSubLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-soft);
+  margin-bottom: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
 
 .rankBadges {
   display: flex;
   gap: 8px;
-  margin: 14px 0;
+  margin: 14px 0 8px;
   position: relative;
 }
+/* 1·2위 자리는 눌러서 다른 유형으로 바꿔볼 수 있는 버튼이다. */
 .rankBadge {
   flex: 1;
+  min-width: 0;
   padding: 8px 12px;
   border-radius: 12px;
   background: var(--ink-3);
   border: 1px solid var(--line);
+  font-family: 'Gothic A1';
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.rankBadge:active {
+  transform: scale(0.985);
 }
 .rankBadgePrimary {
   background: rgba(236, 147, 163, 0.14);
   border-color: rgba(236, 147, 163, 0.45);
+}
+.rankBadgeOpen {
+  border-color: var(--accent);
 }
 .rankBadgeRank {
   display: block;
@@ -179,10 +217,160 @@
   color: var(--accent);
 }
 .rankBadgeLabel {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   font-size: 15px;
   font-weight: 700;
   margin-top: 2px;
+}
+.rankBadgeTitle {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--mute);
+  letter-spacing: -0.01em;
+}
+
+.chev {
+  flex: none;
+  color: var(--mute);
+  transition: transform 0.25s ease;
+}
+.chevOpen {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+/* 1·2위 자리를 눌렀을 때 열리는 유형 선택 */
+.typePicker {
+  position: relative;
+  margin-bottom: 10px;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
+  background: rgba(24, 20, 15, 0.55);
+  border: 1px solid var(--line);
+}
+.typePickerHint {
+  font-size: 11.5px;
+  color: var(--mute);
+  margin-bottom: 8px;
+}
+.typeChips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.typeChip {
+  padding: 7px 6px;
+  border-radius: 10px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: 'Gothic A1';
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.typeChip b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.typeChip em {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--mute);
+  letter-spacing: -0.02em;
+}
+.typeChipOn {
+  background: rgba(236, 147, 163, 0.16);
+  border-color: var(--accent);
+}
+.typeChipOn b {
+  color: var(--accent-soft);
+}
+
+.exploreHint {
+  position: relative;
+  font-size: 11.5px;
+  color: var(--mute);
+  margin-bottom: 10px;
+}
+.backToMine {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  border-radius: 11px;
+  background: none;
+  border: 1px dashed rgba(236, 147, 163, 0.5);
+  color: var(--accent-soft);
+  font-family: 'Gothic A1';
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 조합별 상세 설명 토글 */
+.detailToggle {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: 'Gothic A1';
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.detailBody {
+  position: relative;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+.detailBodyOpen {
+  grid-template-rows: 1fr;
+}
+.detailInner {
+  overflow: hidden;
+}
+.detailText {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #d9cdbb;
+  padding-top: 14px;
+  word-break: keep-all;
+}
+.detailVerse {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border-left: 2px solid var(--accent);
+  background: rgba(24, 20, 15, 0.5);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #d9cdbb;
+  font-style: italic;
+}
+.detailVerseRef {
+  display: block;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin-bottom: 4px;
 }
 
 .qHeading {

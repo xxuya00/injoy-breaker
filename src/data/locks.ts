@@ -148,3 +148,34 @@ export const FINAL_REQUIRED = [
   'd1a', 'd1b', 'd1c', 'd1d', 'd1e', 'd1f', 'd1g', 'd1h', 'd1i',
   'd2a', 'd2b', 'd2c', 'd2e', 'd2f', 'd2g',
 ];
+
+// ---- 시간 잠금(게이트) ----
+// 미니게임 자물쇠(d1a…)처럼 locks 시트에서 열리는 시각을 정할 수 있는 "칸"들이다.
+// 자물쇠 하나가 아니라 하루 전체나 화면 한 덩어리를 통째로 잠글 때 쓴다.
+// 시트에 unlock_at을 적으면 그 시각에 열리고, locked에 TRUE를 적으면 시각과 무관하게 잠긴다.
+export interface GateMeta {
+  /** locks 시트의 id 칸에 들어가는 값 */
+  id: string;
+  /** locks 시트의 name 칸에 들어갈, 관리자가 알아볼 이름 */
+  label: string;
+  /** 아직 잠겨 있을 때 참가자에게 보여줄 안내 */
+  lockedSub: string;
+}
+
+/** DAY 탭 전체. 잠겨 있으면 그 날 탭 자체를 열 수 없다. */
+export const DAY_GATES: Record<Day, GateMeta> = {
+  1: { id: 'day1', label: 'DAY 1 전체', lockedSub: '아직 열리지 않은 날이에요' },
+  2: { id: 'day2', label: 'DAY 2 전체', lockedSub: '아직 열리지 않은 날이에요' },
+  3: { id: 'day3', label: 'DAY 3 전체', lockedSub: '아직 열리지 않은 날이에요' },
+};
+
+/** DAY 2 안의 각 코너. 하루를 통째로 열어두고 코너별로 시간을 따로 줄 수 있다. */
+export const SECTION_GATES = {
+  d2Type: { id: 'd2_type', label: 'DAY 2 · IDOL-X 유형 검사', lockedSub: '아직 열리지 않았어요' },
+  d2Qr: { id: 'd2_qr', label: 'DAY 2 · QR 스캔(알 깨기)', lockedSub: '아직 열리지 않았어요' },
+  d2Write: { id: 'd2_write', label: 'DAY 2 · 숲의 기록', lockedSub: '아직 열리지 않았어요' },
+  d3Decide: { id: 'd3_decide', label: 'DAY 3 · 마지막 열쇠(결단)', lockedSub: '아직 열리지 않았어요' },
+} as const satisfies Record<string, GateMeta>;
+
+// 위 id들을 locks 시트에 실제로 만들어주는 곳은 apps-script.gs의 setupLocksSheet()다.
+// 여기에 게이트를 추가하면 그쪽 목록에도 같은 id를 넣어야 관리자 시트에 줄이 생긴다.

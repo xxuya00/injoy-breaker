@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { LOCKS, TOTAL, FINAL_REQUIRED } from '../data/locks';
+import { LOCKS, TOTAL, FINAL_REQUIRED, DAY_GATES, SECTION_GATES, type GateMeta } from '../data/locks';
 import { generateFlashRound, type FlashRound } from '../data/memoryGame';
 import { TILE_PUZZLE } from '../data/tilePuzzle';
 import { MAZE_STAGES, generateMazePath } from '../data/maze';
 import { generateComboRounds, checkCombo, findAllCombos, type ComboCard } from '../data/comboGame';
 import { generateEquationRound, evaluateTokens, type EquationRound, type EqToken } from '../data/equationGame';
 import { generateLightsOut, toggleLight } from '../data/lightsOut';
-import { generateCrossMathRound, checkCrossMath, type CrossMathRound } from '../data/crossMath';
-import { generateCodeBreakRound, type CodeBreakRound, type ShapeId } from '../data/codeBreak';
+import { generateCrossMathRound, checkCrossMath, crossMathLines, type CrossMathRound } from '../data/crossMath';
+import { generateCodeBreakRound, CODEBREAK_STAGES, type CodeBreakRound, type ShapeId } from '../data/codeBreak';
 import { generateBalanceRound, BALANCE_STAGES, ITEM_LABELS, type BalanceRound } from '../data/balance';
-import { fetchLockUnlockTimes } from '../lib/gas';
+import { fetchLockGates, type LockGate } from '../lib/gas';
 import { getAccumulatedMs, setAccumulatedMs, getGameAttempts, incrementGameAttempts } from '../lib/storage';
 import {
   saveGameTime,
@@ -45,12 +45,20 @@ const TIMED_KINDS = new Set([
 ]);
 const MAX_RANKED_ATTEMPTS = 3;
 const MAZE_REVEAL_MS = 2000;
-const FLASH_SHOW_MS = 1200;
+// 단어를 한꺼번에 띄우면 스크린샷 한 장에 세트 전체가 담겨 버린다.
+// 그래서 한 개씩 차례로 띄우고 사이를 비운다 — 캡처해도 한 장에 한 단어뿐이고,
+// 단어 수가 늘어나는 뒤 라운드일수록 총 노출시간은 자연히 길어져 공평해진다.
+const FLASH_WORD_MS = 750;
+const FLASH_GAP_MS = 250;
 const FLASH_ROUNDS = [4, 6, 8];
 const REFLEX_TARGET_HITS = 10;
 const REFLEX_GRID = 9;
 const REFLEX_ON_MS = 650;
 const REFLEX_GAP_MS = 250;
+// 경과시간을 로컬에 흘려쓰는 주기이자, 분:초로 보여주는 게임의 화면 갱신 주기.
+const TIMER_FLUSH_MS = 500;
+// 1/100초까지 보여주는 게임의 화면 갱신 주기.
+const PRECISE_TICK_MS = 40;
 
 type TimedKind = 'equation' | 'combo' | 'lightsout' | 'reflex' | 'crossmath' | 'codebreak' | 'balance' | 'maze' | 'memory';
 type TimedSheetState = Extract<SheetState, { kind: TimedKind }>;
@@ -63,6 +71,19 @@ function formatElapsed(ms: number): string {
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// 순발력 타격은 분 단위가 의미 없고 찰나로 승부가 갈려서, 분:초 대신 초·1/100초로 보여준다.
+function formatPreciseElapsed(ms: number): string {
+  const total = Math.max(0, ms);
+  const sec = Math.floor(total / 1000);
+  const hundredths = Math.floor((total % 1000) / 10);
+  return `${sec}.${String(hundredths).padStart(2, '0')}초`;
+}
+
+// 이 게임은 초 단위 아래까지 보여준다.
+function isPreciseGame(type: string): boolean {
+  return type === 'reflex';
 }
 
 function formatKST(iso: string): string {
@@ -107,12 +128,14 @@ const GAME_INTRO: Partial<Record<LockType, { pill: string; title: string; desc: 
   codebreak: {
     pill: '부호 해독',
     title: '도형마다 숨은 숫자를 추리하세요',
-    desc: '5개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 두 식을 보고 최종식을 풀어보세요.',
+    desc: `도형마다 0~9 중 겹치지 않는 숫자가 숨어 있어요. 힌트 식들을 보고 최종식을 풀어보세요. ${CODEBREAK_STAGES.map(
+      (s) => `${s.shapes}개`,
+    ).join(' → ')}로 단계가 오를수록 도형과 힌트가 늘고, 마지막엔 곱셈까지 섞여요.`,
   },
   memory: {
     pill: '플래시 기억',
-    title: '단어들이 순식간에 나타났다 사라져요',
-    desc: `순서까지 기억해서, 사라진 뒤 방금 본 순서대로 탭해야 해요. ${FLASH_ROUNDS.join('개 → ')}개로 라운드가 갈수록 단어 수가 늘어나요.`,
+    title: '단어가 한 개씩 스쳐 지나가요',
+    desc: `단어를 한 개씩 순서대로 보여줘요. 다 지나간 뒤 방금 본 순서 그대로 탭해야 해요. ${FLASH_ROUNDS.join('개 → ')}개로 라운드가 갈수록 단어 수가 늘어나요.`,
   },
   reflex: {
     pill: '순발력',
@@ -141,6 +164,18 @@ const GAME_INTRO: Partial<Record<LockType, { pill: string; title: string; desc: 
   },
 };
 
+// 여러 단계·세트로 나뉜 게임들. 재시작할 때 "이 단계만"과 "처음부터"를 구분해서 물어본다.
+// 여기 없는 게임(십자 연산·순발력)은 한 판짜리라 곧바로 처음부터 다시 시작한다.
+const STAGED_GAMES: Partial<Record<LockType, { unit: string; allNote: string }>> = {
+  maze: { unit: '단계', allNote: '1단계로 · 시간도 0부터' },
+  balance: { unit: '단계', allNote: '1단계로 · 시간도 0부터' },
+  lightsout: { unit: '단계', allNote: '1단계로 · 시간도 0부터' },
+  codebreak: { unit: '단계', allNote: '1단계로 · 시간도 0부터' },
+  memory: { unit: '세트', allNote: '1세트로 · 시간도 0부터' },
+  combo: { unit: '세트', allNote: '1세트로 · 시간도 0부터' },
+  equation: { unit: '문제', allNote: '연속 성공 0부터 · 시간도 0부터' },
+};
+
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -164,20 +199,53 @@ function LockIcon({ open }: { open: boolean }) {
   );
 }
 
-function NavCard({ icon, name, sub, onClick }: { icon: React.ReactNode; name: string; sub: string; onClick: () => void }) {
+// locked가 켜지면(시트에서 잠가둔 구역) 눌러도 넘어가지 않고, 언제 열리는지만 알려준다.
+function NavCard({
+  icon,
+  name,
+  sub,
+  onClick,
+  locked = false,
+  lockedSub,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  sub: string;
+  onClick: () => void;
+  locked?: boolean;
+  lockedSub?: string;
+}) {
   return (
-    <div className={`${styles.lock} ${styles.lockOpen} ${styles.tapable}`} onClick={onClick}>
-      <div className={styles.ic}>{icon}</div>
+    <div
+      className={`${styles.lock} ${locked ? styles.lockGated : styles.lockOpen} ${styles.tapable}`}
+      onClick={onClick}
+      aria-disabled={locked || undefined}
+    >
+      <div className={styles.ic}>{locked ? <LockIcon open={false} /> : icon}</div>
       <div className={styles.body}>
         <div className={styles.name}>{name}</div>
-        <div className={styles.sub}>{sub}</div>
+        <div className={styles.sub}>{locked ? (lockedSub ?? '아직 열리지 않았어요') : sub}</div>
       </div>
-      <svg className={styles.chev} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M9 6l6 6-6 6" />
-      </svg>
+      {!locked && (
+        <svg className={styles.chev} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      )}
     </div>
   );
 }
+
+// 자물쇠 id → 그 자물쇠가 속한 날. QR로 다른 날의 자물쇠를 바로 열 때, 지금 보고 있는 날이 아니라
+// 그 자물쇠가 속한 날의 잠금을 봐야 해서 미리 만들어 둔다.
+const ITEM_DAY: Record<string, Day> = (() => {
+  const map: Record<string, Day> = {};
+  ([1, 2, 3] as Day[]).forEach((d) => {
+    LOCKS[d].items.forEach((it) => {
+      map[it.id] = d;
+    });
+  });
+  return map;
+})();
 
 // Day1의 자물쇠 9개를 하나씩 깰 때마다, 그 칸 안에서 바로 BACKTOGOD의 글자가 순서대로 드러난다.
 const BACKTOGOD_WORD = 'BACKTOGOD'.split('');
@@ -498,7 +566,9 @@ function GamePodium({ gameId }: { gameId: string }) {
       {columns.map(({ place, entry }) => (
         <div className={styles.podiumCol} key={entry!.id}>
           <div className={styles.podiumNick}>{entry!.nick}</div>
-          <div className={styles.podiumTime}>{formatElapsed(entry!.elapsedMs)}</div>
+          <div className={styles.podiumTime}>
+            {isPreciseGame(gameId) ? formatPreciseElapsed(entry!.elapsedMs) : formatElapsed(entry!.elapsedMs)}
+          </div>
           <div className={`${styles.podiumBlock} ${styles[`podiumBlock${place}`]}`}>
             <span className={styles.podiumMedal}>{MEDALS[place]}</span>
           </div>
@@ -579,6 +649,7 @@ export default function JourneyScreen() {
   // 진행 중(아직 완료 전)인 자물쇠 id. X로 닫았다가 같은 자물쇠를 다시 열면
   // 처음부터 다시 만들지 않고 하던 판을 그대로 이어서 보여준다.
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [restartMenuOpen, setRestartMenuOpen] = useState(false);
   const [answered, setAnswered] = useState<{ idx: number; correct: boolean } | null>(null);
   const [tileOrder, setTileOrder] = useState<number[]>([]);
   const [tileSelected, setTileSelected] = useState<number | null>(null);
@@ -598,14 +669,21 @@ export default function JourneyScreen() {
   const [flashPhase, setFlashPhase] = useState<'ready' | 'show' | 'choose'>('ready');
   const [flashProgress, setFlashProgress] = useState(0);
   const [flashWrong, setFlashWrong] = useState(false);
+  // show 단계에서 지금 몇 번째 단어를 띄우는 중인지 + 단어 사이 빈 화면인지
+  const [flashCursor, setFlashCursor] = useState(0);
+  const [flashBlank, setFlashBlank] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 성경 십자 연산
   const [cmRound, setCmRound] = useState<CrossMathRound | null>(null);
   const [cmValues, setCmValues] = useState<(number | null)[]>(new Array(9).fill(null));
   const [cmSelected, setCmSelected] = useState<number | null>(null);
+  const cmLines = cmRound
+    ? crossMathLines(cmValues, cmRound)
+    : { rows: [false, false, false] as [boolean, boolean, boolean], cols: [false, false, false] as [boolean, boolean, boolean] };
 
   // 시각 부호 해독
+  const [cbStageIdx, setCbStageIdx] = useState(0);
   const [cbRound, setCbRound] = useState<CodeBreakRound | null>(null);
   const [cbInput, setCbInput] = useState('');
   const [cbWrong, setCbWrong] = useState(false);
@@ -639,7 +717,7 @@ export default function JourneyScreen() {
   const [sessionStart, setSessionStart] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const [lastElapsed, setLastElapsed] = useState<number | null>(null);
-  const [lockTimes, setLockTimes] = useState<Record<string, string>>({});
+  const [lockGates, setLockGates] = useState<Record<string, LockGate>>({});
   const [missionAnswers, setMissionAnswers] = useState<MissionAnswers>({});
   const [answerDraft, setAnswerDraft] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -664,15 +742,16 @@ export default function JourneyScreen() {
     };
   }, []);
 
-  // 관리자가 시트(locks)에 적어둔 unlock_at 시각을 주기적으로 확인해
-  // 시간이 되면 자동으로 자물쇠가 풀리도록 한다. 화면이 보일 때만 폴링한다.
+  // 관리자가 시트(locks)에 적어둔 unlock_at 시각·locked 여부를 주기적으로 확인해
+  // 시간이 되면 자동으로 풀리도록 한다. 화면이 보일 때만 폴링한다.
+  // 자물쇠 하나뿐 아니라 DAY 탭 전체·DAY 2 각 코너도 같은 시트에서 잠근다.
   useEffect(() => {
     let cancelled = false;
     const load = () => {
       if (document.visibilityState !== 'visible') return;
-      fetchLockUnlockTimes()
-        .then((times) => {
-          if (!cancelled) setLockTimes(times);
+      fetchLockGates()
+        .then((gates) => {
+          if (!cancelled) setLockGates(gates);
         })
         .catch(() => {});
     };
@@ -686,23 +765,38 @@ export default function JourneyScreen() {
     };
   }, []);
 
-  // 타임어택형 게임(9개 미니게임 전부)이 열려있는 동안만 시계를 째깍이고,
-  // 0.5초마다 누적시간을 로컬에 흘려써서 앱을 그냥 꺼버려도 직전 지점까지는 저장돼 있게 한다.
+  // 타임어택형 게임(9개 미니게임 전부)이 열려있는 동안만 시계를 째깍인다.
+  // 1/100초까지 보여주는 순발력 타격은 눈에 보이게 굴러가도록 촘촘히 갱신한다.
+  // (requestAnimationFrame은 화면이 가려지면 아예 멈춰서 저장까지 같이 끊기므로 쓰지 않는다.)
+  // 로컬에 흘려쓰는 건 어느 쪽이든 0.5초에 한 번 — 앱을 그냥 꺼버려도 직전 지점까지는 남는다.
   useEffect(() => {
     if (!isTimedSheet(sheet) || sessionStart === null) return;
     const itemId = sheet.item.id;
     const base = accumulatedBase;
     const start = sessionStart;
-    const id = setInterval(() => {
-      const now = Date.now();
-      setNowTick(now);
-      if (getGameAttempts(itemId) < MAX_RANKED_ATTEMPTS) {
-        setAccumulatedMs(itemId, base + (now - start));
-      }
-    }, 500);
+    let lastFlush = 0;
+
+    const id = setInterval(
+      () => {
+        const now = Date.now();
+        setNowTick(now);
+        if (now - lastFlush >= TIMER_FLUSH_MS) {
+          lastFlush = now;
+          if (getGameAttempts(itemId) < MAX_RANKED_ATTEMPTS) {
+            setAccumulatedMs(itemId, base + (now - start));
+          }
+        }
+      },
+      isPreciseGame(sheet.item.type) ? PRECISE_TICK_MS : TIMER_FLUSH_MS,
+    );
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet, sessionStart, accumulatedBase]);
+
+  // 시트가 바뀌면(다른 게임, 완료, 닫기) 열려있던 재시작 메뉴는 닫는다.
+  useEffect(() => {
+    setRestartMenuOpen(false);
+  }, [sheet]);
 
   // 순발력 타격 시트를 벗어나면 다음 타깃 예약을 멈춘다.
   useEffect(() => {
@@ -715,14 +809,49 @@ export default function JourneyScreen() {
   const dayData = LOCKS[state.day];
   const openedCount = Object.keys(state.opened).length;
 
-  const isTimeLocked = (item: LockItem) => {
-    const t = lockTimes[item.id];
-    if (!t) return false;
-    return new Date(t).getTime() > Date.now();
+  // 시트에 적힌 잠금 상태를 읽는다. locked=TRUE면 시각과 무관하게 잠겨 있고,
+  // unlock_at이 아직 안 지났으면 그 시각까지 잠겨 있다. 둘 다 없으면 열려 있다.
+  const gateOf = (id: string): { locked: boolean; at?: string } => {
+    const g = lockGates[id];
+    if (!g) return { locked: false };
+    if (g.locked) return { locked: true };
+    if (g.unlockAt && new Date(g.unlockAt).getTime() > Date.now()) return { locked: true, at: g.unlockAt };
+    return { locked: false };
   };
+
+  // 하루가 통째로 잠겨 있으면 그 안의 것도 전부 잠긴 것으로 본다.
+  const dayGate = (day: Day) => gateOf(DAY_GATES[day].id);
+  const sectionGate = (gate: GateMeta) => {
+    const d = dayGate(state.day);
+    return d.locked ? d : gateOf(gate.id);
+  };
+
+  /** 잠긴 칸을 눌렀을 때: 열리는 시각을 알거나, 모르면 그냥 잠겼다고 알린다. */
+  const toastGate = (g: { at?: string }) => toast(g.at ? `${formatKST(g.at)}에 열려요` : '아직 열리지 않았어요');
+
+  // 자물쇠 하나에 걸린 잠금은 바깥부터 안쪽 순으로 본다: 그 날 전체 → 속한 코너 → 자물쇠 자신.
+  // QR로 다른 날의 자물쇠를 바로 열 수도 있으므로, 지금 보고 있는 날이 아니라 그 자물쇠가 속한 날로 판단한다.
+  const itemGate = (item: LockItem): { locked: boolean; at?: string } => {
+    const day = ITEM_DAY[item.id] ?? state.day;
+    const d = dayGate(day);
+    if (d.locked) return d;
+    // DAY 2의 QR 미션은 'QR 스캔' 코너에 속해 있어서, 그 코너를 잠그면 QR 링크로도 못 연다.
+    if (day === 2 && item.type === 'mission') {
+      const s = gateOf(SECTION_GATES.d2Qr.id);
+      if (s.locked) return s;
+    }
+    return gateOf(item.id);
+  };
+
 
   const handleLockClick = (item: LockItem) => {
     const isOpen = !!state.opened[item.id];
+    // 시간 잠금은 자물쇠 종류를 가리지 않고 가장 먼저 본다(최후의 자물쇠도 시각을 정해둘 수 있게).
+    const gate = itemGate(item);
+    if (!isOpen && gate.locked) {
+      toastGate(gate);
+      return;
+    }
     if (item.type === 'final') {
       const done = FINAL_REQUIRED.filter((k) => state.opened[k]).length;
       if (done < FINAL_REQUIRED.length) {
@@ -731,10 +860,6 @@ export default function JourneyScreen() {
         goScreen('decide');
         setSheet(null);
       }
-      return;
-    }
-    if (!isOpen && isTimeLocked(item)) {
-      toast(`${formatKST(lockTimes[item.id])}에 열려요`);
       return;
     }
     if (item.type === 'locked-until') {
@@ -853,7 +978,8 @@ export default function JourneyScreen() {
     }
     if (item.type === 'codebreak') {
       beginTimedGame(item);
-      setCbRound(generateCodeBreakRound());
+      setCbStageIdx(0);
+      setCbRound(generateCodeBreakRound(0));
       setCbInput('');
       setCbWrong(false);
       setSheet({ kind: 'codebreak', item });
@@ -935,6 +1061,86 @@ export default function JourneyScreen() {
     setSheet({ kind: item.type === 'quiz' ? 'quiz' : 'mission', item });
   };
 
+  const clearGameTimers = () => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    if (mazeRevealTimer.current) clearTimeout(mazeRevealTimer.current);
+    if (reflexSpawnTimer.current) clearTimeout(reflexSpawnTimer.current);
+    if (reflexClearTimer.current) clearTimeout(reflexClearTimer.current);
+  };
+
+  // 지금 보고 있는 단계만 새 문제로 다시 깐다. 진행한 단계 수도, 경과시간도 그대로 둔다 —
+  // 여기서 시간까지 0으로 돌려주면 마지막 단계에서 눌러 기록을 마음대로 만들 수 있게 된다.
+  const restartRound = (item: LockItem) => {
+    clearGameTimers();
+    setLastElapsed(null);
+
+    switch (item.type) {
+      case 'crossmath':
+        setCmRound(generateCrossMathRound());
+        setCmValues(new Array(9).fill(null));
+        setCmSelected(null);
+        break;
+      case 'codebreak':
+        setCbRound(generateCodeBreakRound(cbStageIdx));
+        setCbInput('');
+        setCbWrong(false);
+        break;
+      case 'balance':
+        setBalRound(generateBalanceRound(balStageIdx));
+        setBalWrong(false);
+        break;
+      case 'reflex':
+        setReflexHits(0);
+        setReflexActiveCell(null);
+        scheduleReflexSpawn();
+        break;
+      case 'memory':
+        setFlashRound(generateFlashRound(FLASH_ROUNDS[flashRoundIdx]));
+        setFlashPhase('ready');
+        setFlashProgress(0);
+        setFlashWrong(false);
+        break;
+      case 'maze':
+        beginMazeRound(mazeStageIdx);
+        break;
+      case 'combo': {
+        // 지금 세트의 보드만 새로 뽑고, 앞뒤 세트와 세트 번호는 그대로 둔다.
+        const fresh = generateComboRounds(1)[0];
+        setComboRounds((prev) => prev.map((board, i) => (i === comboRoundIdx ? fresh : board)));
+        setComboSelected([]);
+        setComboFound([]);
+        setComboWrong(false);
+        break;
+      }
+      case 'equation': {
+        // 지금 문제만 새로 낸다. 여태 쌓은 연속 성공 수는 유지된다.
+        const round = generateEquationRound();
+        setEqRound(round);
+        setEqTokens([]);
+        setEqNumUsed(new Array(round.numbers.length).fill(false));
+        break;
+      }
+      case 'lightsout': {
+        const round = generateLightsOut(LO_STAGES[loStageIdx]);
+        setLoGrid(round.initial);
+        setLoSize(round.size);
+        break;
+      }
+    }
+  };
+
+  // 판을 통째로 버리고 1단계부터 새로. 진행도를 전부 반납하는 대신 경과시간도 0으로 되돌린다.
+  const restartAll = (item: LockItem) => {
+    clearGameTimers();
+    setAccumulatedMs(item.id, 0);
+    setAccumulatedBase(0);
+    setNowTick(Date.now());
+    // 플래시 기억은 '시작'을 눌러야 시계가 도는 게임이라 멈춘 채로 두고, 나머지는 startGame이 곧바로 다시 돌린다.
+    setSessionStart(null);
+    startGame(item);
+  };
+
+
   // id로 해당 자물쇠를 찾아 그 자리에서 바로 연다. URL의 ?qr= 파라미터와 인앱 카메라 스캐너가 함께 쓴다.
   const openMissionById = (qrId: string) => {
     let target: { day: Day; item: LockItem } | null = null;
@@ -968,11 +1174,31 @@ export default function JourneyScreen() {
   };
 
   const beginFlashShow = (item: LockItem) => {
-    // 라운드가 바뀔 때마다 다시 시작을 누르지만, 타이머는 첫 라운드에서만 시작해 계속 이어서 흐르게 한다.
-    if (flashRoundIdx === 0) beginTimedGame(item);
+    // 라운드가 바뀔 때마다 다시 시작을 누르지만, 타이머는 한 번 돌기 시작하면 라운드 사이에도 계속 흐른다.
+    // 시계가 멈춰 있을 때(첫 라운드, 또는 재시작 직후)만 다시 돌린다.
+    if (sessionStart === null) beginTimedGame(item);
+    const total = flashRound?.sequence.length ?? 0;
     setFlashPhase('show');
+    setFlashCursor(0);
+    setFlashBlank(false);
     if (flashTimer.current) clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setFlashPhase('choose'), FLASH_SHOW_MS);
+    // i번째 단어 → 빈 화면 → i+1번째 … 마지막 단어까지 보여주면 선택 단계로.
+    // 타이머를 매번 flashTimer.current에 다시 담아, 화면을 벗어날 때 한 번만 정리하면 사슬 전체가 끊긴다.
+    const step = (i: number) => {
+      flashTimer.current = setTimeout(() => {
+        setFlashBlank(true);
+        flashTimer.current = setTimeout(() => {
+          if (i + 1 >= total) {
+            setFlashPhase('choose');
+            return;
+          }
+          setFlashCursor(i + 1);
+          setFlashBlank(false);
+          step(i + 1);
+        }, FLASH_GAP_MS);
+      }, FLASH_WORD_MS);
+    };
+    step(0);
   };
 
   const pickFlashWord = (item: LockItem, word: string) => {
@@ -1084,7 +1310,16 @@ export default function JourneyScreen() {
   const cbSubmit = (item: LockItem) => {
     if (!cbRound || cbInput === '') return;
     if (Number(cbInput) === cbRound.answer) {
-      finishTimedGame(item);
+      const nextStage = cbStageIdx + 1;
+      if (nextStage >= CODEBREAK_STAGES.length) {
+        finishTimedGame(item);
+      } else {
+        setCbStageIdx(nextStage);
+        setCbRound(generateCodeBreakRound(nextStage));
+        setCbInput('');
+        setCbWrong(false);
+        toast(`${nextStage}/${CODEBREAK_STAGES.length}단계 통과! 다음 단계`);
+      }
     } else {
       toast('정답이 아니에요');
       setCbWrong(true);
@@ -1294,6 +1529,88 @@ export default function JourneyScreen() {
 
   const day2CrackCount = DAY2_MISSION_IDS.filter((id) => state.opened[id]).length;
 
+  const elapsedMs = accumulatedBase + (sessionStart !== null ? nowTick - sessionStart : 0);
+  const elapsedText =
+    sheet && isPreciseGame(sheet.kind) ? formatPreciseElapsed(elapsedMs) : formatElapsed(elapsedMs);
+
+  // 9개 미니게임이 공통으로 쓰는 상단 줄 — 게임 이름 · 경과시간. (재시작은 시트 우상단에 따로 있다)
+  const gameHeader = (label: React.ReactNode, showTimer = true) => (
+    <div className={styles.timerRow}>
+      <span className="pill">{label}</span>
+      {showTimer && <span className={styles.timerBadge}>⏱ {elapsedText}</span>}
+    </div>
+  );
+
+  // 타임어택 게임을 보고 있을 때만 시트 우상단(닫기 왼쪽)에 재시작 아이콘이 붙는다.
+  // 여러 단계짜리 게임은 "이 단계만"과 "처음부터" 중에 고르게 하고, 한 판짜리는 곧바로 처음부터 다시 시작한다.
+  const restartAction = isTimedSheet(sheet)
+    ? (() => {
+        const item = sheet.item;
+        const stage = STAGED_GAMES[item.type];
+        const icon = (
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+        );
+        if (!stage) {
+          return (
+            <button className={styles.restartBtn} onClick={() => restartAll(item)} aria-label="처음부터 다시 시작">
+              {icon}
+            </button>
+          );
+        }
+        return (
+          <div className={styles.restartWrap}>
+            <button
+              className={styles.restartBtn}
+              onClick={() => setRestartMenuOpen((v) => !v)}
+              aria-label="다시 시작"
+              aria-expanded={restartMenuOpen}
+            >
+              {icon}
+            </button>
+            {restartMenuOpen && (
+              <>
+                <div className={styles.restartBackdrop} onClick={() => setRestartMenuOpen(false)} />
+                <div className={styles.restartMenu}>
+                  <button
+                    className={styles.restartMenuItem}
+                    onClick={() => {
+                      setRestartMenuOpen(false);
+                      restartRound(item);
+                    }}
+                  >
+                    <b>이 {stage.unit}만 다시</b>
+                    <span>시간은 이어서 흘러요</span>
+                  </button>
+                  <button
+                    className={styles.restartMenuItem}
+                    onClick={() => {
+                      setRestartMenuOpen(false);
+                      restartAll(item);
+                    }}
+                  >
+                    <b>처음부터 다시</b>
+                    <span>{stage.allNote}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()
+    : null;
+
   return (
     <section>
       <div className={styles.header}>
@@ -1318,61 +1635,82 @@ export default function JourneyScreen() {
       </div>
 
       <div className={styles.daytabRow}>
-        {([1, 2, 3] as Day[]).map((d) => (
-          <div
-            key={d}
-            className={`${styles.daytab} ${state.day === d ? styles.daytabOn : ''}`}
-            onClick={() => selectDay(d)}
-          >
-            <div className={styles.d}>DAY {d}</div>
-            <div className={styles.t}>{DAY_LABELS[d]}</div>
-          </div>
-        ))}
+        {([1, 2, 3] as Day[]).map((d) => {
+          // 시트에서 그 날을 통째로 잠가두면 탭 자체가 열리지 않는다.
+          const g = dayGate(d);
+          return (
+            <div
+              key={d}
+              className={`${styles.daytab} ${state.day === d ? styles.daytabOn : ''} ${g.locked ? styles.daytabLocked : ''}`}
+              onClick={() => (g.locked ? toastGate(g) : selectDay(d))}
+              aria-disabled={g.locked || undefined}
+            >
+              <div className={styles.d}>DAY {d}</div>
+              <div className={styles.t}>{g.locked ? '잠김' : DAY_LABELS[d]}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className={`muted ${styles.dayCaption}`}>{dayData.caption}</div>
 
-      {state.day === 2 && (
-        <NavCard
-          icon={
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="2.6" />
-            </svg>
-          }
-          name="유형 검사"
-          sub="아침 큐티 직후, 가장 먼저 해보세요"
-          onClick={() => goScreen('type')}
-        />
-      )}
+      {state.day === 2 &&
+        (() => {
+          const g = sectionGate(SECTION_GATES.d2Type);
+          return (
+            <NavCard
+              icon={
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="8" />
+                  <circle cx="12" cy="12" r="2.6" />
+                </svg>
+              }
+              name="IDOL-X · 우상 유형 검사"
+              sub="아침 큐티 직후, 가장 먼저 해보세요"
+              locked={g.locked}
+              lockedSub={g.at ? `${formatKST(g.at)}에 열려요` : SECTION_GATES.d2Type.lockedSub}
+              onClick={() => (g.locked ? toastGate(g) : goScreen('type'))}
+            />
+          );
+        })()}
 
-      {state.day === 2 && (
-        <div className={styles.eggHero}>
-          <EggCrack count={day2CrackCount} total={DAY2_MISSION_IDS.length} />
-          <button className="btn" onClick={() => setScannerOpen(true)}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M4 8a2 2 0 0 1 2-2h1.6l1.2-1.6h6.4L16.4 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
-              <circle cx="12" cy="13" r="3.4" />
-            </svg>
-            QR 스캔하기
-          </button>
-          <p className="muted" style={{ textAlign: 'center', marginTop: 8 }}>
-            물놀이 전후로 숲과 계곡 곳곳의 QR을 찾아보세요
-          </p>
-        </div>
-      )}
+      {state.day === 2 &&
+        (() => {
+          const g = sectionGate(SECTION_GATES.d2Qr);
+          return (
+            <div className={styles.eggHero}>
+              <EggCrack count={day2CrackCount} total={DAY2_MISSION_IDS.length} />
+              <button className="btn" disabled={g.locked} onClick={() => setScannerOpen(true)}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 8a2 2 0 0 1 2-2h1.6l1.2-1.6h6.4L16.4 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
+                  <circle cx="12" cy="13" r="3.4" />
+                </svg>
+                QR 스캔하기
+              </button>
+              <p className="muted" style={{ textAlign: 'center', marginTop: 8 }}>
+                {g.locked
+                  ? g.at
+                    ? `${formatKST(g.at)}에 열려요`
+                    : SECTION_GATES.d2Qr.lockedSub
+                  : '물놀이 전후로 숲과 계곡 곳곳의 QR을 찾아보세요'}
+              </p>
+            </div>
+          );
+        })()}
 
       {state.day !== 2 && (
         <div className={styles.lockGrid}>
           {dayData.items.map((item, idx) => {
             const open = !!state.opened[item.id];
+            // 시트에서 시각을 정해둔 자물쇠는 그 시각 전까지 눌러도 열리지 않으므로 흐리게 보여준다.
+            const gated = !open && itemGate(item).locked;
             const letter = state.day === 1 ? BACKTOGOD_WORD[idx] : null;
             return (
               <div
                 key={item.id}
-                className={`${styles.lockTile} ${open ? styles.lockTileOpen : ''}`}
+                className={`${styles.lockTile} ${open ? styles.lockTileOpen : ''} ${gated ? styles.lockTileGated : ''}`}
                 onClick={() => handleLockClick(item)}
-                aria-label={open ? `${item.name} · 열림` : '잠긴 자물쇠'}
+                aria-label={open ? `${item.name} · 열림` : gated ? '아직 열리지 않은 자물쇠' : '잠긴 자물쇠'}
               >
                 {open && letter ? <span className={styles.lockLetter}>{letter}</span> : <LockIcon open={open} />}
               </div>
@@ -1381,38 +1719,50 @@ export default function JourneyScreen() {
         </div>
       )}
 
-      {state.day === 2 && (
-        <>
-          <hr className={styles.sectionDivider} />
-          <div className={styles.sectionLabel}>이 날 더 해보기</div>
-          <NavCard
-            icon={
-              <svg viewBox="0 0 24 24">
-                <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
-              </svg>
-            }
-            name="숲의 기록"
-            sub="오늘 마주한 것을 남겨보세요"
-            onClick={() => goScreen('write')}
-          />
-        </>
-      )}
-      {state.day === 3 && (
-        <>
-          <hr className={styles.sectionDivider} />
-          <div className={styles.sectionLabel}>이 날 더 해보기</div>
-          <NavCard
-            icon={
-              <svg viewBox="0 0 24 24">
-                <path d="M12 3l2 5 5 .5-4 3.5 1 5-4-2.5L8 20l1-5-4-3.5 5-.5z" />
-              </svg>
-            }
-            name="마지막 열쇠 · 결단"
-            sub="깨어난 집중으로 세상에 나아가요"
-            onClick={() => goScreen('decide')}
-          />
-        </>
-      )}
+      {state.day === 2 &&
+        (() => {
+          const g = sectionGate(SECTION_GATES.d2Write);
+          return (
+            <>
+              <hr className={styles.sectionDivider} />
+              <div className={styles.sectionLabel}>이 날 더 해보기</div>
+              <NavCard
+                icon={
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 20h16M6 16l9-9 3 3-9 9H6z" />
+                  </svg>
+                }
+                name="숲의 기록"
+                sub="오늘 마주한 것을 남겨보세요"
+                locked={g.locked}
+                lockedSub={g.at ? `${formatKST(g.at)}에 열려요` : SECTION_GATES.d2Write.lockedSub}
+                onClick={() => (g.locked ? toastGate(g) : goScreen('write'))}
+              />
+            </>
+          );
+        })()}
+      {state.day === 3 &&
+        (() => {
+          const g = sectionGate(SECTION_GATES.d3Decide);
+          return (
+            <>
+              <hr className={styles.sectionDivider} />
+              <div className={styles.sectionLabel}>이 날 더 해보기</div>
+              <NavCard
+                icon={
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3l2 5 5 .5-4 3.5 1 5-4-2.5L8 20l1-5-4-3.5 5-.5z" />
+                  </svg>
+                }
+                name="마지막 열쇠 · 결단"
+                sub="깨어난 집중으로 세상에 나아가요"
+                locked={g.locked}
+                lockedSub={g.at ? `${formatKST(g.at)}에 열려요` : SECTION_GATES.d3Decide.lockedSub}
+                onClick={() => (g.locked ? toastGate(g) : goScreen('decide'))}
+              />
+            </>
+          );
+        })()}
 
       {state.day === 2 && (
         <>
@@ -1426,7 +1776,7 @@ export default function JourneyScreen() {
 
       {scannerOpen && <QrScanner parse={parseQrText} onDetect={handleScanDetect} onClose={() => setScannerOpen(false)} />}
 
-      <Sheet open={sheet !== null} onClose={closeSheet} fullscreen>
+      <Sheet open={sheet !== null} onClose={closeSheet} fullscreen action={restartAction}>
         {sheet?.kind === 'intro' &&
           (() => {
             const intro = GAME_INTRO[sheet.item.type];
@@ -1493,18 +1843,14 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'crossmath' && cmRound && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">✝️ 성경 십자 연산</span>
-              <span className={styles.timerBadge}>
-                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-              </span>
-            </div>
+            {gameHeader('✝️ 성경 십자 연산')}
             <h2 style={{ margin: '6px 0 4px' }}>1~9를 겹치지 않게 채워 합을 맞추세요</h2>
             <p className="muted" style={{ marginBottom: 6 }}>
               {cmRound.hint}
             </p>
             <p className="muted" style={{ marginBottom: 14 }}>
               빈칸을 탭해 선택하고, 아래 숫자패드로 채워보세요. 오른쪽·아래 숫자가 목표 합이에요.
+              합이 맞은 줄은 초록색으로 표시돼요.
             </p>
             <div className={styles.cmGrid}>
               {Array.from({ length: 4 }).map((_, r) =>
@@ -1512,12 +1858,13 @@ export default function JourneyScreen() {
                   if (r < 3 && c < 3) {
                     const idx = r * 3 + c;
                     const val = cmValues[idx];
+                    const done = cmLines.rows[r] || cmLines.cols[c];
                     return (
                       <button
                         key={`${r}-${c}`}
                         className={`${styles.cmCell} ${cmSelected === idx ? styles.cmCellSelected : ''} ${
                           val !== null ? styles.cmCellFilled : ''
-                        }`}
+                        } ${done ? styles.cmCellDone : ''}`}
                         onClick={() => tapCmCell(idx)}
                       >
                         {val ?? ''}
@@ -1526,14 +1873,20 @@ export default function JourneyScreen() {
                   }
                   if (r < 3 && c === 3) {
                     return (
-                      <div key={`${r}-${c}`} className={styles.cmTarget}>
+                      <div
+                        key={`${r}-${c}`}
+                        className={`${styles.cmTarget} ${cmLines.rows[r] ? styles.cmTargetDone : ''}`}
+                      >
                         {cmRound.rowTargets[r]}
                       </div>
                     );
                   }
                   if (r === 3 && c < 3) {
                     return (
-                      <div key={`${r}-${c}`} className={styles.cmTarget}>
+                      <div
+                        key={`${r}-${c}`}
+                        className={`${styles.cmTarget} ${cmLines.cols[c] ? styles.cmTargetDone : ''}`}
+                      >
                         {cmRound.colTargets[c]}
                       </div>
                     );
@@ -1542,6 +1895,9 @@ export default function JourneyScreen() {
                 }),
               )}
             </div>
+            <p className="muted" style={{ margin: '0 0 14px', textAlign: 'center' }}>
+              맞춘 줄 {cmLines.rows.filter(Boolean).length + cmLines.cols.filter(Boolean).length} / 6
+            </p>
             <div className={styles.eqNumRow}>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
                 <button
@@ -1559,30 +1915,21 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'codebreak' && cbRound && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">🔺 부호 해독</span>
-              <span className={styles.timerBadge}>
-                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-              </span>
-            </div>
+            {gameHeader(`🔺 부호 해독 · ${cbStageIdx + 1}/${CODEBREAK_STAGES.length}단계`)}
             <h2 style={{ margin: '6px 0 4px' }}>도형마다 숨은 숫자를 추리하세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
-              5개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 두 식을 보고 최종식을 풀어보세요.
+              {cbRound.shapeCount}개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 {cbRound.hints.length}개를 보고
+              최종식을 풀어보세요.
             </p>
-            <div className={styles.cbHintRow}>
-              <ShapeIcon shape={cbRound.hint1.a} />
-              <span className={styles.cbOp}>{cbRound.hint1.op}</span>
-              <ShapeIcon shape={cbRound.hint1.b} />
-              <span className={styles.cbOp}>=</span>
-              <span className={styles.cbNum}>{cbRound.hint1.result}</span>
-            </div>
-            <div className={styles.cbHintRow}>
-              <ShapeIcon shape={cbRound.hint2.a} />
-              <span className={styles.cbOp}>{cbRound.hint2.op}</span>
-              <ShapeIcon shape={cbRound.hint2.b} />
-              <span className={styles.cbOp}>=</span>
-              <span className={styles.cbNum}>{cbRound.hint2.result}</span>
-            </div>
+            {cbRound.hints.map((h, i) => (
+              <div key={i} className={styles.cbHintRow}>
+                <ShapeIcon shape={h.a} />
+                <span className={styles.cbOp}>{h.op}</span>
+                <ShapeIcon shape={h.b} />
+                <span className={styles.cbOp}>=</span>
+                <span className={styles.cbNum}>{h.result}</span>
+              </div>
+            ))}
             <div className={`${styles.cbHintRow} ${styles.cbFinalRow} ${cbWrong ? styles.cbWrong : ''}`}>
               <ShapeIcon shape={cbRound.final.a} />
               <span className={styles.cbOp}>+</span>
@@ -1617,14 +1964,9 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'balance' && balRound && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                ⚖️ 가짜 찾기 · {balStageIdx + 1}/{BALANCE_STAGES.length}단계 ({balRound.itemCount}개)
-              </span>
-              <span className={styles.timerBadge}>
-                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-              </span>
-            </div>
+            {gameHeader(
+              `⚖️ 가짜 찾기 · ${balStageIdx + 1}/${BALANCE_STAGES.length}단계 (${balRound.itemCount}개)`,
+            )}
             <h2 style={{ margin: '6px 0 4px' }}>딱 하나, 무게가 다른 가짜를 찾으세요</h2>
             <p className="muted" style={{ marginBottom: 14 }}>
               아래는 이미 진행된 저울질 결과예요. 결과를 보고 어떤 것이 가짜(더 무거운 것)인지 아래에서 골라보세요.
@@ -1670,14 +2012,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'reflex' && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                ⚡ 순발력 타격 · {reflexHits}/{REFLEX_TARGET_HITS}
-              </span>
-              <span className={styles.timerBadge}>
-                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-              </span>
-            </div>
+            {gameHeader(`⚡ 순발력 타격 · ${reflexHits}/${REFLEX_TARGET_HITS}`)}
             <h2 style={{ margin: '6px 0 4px' }}>빛나는 칸을 최대한 빠르게 탭하세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
               {REFLEX_TARGET_HITS}번 맞히면 열려요. 속도가 곧 실력!
@@ -1696,19 +2031,14 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'memory' && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                🧠 플래시 기억 · {flashRoundIdx + 1}/{FLASH_ROUNDS.length}세트
-              </span>
-              {flashPhase !== 'ready' && (
-                <span className={styles.timerBadge}>
-                  ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-                </span>
-              )}
-            </div>
+            {/* 시계는 '시작'을 눌러야 돌기 시작한다. 한 번 돌기 시작하면 준비 화면에서도 계속 보여준다. */}
+            {gameHeader(
+              `🧠 플래시 기억 · ${flashRoundIdx + 1}/${FLASH_ROUNDS.length}세트`,
+              flashPhase !== 'ready' || sessionStart !== null,
+            )}
             {flashPhase === 'ready' && (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>단어 {FLASH_ROUNDS[flashRoundIdx]}개가 순식간에 나타났다 사라져요</h2>
+                <h2 style={{ margin: '6px 0 4px' }}>단어 {FLASH_ROUNDS[flashRoundIdx]}개가 한 개씩 스쳐 지나가요</h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
                   준비되면 시작을 눌러보세요. 순서까지 기억해야 해요.
                 </p>
@@ -1718,13 +2048,26 @@ export default function JourneyScreen() {
               </>
             )}
             {flashPhase === 'show' && flashRound && (
-              <div className={styles.flashShowBox}>
-                {flashRound.sequence.map((w, i) => (
-                  <div key={i} className={styles.flashWord}>
-                    {w}
-                  </div>
-                ))}
-              </div>
+              <>
+                <p className="muted" style={{ margin: '6px 0 0', textAlign: 'center' }}>
+                  {flashCursor + 1} / {flashRound.sequence.length}번째
+                </p>
+                <div className={styles.flashShowBox}>
+                  {!flashBlank && (
+                    <div key={flashCursor} className={styles.flashWord}>
+                      {flashRound.sequence[flashCursor]}
+                    </div>
+                  )}
+                </div>
+                <div className={styles.flashDots}>
+                  {flashRound.sequence.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`${styles.flashDot} ${i <= flashCursor ? styles.flashDotOn : ''}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
             {flashPhase === 'choose' && flashRound && (
               <>
@@ -1775,14 +2118,9 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'maze' && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                🧭 기억의 미로 · {mazeStageIdx + 1}/{MAZE_STAGES.length}단계 ({mazeStage.rows}x{mazeStage.cols})
-              </span>
-              <span className={styles.timerBadge}>
-                ⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}
-              </span>
-            </div>
+            {gameHeader(
+              `🧭 기억의 미로 · ${mazeStageIdx + 1}/${MAZE_STAGES.length}단계 (${mazeStage.rows}x${mazeStage.cols})`,
+            )}
             {mazePhase === 'reveal' ? (
               <>
                 <h2 style={{ margin: '6px 0 4px' }}>안전한 길을 잘 기억하세요</h2>
@@ -1842,12 +2180,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'combo' && comboRounds[comboRoundIdx] && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                🎴 결합 찾기 · {comboRoundIdx + 1}/{comboRounds.length}세트
-              </span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
-            </div>
+            {gameHeader(`🎴 결합 찾기 · ${comboRoundIdx + 1}/${comboRounds.length}세트`)}
             <h2 style={{ margin: '6px 0 4px' }}>보이는 결합을 모두 찾아보세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
               모양·색·배경이 각각 셋 다 같거나 셋 다 달라야 결합이에요. 더 찾을 결합이 없으면 아래 "결" 버튼을 눌러
@@ -1893,12 +2226,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'equation' && eqRound && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                🔢 수식 만들기 · {eqStreak}/{EQ_TARGET_STREAK}
-              </span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
-            </div>
+            {gameHeader(`🔢 수식 만들기 · ${eqStreak}/${EQ_TARGET_STREAK}`)}
             <h2 style={{ margin: '6px 0 4px' }}>목표 숫자: {eqRound.target}</h2>
             <p className="muted" style={{ marginBottom: 12 }}>
               숫자 4개를 전부 한 번씩만 써서 목표를 만드세요. {EQ_TARGET_STREAK}문제 연속 성공하면 열려요.
@@ -1935,12 +2263,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'lightsout' && loGrid && (
           <>
-            <div className={styles.timerRow}>
-              <span className="pill">
-                💡 라이트 아웃 · {loStageIdx + 1}/{LO_STAGES.length}단계
-              </span>
-              <span className={styles.timerBadge}>⏱ {formatElapsed(accumulatedBase + (sessionStart ? nowTick - sessionStart : 0))}</span>
-            </div>
+            {gameHeader(`💡 라이트 아웃 · ${loStageIdx + 1}/${LO_STAGES.length}단계`)}
             <h2 style={{ margin: '6px 0 4px' }}>
               {loSize}×{loSize} 불을 전부 꺼보세요
             </h2>
@@ -1974,7 +2297,8 @@ export default function JourneyScreen() {
             )}
             {lastElapsed !== null && (
               <p className="muted" style={{ marginTop: -4, marginBottom: 4 }}>
-                완료 시간 {formatElapsed(lastElapsed)}
+                완료 시간{' '}
+                {isPreciseGame(sheet.item.type) ? formatPreciseElapsed(lastElapsed) : formatElapsed(lastElapsed)}
                 {TIMED_KINDS.has(sheet.item.type) && getGameAttempts(sheet.item.id) >= MAX_RANKED_ATTEMPTS
                   ? ' · 순위 기록은 처음 3번의 도전까지만 반영돼요'
                   : ''}

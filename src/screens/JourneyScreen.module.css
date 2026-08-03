@@ -33,7 +33,7 @@
   height: 1px;
   background: var(--line);
   border: 0;
-  margin: 24px 0 14px;
+  margin: 16px 0 10px;
 }
 .sectionLabel {
   font-size: 11.5px;
@@ -71,7 +71,7 @@
 .daytabRow {
   display: flex;
   gap: 8px;
-  margin: 18px 0 22px;
+  margin: 14px 0 16px;
 }
 .daytab {
   flex: 1;
@@ -85,6 +85,10 @@
 .daytabOn {
   border-color: var(--accent);
   background: var(--ink-3);
+}
+/* 시트(locks)에서 잠가둔 날. 눌러도 넘어가지 않고 언제 열리는지만 알려준다. */
+.daytabLocked {
+  opacity: 0.45;
 }
 .d {
   font-family: 'Bebas Neue';
@@ -103,7 +107,7 @@
 }
 
 .dayCaption {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .lockLetter {
@@ -127,7 +131,7 @@
 }
 
 .eggHero {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   text-align: center;
 }
 .eggHero .btn {
@@ -152,7 +156,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 8px 15px;
   background: none;
   border: 0;
   cursor: pointer;
@@ -263,6 +267,11 @@
   stroke: var(--mute);
   fill: none;
   stroke-width: 1.8;
+}
+/* 시트(locks)에서 여는 시각을 정해둔 자물쇠. 아직 그 시각이 아니라 눌러도 열리지 않는다. */
+.lockTileGated {
+  opacity: 0.32;
+  border-style: dashed;
 }
 .lockTileOpen {
   opacity: 1;
@@ -423,10 +432,11 @@
 .timerRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 6px;
-  padding-right: 44px;
+  /* 시트 우상단의 재시작·닫기 두 버튼 자리를 비워둔다. */
+  padding-right: 94px;
 }
 .timerBadge {
   font-family: 'Bebas Neue', sans-serif;
@@ -437,6 +447,75 @@
   border: 1px solid var(--line);
   border-radius: 99px;
   padding: 4px 12px;
+}
+/* 시트 우상단, 닫기 버튼과 같은 크기의 원형 아이콘 버튼. */
+.restartBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--mute);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.restartBtn:active {
+  transform: scale(0.92) rotate(-90deg);
+  color: var(--accent);
+}
+
+/* 재시작 아이콘에 매달리는 선택 메뉴 — "이 단계만" / "처음부터". */
+.restartWrap {
+  position: relative;
+}
+.restartBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+.restartMenu {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  z-index: 2;
+  width: 212px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.restartMenuItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  font-family: 'Gothic A1';
+  cursor: pointer;
+}
+.restartMenuItem b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.restartMenuItem span {
+  font-size: 11.5px;
+  color: var(--mute);
+}
+.restartMenuItem:active {
+  background: var(--ink-2);
 }
 
 .podium {
@@ -562,8 +641,8 @@
   background: var(--ink-2);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 16px 18px;
-  margin-bottom: 12px;
+  padding: 13px 16px;
+  margin-bottom: 10px;
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s;
@@ -579,6 +658,10 @@
   inset: 0;
   background: radial-gradient(80% 120% at 100% 0%, rgba(236, 147, 163, 0.12), transparent 70%);
   pointer-events: none;
+}
+/* 시트(locks)에서 잠가둔 구역. 눌리긴 하지만(언제 열리는지 알려줘야 하므로) 꺼진 것처럼 보인다. */
+.lockGated {
+  opacity: 0.5;
 }
 .tapable {
   cursor: pointer;
@@ -662,6 +745,15 @@
 .cmCellFilled {
   color: var(--accent-soft);
 }
+/* 합이 맞은 줄은 초록으로 굳혀서, 어디까지 풀었는지 눈으로 바로 잡히게 한다. */
+.cmCellDone {
+  background: rgba(147, 210, 164, 0.16);
+  border-color: rgba(147, 210, 164, 0.55);
+  color: var(--ok);
+}
+.cmCellSelected.cmCellDone {
+  border-color: var(--accent);
+}
 .cmTarget {
   aspect-ratio: 1;
   border-radius: 10px;
@@ -671,6 +763,16 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--accent);
+  transition: color 0.18s, background 0.18s;
+}
+.cmTargetDone {
+  color: var(--ok);
+  background: rgba(147, 210, 164, 0.18);
+}
+.cmTargetDone::after {
+  content: '✓';
+  font-size: 10px;
+  margin-left: 2px;
 }
 .cmCorner {
   aspect-ratio: 1;
@@ -866,19 +968,39 @@
 }
 
 /* ---------- 플래시 기억 ---------- */
+/* 단어를 한 개씩 띄우므로 높이를 고정해 글자가 뜰 때마다 화면이 들썩이지 않게 한다. */
 .flashShowBox {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 14px 20px;
-  padding: 26px 8px;
+  min-height: 108px;
+  padding: 16px 8px;
 }
 .flashWord {
-  font-size: 24px;
+  font-size: 34px;
   font-weight: 800;
   color: var(--accent-soft);
   text-align: center;
+  animation: flashWordIn 0.12s ease-out;
+}
+@keyframes flashWordIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.flashDots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.flashDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.flashDotOn {
+  background: var(--accent);
 }
 .flashChoiceGrid {
   display: grid;
@@ -1205,15 +1327,16 @@
   color: var(--mute);
   animation: demoMemFlash 5s steps(1) infinite, demoMemTap 5s steps(1) infinite;
 }
+/* 실제 게임처럼 한 개씩 차례로 켜졌다 꺼진 뒤, 같은 순서로 탭하는 흐름을 보여준다. */
 .demoMemChip1 {
-  animation-delay: 0s, 0.5s;
+  animation-delay: 0.6s, 0.4s;
 }
 .demoMemChip2 {
-  animation-delay: 0s, 1s;
+  animation-delay: 1.2s, 0.8s;
 }
 @keyframes demoMemFlash {
-  0%, 18% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
-  19%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+  0%, 11% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  12%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
 }
 @keyframes demoMemTap {
   0%, 39% { box-shadow: none; }

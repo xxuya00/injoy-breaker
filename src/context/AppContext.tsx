@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
 import type { AppState, Day, ScreenId, TabId } from '../types';
 import { loadLastId, loadState, saveLastId, saveState, loadGroup, saveGroup, clearLocalPlayer } from '../lib/storage';
 import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
-import { saveRemoteProgress as saveLeaderboardScore } from '../lib/sync';
+import { saveRemoteProgress as saveLeaderboardScore, deleteRemotePlayer } from '../lib/sync';
 import { useToast } from './ToastContext';
 
 const TAB_SCREEN: Record<TabId, ScreenId> = {
@@ -14,18 +14,20 @@ const TAB_SCREEN: Record<TabId, ScreenId> = {
 };
 
 type Action =
-  | { type: 'ENROLL'; id: string; nick: string; nickname: string }
+  | { type: 'ENROLL'; id: string; nick: string; nickname: string; group: string }
   | { type: 'RESTORE'; state: Partial<AppState> & { id: string; nick: string } }
   | { type: 'RESET' }
   | { type: 'GO_SCREEN'; screen: ScreenId }
   | { type: 'SET_TAB'; tab: TabId }
   | { type: 'SELECT_DAY'; day: Day }
+  | { type: 'SET_GROUP'; group: string }
   | { type: 'OPEN_LOCK'; id: string };
 
 const initialState: AppState = {
   id: null,
   nick: '',
   nickname: '',
+  group: '',
   day: 1,
   opened: {},
   screen: 'login',
@@ -35,7 +37,7 @@ const initialState: AppState = {
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ENROLL':
-      return { ...state, id: action.id, nick: action.nick, nickname: action.nickname, screen: 'brief' };
+      return { ...state, id: action.id, nick: action.nick, nickname: action.nickname, group: action.group, screen: 'brief' };
     case 'RESTORE':
       return { ...state, ...action.state, screen: 'journey', activeTab: 'journey' };
     case 'RESET':
@@ -46,6 +48,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, activeTab: action.tab, screen: TAB_SCREEN[action.tab] };
     case 'SELECT_DAY':
       return { ...state, day: action.day };
+    case 'SET_GROUP':
+      return { ...state, group: action.group };
     case 'OPEN_LOCK':
       return { ...state, opened: { ...state.opened, [action.id]: true } };
     default:
@@ -60,6 +64,7 @@ interface AppContextValue {
   goScreen: (screen: ScreenId) => void;
   setTab: (tab: TabId) => void;
   selectDay: (day: Day) => void;
+  setGroup: (group: string) => void;
   openLock: (id: string) => void;
 }
 
@@ -78,6 +83,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 안 그러면 로컬 캐시로 보여준 화면이 그대로 저장 이펙트를 타면서, 관리자가 시트에서 지운 기록을
   // (조회 응답이 늦게 와서) 다시 만들어버리는 경합이 생길 수 있다. 이어할 게 없으면 바로 true.
   const [hydrated, setHydrated] = useState(() => !loadLastId());
+  // 신규 등록으로 시트에 행을 처음 만들 권한. 등록 저장이 성공할 때까지만 켜져 있고,
+  // 그 뒤의 진행 저장은 행을 새로 만들지 못한다(관리자가 지운 기록이 되살아나지 않도록).
+  const allowCreate = useRef(false);
+  // 순위판 쓰기가 삭제보다 늦게 도착해 지운 문서를 되살리는 걸 막기 위해 마지막 쓰기를 붙잡아 둔다.
+  const pendingScoreWrite = useRef<Promise<unknown>>(Promise.resolve());
+
+  // 시트(진짜 DB)에서 사라진 참가자를 이 기기와 실시간 순위판에서 완전히 지우고 로그인 화면으로 되돌린다.
+  const wipePlayer = (id: string) => {
+    clearLocalPlayer();
+    allowCreate.current = false;
+    dispatch({ type: 'RESET' });
+    pendingScoreWrite.current.then(() => deleteRemotePlayer(id).catch(() => {}));
+  };
 
   // resume session on load.
   // 클리어 여부(opened)의 기준은 항상 구글 시트(진짜 DB)다. 로컬 캐시는 시트 응답이 오기 전까지
@@ -89,7 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!lastId) return;
     const local = loadState(lastId);
     if (local) {
-      dispatch({ type: 'RESTORE', state: { ...local, id: lastId } });
+      // group이 AppState에 없던 시절에 저장된 캐시는 따로 보관해둔 조를 쓴다.
+      dispatch({ type: 'RESTORE', state: { ...local, id: lastId, group: local.group || loadGroup() || '' } });
     }
     if (!gasEnabled) {
       setHydrated(true);
@@ -98,8 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadRemoteProgress(lastId)
       .then((remote) => {
         if (!remote) {
-          clearLocalPlayer(lastId);
-          dispatch({ type: 'RESET' });
+          wipePlayer(lastId);
           return;
         }
         if (remote.group) saveGroup(remote.group);
@@ -109,6 +127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             id: lastId,
             nick: remote.nick,
             nickname: remote.nickname || '',
+            group: remote.group || loadGroup() || '',
             day: (remote.day as Day) || 1,
             opened: remote.opened || {},
           },
@@ -125,19 +144,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!state.id || !hydrated) return;
     saveState(state.id, state);
-    const group = loadGroup() ?? undefined;
-    saveRemoteProgress(state.id, state.nick, state.day, state.opened, state.nickname, group).catch(() => {
-      toast('저장에 실패했어요. 네트워크를 확인해주세요');
-    });
+    const group = state.group || loadGroup() || undefined;
+    const id = state.id;
+    const create = allowCreate.current;
+    saveRemoteProgress(id, state.nick, state.day, state.opened, state.nickname, group, create)
+      .then((res) => {
+        // 관리자가 시트에서 이 참가자를 지운 경우. 진행도를 다시 써넣지 않고 이 기기를 정리한다.
+        if (res.missing) {
+          wipePlayer(id);
+          toast('관리자가 기록을 삭제했어요. 처음부터 다시 등록해주세요');
+          return;
+        }
+        if (create) allowCreate.current = false;
+      })
+      .catch(() => {
+        toast('저장에 실패했어요. 네트워크를 확인해주세요');
+      });
     // 실시간 순위판(70명 동시 접속에도 안정적)을 위해 점수만 별도로 Firestore에도 기록한다.
-    saveLeaderboardScore(state.id, state.nick, state.day, state.opened).catch(() => {});
+    pendingScoreWrite.current = saveLeaderboardScore(id, state.nick, state.day, state.opened).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, hydrated]);
 
   const enroll = (name: string, nickname: string, group: string, id: string) => {
     saveLastId(id);
     saveGroup(group);
-    dispatch({ type: 'ENROLL', id, nick: name, nickname });
+    // 신규 등록만 시트에 행을 새로 만들 수 있다. 저장이 성공해야 꺼지므로 실패하면 다음 저장에서 다시 시도된다.
+    allowCreate.current = true;
+    dispatch({ type: 'ENROLL', id, nick: name, nickname, group });
   };
 
   const restoreById = async (id: string): Promise<boolean> => {
@@ -163,6 +196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         id,
         nick: remote?.nick ?? local?.nick ?? '',
         nickname: remote?.nickname ?? local?.nickname ?? '',
+        group: remote?.group || local?.group || loadGroup() || '',
         day: ((remote?.day ?? local?.day ?? 1) as Day),
         opened: remote ? remote.opened : local?.opened ?? {},
       },
@@ -173,10 +207,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const goScreen = (screen: ScreenId) => dispatch({ type: 'GO_SCREEN', screen });
   const setTab = (tab: TabId) => dispatch({ type: 'SET_TAB', tab });
   const selectDay = (day: Day) => dispatch({ type: 'SELECT_DAY', day });
+  // 내 조를 바꾼다. 등록할 때 골라둔 조가 없던 예전 참가자를 위한 보정용이고,
+  // 다른 조 기도제목을 구경하는 건 이걸 건드리지 않는다(보기 전용).
+  const setGroup = (group: string) => {
+    saveGroup(group);
+    dispatch({ type: 'SET_GROUP', group });
+  };
   const openLock = (id: string) => dispatch({ type: 'OPEN_LOCK', id });
 
   return (
-    <AppContext.Provider value={{ state, enroll, restoreById, goScreen, setTab, selectDay, openLock }}>
+    <AppContext.Provider value={{ state, enroll, restoreById, goScreen, setTab, selectDay, setGroup, openLock }}>
       {children}
     </AppContext.Provider>
   );

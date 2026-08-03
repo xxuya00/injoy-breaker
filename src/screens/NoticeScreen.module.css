@@ -1,3 +1,13 @@
+/* 공지는 몇 개가 올라올지 정해져 있지 않다. 전부 펼쳐 놓으면 FitBox가 화면 전체를
+   글씨가 안 보일 만큼 줄이고 그래도 넘쳐 페이지가 통째로 드래그되므로, 목록만 이 높이
+   안에서 넘겨 보게 한다. 이 높이도 FitBox가 기기에 맞춰 함께 키우고 줄인다. */
+.list {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 2px;
+}
+
 .item {
   background: var(--ink-2);
   border: 1px solid var(--line);

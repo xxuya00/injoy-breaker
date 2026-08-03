@@ -29,6 +29,25 @@ export function generateCrossMathRound(): CrossMathRound {
   return { rowTargets, colTargets, hint };
 }
 
+// 한 줄(가로/세로)이 다 채워졌고 합까지 맞으면 그 줄을 "완성"으로 본다.
+// 화면에서 완성된 줄만 초록으로 표시해 어디까지 맞췄는지 바로 보이게 하려는 용도.
+export interface CrossMathLines {
+  rows: [boolean, boolean, boolean];
+  cols: [boolean, boolean, boolean];
+}
+
+export function crossMathLines(values: (number | null)[], round: CrossMathRound): CrossMathLines {
+  const lineDone = (cells: (number | null)[], target: number) =>
+    cells.every((v) => v !== null) && (cells as number[]).reduce((a, b) => a + b, 0) === target;
+  const rows = [0, 1, 2].map((r) =>
+    lineDone([values[r * 3], values[r * 3 + 1], values[r * 3 + 2]], round.rowTargets[r]),
+  ) as [boolean, boolean, boolean];
+  const cols = [0, 1, 2].map((c) =>
+    lineDone([values[c], values[c + 3], values[c + 6]], round.colTargets[c]),
+  ) as [boolean, boolean, boolean];
+  return { rows, cols };
+}
+
 export function checkCrossMath(values: (number | null)[], round: CrossMathRound): boolean {
   if (values.some((v) => v === null)) return false;
   const v = values as number[];
