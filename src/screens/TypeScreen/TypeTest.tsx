@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   IDOL_ORDER,
   IDOL_META,
@@ -15,16 +15,31 @@ import {
   PRAY_AXIS_EXPR,
   PRAY_AXIS_FOCUS,
   PRAY_TIME_OPTIONS,
-  MED_TYPES,
-  PRAY_TYPES,
   type IdolKey,
 } from '../../data/typeTest';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { loadTypeResult, saveTypeResult } from '../../lib/gas';
-import { clearTypeProgress, loadTypeProgress, saveTypeProgress } from '../../lib/storage';
+import { clearTypeProgress, loadTypeProgress, saveTypeProgress, saveTypeSummary } from '../../lib/storage';
+import { computeResponseQuality, computeWalk, QUALITY_NOTE, type QualityBand, type WalkMeta } from '../../lib/typeScore';
 import BackLink from '../../components/BackLink';
+import { useFitMode } from '../../components/FitBox';
 import styles from './TypeTest.module.css';
+
+// 문항 자리의 높이를 붙박이로 만들기 위해 뒤에 깔아둘 "가장 긴 문장". 글자 수가 많을수록
+// 줄 수도 많으므로 가장 긴 문장의 높이가 곧 모든 문항이 필요로 하는 최대 높이가 된다.
+const longest = (list: string[]) => list.reduce((a, b) => (b.length > a.length ? b : a), '');
+const LONGEST_IDOL_TEXT = longest(IDOL_QUESTIONS.map((q) => q.text));
+const LONGEST_AB_TEXT = longest(
+  [
+    ...MED_AXIS_ROUTINE,
+    ...MED_AXIS_METHOD,
+    ...MED_AXIS_SOCIAL,
+    ...PRAY_AXIS_ROUTINE,
+    ...PRAY_AXIS_EXPR,
+    ...PRAY_AXIS_FOCUS,
+  ].flatMap((q) => [q.a, q.b]),
+);
 
 function shuffledIndices(length: number): number[] {
   const arr = Array.from({ length }, (_, i) => i);
@@ -37,7 +52,7 @@ function shuffledIndices(length: number): number[] {
 
 type TTScreen =
   | { type: 'intro' }
-  | { type: 'section'; title: string; body: string }
+  | { type: 'section'; step: string; title: string; body: string }
   | { type: 'likert'; key: string; cat: IdolKey; text: string; section: string }
   | { type: 'ab'; key: string; a: string; b: string; section: string }
   | { type: 'choice'; key: string; text: string; options: string[]; section: string }
@@ -48,14 +63,24 @@ type TTScreen =
 function buildScreens(order: number[]): TTScreen[] {
   const screens: TTScreen[] = [];
   screens.push({ type: 'intro' });
-  screens.push({ type: 'section', title: '1부 · 나의 우상 유형', body: '하나님보다 앞에 두기 쉬운 것이 무엇인지, 함께 찾아봐요.' });
+  screens.push({
+    type: 'section',
+    step: 'PART 1',
+    title: '나의 우상 유형',
+    body: '하나님보다 앞에 두기 쉬운 것이 무엇인지, 함께 찾아봐요.',
+  });
   order.forEach((i) => {
     const q = IDOL_QUESTIONS[i];
     screens.push({ type: 'likert', key: 'idol_' + i, cat: q.cat, text: q.text, section: '우상 유형' });
   });
 
   // 묵상과 기도는 따로 나누지 않고 한 부로 이어서 묻는다.
-  screens.push({ type: 'section', title: '2부 · 나의 묵상과 기도', body: '말씀과 기도를 대하는 시간과 방식으로 나의 결을 알아봐요.' });
+  screens.push({
+    type: 'section',
+    step: 'PART 2',
+    title: '나의 묵상과 기도',
+    body: '말씀과 기도를 대하는 시간과 방식으로 나의 결을 알아봐요.',
+  });
   MED_AXIS_ROUTINE.forEach((q, i) => screens.push({ type: 'ab', key: 'med_r_' + i, a: q.a, b: q.b, section: '묵상과 기도' }));
   MED_AXIS_METHOD.forEach((q, i) => screens.push({ type: 'ab', key: 'med_m_' + i, a: q.a, b: q.b, section: '묵상과 기도' }));
   MED_AXIS_SOCIAL.forEach((q, i) => screens.push({ type: 'ab', key: 'med_s_' + i, a: q.a, b: q.b, section: '묵상과 기도' }));
@@ -103,6 +128,39 @@ function computePray(answers: Record<string, number>) {
   return { type: `${routine}_${expr}`, focus, time: t !== undefined ? PRAY_TIME_OPTIONS[t] : '미응답' };
 }
 
+function SectionTag({ label }: { label: string }) {
+  return (
+    <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
+      {label}
+    </div>
+  );
+}
+
+// 문항 글은 보이는 것과 가장 긴 문항을 같은 자리에 겹쳐 둔다(뒤엣것은 자리만 차지한다).
+function QuestionText({ text }: { text: string }) {
+  return (
+    <div className={styles.qStack}>
+      <h2 className={styles.qHeading}>{text}</h2>
+      <h2 className={`${styles.qHeading} ${styles.ghost}`} aria-hidden="true">
+        {LONGEST_IDOL_TEXT}
+      </h2>
+    </div>
+  );
+}
+
+function PrevButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className={styles.qNav}>
+      <button className={styles.prevBtn} onClick={onClick}>
+        <svg viewBox="0 0 24 24">
+          <path d="M15 6l-6 6 6 6" />
+        </svg>
+        이전
+      </button>
+    </div>
+  );
+}
+
 export default function TypeTest() {
   const { state, goScreen } = useApp();
   const [order, setOrder] = useState(() => shuffledIndices(IDOL_QUESTIONS.length));
@@ -115,6 +173,12 @@ export default function TypeTest() {
   const current = screens[idx];
   // 화면 수는 문항 수에 따라 정해지므로, 저장해둔 답변이 지금 문항 구성과 맞는지 가리는 기준으로 쓴다.
   const version = screens.length;
+  const isResult = current.type === 'result';
+
+  // 결과지는 한 화면에 우겨넣을 내용이 아니다(카드 두 장에 상세 설명 토글까지 열린다).
+  // 억지로 줄이면 글씨만 작아지므로 원래 크기로 두고 읽어 내려가게 한다.
+  // 반대로 문항 화면은 글이 한 줄뿐이라 남는 높이만큼 키우면 글씨만 커진 확대경이 된다.
+  useFitMode(isResult ? 'scroll' : 'shrink', idx);
 
   // 이 화면은 앱이 켜질 때(로그인 전) 이미 마운트되므로, 로그인해서 id가 생긴 뒤에 저장된 답변을 불러온다.
   // 이 기기에 남은 게 없으면 시트에 백업해둔 답변으로 결과를 되살린다
@@ -171,14 +235,29 @@ export default function TypeTest() {
     setIdx(0);
   };
 
+  // 결과 화면에서만 제목이 'IDOL-X' 대신 확정된 글자와 조합 이름으로 바뀐다.
+  const resultTitle = useMemo(() => {
+    if (!isResult) return null;
+    const { primary, secondary } = computeIdol(answers);
+    return `IDOL-${computeWalk(answers).code}: “${IDOL_COMBOS[primary][secondary]!.name}”`;
+  }, [isResult, answers]);
+
   return (
     <section>
       <BackLink onClick={() => goScreen('journey')} />
-      <div className="eyebrow">Inner Desire &amp; Orientation Assessment</div>
-      <h1>IDOL-X</h1>
-      <p className="muted" style={{ marginBottom: 16 }}>
-        내가 하나님보다 앞세우는 것, 말씀과 기도를 대하는 나의 결을 알아봐요.
-      </p>
+      <div className={`eyebrow ${styles.ttEyebrow}`}>Inner Desire &amp; Orientation Assessment</div>
+      {/* 검사를 마치면 제목의 X가 내 글자로 확정되고, 조합 이름까지 제목이 품는다 —
+          결과지의 헤드라인 역할을 제목이 겸한다.
+          반대로 문항을 푸는 동안에는 제목이 매 화면 주인공 자리를 차지하지 않도록 줄여 둔다.
+          그 자리의 주인공은 지금 읽어야 할 문항이다. */}
+      <h1 className={resultTitle ? styles.resultTitle : current.type === 'intro' ? undefined : styles.testTitle}>
+        {resultTitle ?? 'IDOL-X'}
+      </h1>
+      {current.type === 'intro' && (
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Break · 하나님보다 앞세우는 것 찾기
+        </p>
+      )}
 
       {isQ && (
         <div className={styles.progressWrap}>
@@ -204,10 +283,13 @@ export default function TypeTest() {
           </>
         )}
 
+        {/* 예전에는 안내 문장 자체가 h2로 화면을 가득 채웠다. 지금은 "몇 부에 들어서는가"가
+            주인공이고, 안내 문장은 그 아래 붙는 본문이다. */}
         {current.type === 'section' && (
           <>
-            <span className="pill">{current.title}</span>
-            <h2 style={{ margin: '8px 0 18px' }}>{current.body}</h2>
+            <div className={styles.sectionStep}>{current.step}</div>
+            <h2 className={styles.sectionTitle}>{current.title}</h2>
+            <p className={styles.sectionBody}>{current.body}</p>
             <div className="row">
               <button className="btn ghost" style={{ flex: '0 0 92px' }} onClick={goPrev}>
                 이전
@@ -221,10 +303,8 @@ export default function TypeTest() {
 
         {current.type === 'likert' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
-              {current.section}
-            </div>
-            <h2 className={styles.qHeading}>{current.text}</h2>
+            <SectionTag label={current.section} />
+            <QuestionText text={current.text} />
             <div className={`${styles.scaleTrack} ${styles.scaleTrackLikert}`}>
               <div className={styles.scaleLine} />
               {LIKERT_LABELS.map((label, i) => {
@@ -246,28 +326,32 @@ export default function TypeTest() {
               <span>{LIKERT_LABELS[0]}</span>
               <span>{LIKERT_LABELS[LIKERT_LABELS.length - 1]}</span>
             </div>
-            <div className="row" style={{ marginTop: 20 }}>
-              <button className="btn ghost" onClick={goPrev}>
-                이전
-              </button>
-            </div>
+            <PrevButton onClick={goPrev} />
           </>
         )}
 
         {current.type === 'ab' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
-              {current.section}
-            </div>
+            <SectionTag label={current.section} />
             <div className={styles.abCard}>
               <div className={styles.abSide}>
                 <span className={styles.abBadge}>A</span>
-                <p>{current.a}</p>
+                <div className={styles.abStack}>
+                  <p>{current.a}</p>
+                  <p className={styles.ghost} aria-hidden="true">
+                    {LONGEST_AB_TEXT}
+                  </p>
+                </div>
               </div>
               <div className={styles.abDivider}>vs</div>
               <div className={styles.abSide}>
                 <span className={`${styles.abBadge} ${styles.abBadgeB}`}>B</span>
-                <p>{current.b}</p>
+                <div className={styles.abStack}>
+                  <p>{current.b}</p>
+                  <p className={styles.ghost} aria-hidden="true">
+                    {LONGEST_AB_TEXT}
+                  </p>
+                </div>
               </div>
             </div>
             <div className={styles.scaleTrack}>
@@ -289,19 +373,13 @@ export default function TypeTest() {
               <span>중립</span>
               <span>B</span>
             </div>
-            <div className="row" style={{ marginTop: 20 }}>
-              <button className="btn ghost" onClick={goPrev}>
-                이전
-              </button>
-            </div>
+            <PrevButton onClick={goPrev} />
           </>
         )}
 
         {current.type === 'choice' && (
           <>
-            <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
-              {current.section}
-            </div>
+            <SectionTag label={current.section} />
             <h2 className={styles.qHeading} style={{ marginBottom: 16 }}>{current.text}</h2>
             {current.options.map((o, i) => (
               <button
@@ -312,11 +390,7 @@ export default function TypeTest() {
                 {o}
               </button>
             ))}
-            <div className="row" style={{ marginTop: 6 }}>
-              <button className="btn ghost" onClick={goPrev}>
-                이전
-              </button>
-            </div>
+            <PrevButton onClick={goPrev} />
           </>
         )}
 
@@ -344,7 +418,7 @@ function Chevron({ open }: { open: boolean }) {
 
 // 우상 유형 카드. 내 결과를 보여주는 것이 기본이지만, 1·2위 자리를 눌러 다른 유형 조합의
 // 결과도 그대로 열어볼 수 있다(내 점수와 저장되는 결과는 바뀌지 않는다).
-function IdolResultCard({ idol }: { idol: ReturnType<typeof computeIdol> }) {
+function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; band: QualityBand }) {
   const [pick, setPick] = useState<{ p: IdolKey; s: IdolKey } | null>(null);
   const [openSlot, setOpenSlot] = useState<'p' | 's' | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -367,12 +441,21 @@ function IdolResultCard({ idol }: { idol: ReturnType<typeof computeIdol> }) {
   ];
 
   return (
-    <div className="decision-card" style={{ marginBottom: 16 }}>
-      <div className={styles.ttResultTag} style={{ position: 'relative' }}>
-        {isMine ? '01 · 나의 우상 유형' : '01 · 다른 유형 살펴보는 중'}
+    <div className="decision-card">
+      {/* 내 조합은 이름표처럼 이 줄에 작게 붙인다. 응답이 얼마나 또렷했는지는 그 이름표의
+          색으로만 전한다 — '신뢰성 낮음' 같은 등급을 글자로 박아두면 채점처럼 읽히기 때문이다. */}
+      <div className={styles.cardTagRow}>
+        <span className={styles.ttResultTag}>{isMine ? '내가 앞세우는 것' : '다른 유형 살펴보는 중'}</span>
+        {isMine && (
+          <span className={`${styles.comboPill} ${QUALITY_BAND_CLASS[band]}`} title={QUALITY_NOTE[band]}>
+            {IDOL_META[idol.primary].label} × {IDOL_META[idol.secondary].label}
+          </span>
+        )}
       </div>
-      <h2 style={{ position: 'relative', marginBottom: 10 }}>{combo.name}</h2>
-      <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginBottom: 8 }}>{combo.desc}</p>
+      {/* 내 조합 이름은 화면 제목이 이미 품고 있다. 여기서는 다른 유형을 열어봤을 때만
+          지금 보고 있는 조합이 무엇인지 밝혀준다. */}
+      {!isMine && <h2 style={{ marginBottom: 10 }}>{combo.name}</h2>}
+      <p className={styles.comboDesc}>{combo.desc}</p>
 
       <div className={styles.rankBadges}>
         {slots.map(({ slot, rank, key }) => {
@@ -430,24 +513,23 @@ function IdolResultCard({ idol }: { idol: ReturnType<typeof computeIdol> }) {
       )}
 
       <button className={styles.detailToggle} aria-expanded={detailOpen} onClick={() => setDetailOpen((o) => !o)}>
-        <span>
-          {IDOL_META[p].label} × {IDOL_META[s].label} 자세히 보기
-        </span>
+        <span>{combo.name} 자세히 보기</span>
         <Chevron open={detailOpen} />
       </button>
       <div className={`${styles.detailBody} ${detailOpen ? styles.detailBodyOpen : ''}`}>
         <div className={styles.detailInner}>
           <p className={styles.detailText}>{combo.detail}</p>
           <div className={styles.detailVerse}>
-            <span className={styles.detailVerseRef}>추천 말씀 · {combo.verse.ref}</span>“{combo.verse.text}”
+            <span className={styles.detailVerseRef}>추천 말씀</span>
+            {combo.verse}
           </div>
         </div>
       </div>
 
-      <div className={styles.ttSubLabel} style={{ position: 'relative', marginTop: 18 }}>
+      <div className={styles.ttSubLabel} style={{ marginTop: 18 }}>
         내 응답 분포
       </div>
-      <div className={styles.ttBars} style={{ position: 'relative' }}>
+      <div className={styles.ttBars}>
         {IDOL_ORDER.map((c) => {
           const meta = IDOL_META[c];
           const pct = Math.max(4, Math.round((idol.scores[c] / IDOL_CAT_MAX) * 100));
@@ -468,6 +550,169 @@ function IdolResultCard({ idol }: { idol: ReturnType<typeof computeIdol> }) {
   );
 }
 
+const QUALITY_BAND_CLASS: Record<QualityBand, string> = {
+  high: styles.qualityHigh,
+  mid: styles.qualityMid,
+  low: styles.qualityLow,
+};
+
+// 우상 진단(내 마음의 그늘)에서 처방(하나님께 돌아가는 길)으로 넘어가는 자리.
+// 덱은 손가락으로 넘길 수 있지만 그것만으로는 "넘길 게 있다"는 걸 모른다.
+// 진단을 다 읽은 자리에 질문을 놓고, 그 질문이 곧 넘기는 버튼이 된다.
+function BridgeNudge({ onNext }: { onNext: () => void }) {
+  return (
+    <button className={styles.bridge} onClick={onNext}>
+      <span className={styles.bridgeLine} aria-hidden="true" />
+      {/* 줄바꿈을 손으로 넣으면 기기 폭에 따라 "위해," 같은 한 낱말만 남는 줄이 생긴다.
+          어절 단위로만 끊기게 두고(keep-all) 줄바꿈은 브라우저에 맡긴다. */}
+      <span className={styles.bridgeText}>
+        그렇다면 이 마음의 우상을 내려놓고 하나님께 돌아가기 위해, 당신에게 가장 자연스러운 <b>영적 호흡 방식</b>은
+        무엇일까요?
+      </span>
+      <span className={styles.bridgeGo}>
+        나의 영적 처방 보기
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
+// 묵상·기도의 결을 "또 하나의 유형"이 아니라 앞선 우상 진단에 대한 처방으로 내놓는다.
+// 그래서 이름을 크게 앞세우지 않고, 무엇을 어떻게 해보면 되는지가 카드의 본문이 된다.
+function PrescriptionCard({ walk }: { walk: WalkMeta }) {
+  return (
+    <div className="decision-card">
+      <div className={styles.walkHead}>
+        <h2 className={styles.walkName}>
+          {walk.name}
+          <em>{walk.en}</em>
+        </h2>
+        <span className={styles.walkAxis}>
+          {walk.expression} × {walk.rhythm}
+        </span>
+      </div>
+      <p className={styles.walkTagline}>{walk.tagline}</p>
+      <p className={styles.walkFusion}>{walk.fusion}</p>
+
+      <div className={styles.guideLabel}>실천 가이드</div>
+      <ul className={styles.guideList}>
+        {walk.guides.map((g) => (
+          <li key={g}>{g}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface DeckSlide {
+  key: string;
+  /** 넘기기 전에도 저쪽에 무엇이 있는지 보여주는 이름표 */
+  tab: string;
+  /** goTo를 받아 슬라이드 안에서도 다른 장으로 넘길 수 있게 한다(브릿지 버튼 등). */
+  render: (goTo: (i: number) => void) => ReactNode;
+}
+
+// 진단과 처방을 좌우로 넘겨보는 덱. 스크롤 스냅만 쓰기 때문에 터치 스와이프는 브라우저 기본
+// 동작이고, 여기서는 지금 몇 번째를 보고 있는지만 따라간다.
+// 점 대신 이름표를 쓴다 — 넘기기 전에도 "저쪽에 무엇이 있는지"가 보여야 넘길 마음이 생긴다.
+function ResultDeck({ slides }: { slides: DeckSlide[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  // 넘기는 중에는 들어오는 장이 잘리지 않게 가장 큰 높이를 쓴다. 멈춘 뒤에는 지금 보는 장에 맞춘다.
+  const [moving, setMoving] = useState(false);
+  const [trackH, setTrackH] = useState<number>();
+  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 스크롤이 멎었는지 알려주는 이벤트가 없어서, 잠시 조용하면 멈춘 것으로 본다.
+  const markMoving = () => {
+    setMoving(true);
+    if (settleRef.current) clearTimeout(settleRef.current);
+    settleRef.current = setTimeout(() => setMoving(false), 160);
+  };
+
+  // 슬라이드 사이 간격 때문에 scrollLeft를 폭으로 나누면 어긋난다.
+  // 화면 한가운데에 가장 가까운 슬라이드를 현재 슬라이드로 본다.
+  const syncActive = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    const mid = el.scrollLeft + el.clientWidth / 2;
+    let nearest = 0;
+    let best = Infinity;
+    Array.from(el.children).forEach((child, i) => {
+      const c = child as HTMLElement;
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid);
+      if (d < best) {
+        best = d;
+        nearest = i;
+      }
+    });
+    setActive(nearest);
+    markMoving();
+  };
+
+  // 두 장의 높이가 다르면 짧은 쪽 아래에 그 차이만큼 빈 자리가 남는다(상세 설명을 펴면 더 벌어진다).
+  // 그래서 덱 자체의 높이를 지금 보는 장에 맞춰 따라가게 한다. 슬라이드 안에서 토글이 열려
+  // 높이가 달라지는 것도 관찰해서 함께 따라간다.
+  useLayoutEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const kids = Array.from(el.children) as HTMLElement[];
+    if (!kids.length) return;
+    const sync = () => {
+      const heights = kids.map((k) => k.getBoundingClientRect().height);
+      setTrackH(Math.ceil(moving ? Math.max(...heights) : heights[active] ?? 0));
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    kids.forEach((k) => ro.observe(k));
+    return () => ro.disconnect();
+  }, [active, moving, slides.length]);
+
+  useEffect(() => () => {
+    if (settleRef.current) clearTimeout(settleRef.current);
+  }, []);
+
+  // 이름표를 눌러 넘길 때는 스크롤 이벤트를 기다리지 않고 곧바로 활성 장을 바꾼다.
+  // 부드러운 스크롤은 몇 프레임 뒤에야 첫 이벤트를 주기 때문에, 기다리면 누른 이름표가
+  // 한 박자 늦게 켜진다(움직임을 줄이는 설정에서는 아예 안 켜질 수도 있다).
+  const goTo = (i: number) => {
+    const el = trackRef.current;
+    const target = el?.children[i] as HTMLElement | undefined;
+    if (!el || !target) return;
+    setActive(i);
+    // 짧은 장으로 넘어갈 때, 아직 보이는 긴 장이 잘리지 않도록 스크롤이 끝날 때까지 높이를 열어둔다.
+    markMoving();
+    el.scrollTo({ left: target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className={styles.deckTabs} role="tablist">
+        {slides.map((s, i) => (
+          <button
+            key={s.key}
+            role="tab"
+            aria-selected={i === active}
+            className={`${styles.deckTab} ${i === active ? styles.deckTabOn : ''}`}
+            onClick={() => goTo(i)}
+          >
+            {s.tab}
+          </button>
+        ))}
+      </div>
+      <div className={styles.deck} ref={trackRef} onScroll={syncActive} style={{ height: trackH }}>
+        {slides.map((s) => (
+          <div className={styles.deckSlide} key={s.key}>
+            {s.render(goTo)}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function ResultView({
   answers,
   version,
@@ -479,11 +724,12 @@ function ResultView({
 }) {
   const { state } = useApp();
   const idol = computeIdol(answers);
+  // 묵상·기도 유형 코드와 시간은 화면에 따로 펼치지 않고 인도자용으로 시트에만 남긴다.
   const med = computeMed(answers);
   const pray = computePray(answers);
+  const walk = computeWalk(answers);
+  const quality = computeResponseQuality(answers);
   const combo = IDOL_COMBOS[idol.primary][idol.secondary]!;
-  const medT = MED_TYPES[med.type];
-  const prayT = PRAY_TYPES[pray.type];
   const toast = useToast();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const savingRef = useRef(false);
@@ -502,11 +748,16 @@ function ResultView({
       idolSecondary: idol.secondary,
       comboName: combo.name,
       medType: med.type,
-      medTypeName: medT.name,
       prayType: pray.type,
-      prayTypeName: prayT.name,
       medTime: med.time,
       prayTime: pray.time,
+      walkCode: walk.code,
+      medSocial: med.social,
+      prayFocus: pray.focus,
+      idolScores: idol.scores,
+      consistency: quality.consistency,
+      clarity: quality.clarity,
+      flat: quality.flat,
       answers,
       version,
     })
@@ -525,39 +776,35 @@ function ResultView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id, saveStatus]);
 
-  const medSocialNote =
-    med.social === 'G' ? '함께 말씀을 나누며 묵상할 때 더 은혜를 받는 편이에요.' : '혼자 조용히 묵상할 때 더 은혜를 받는 편이에요.';
-  const prayFocusNote =
-    pray.focus === 'O'
-      ? '기도 시간의 대부분을 나 자신의 삶과 고민을 위해 쓰는 편이에요.'
-      : '나를 위한 기도와 다른 사람을 위한 기도를 비슷한 비중으로 하는 편이에요.';
+  // 나눔 화면이 내 유형을 알아야 하는데, 답변을 다시 채점하려면 문항 구성까지 알아야 한다.
+  // 결론만 따로 남겨두면 나눔 화면은 검사 화면을 몰라도 된다.
+  useEffect(() => {
+    if (state.id) saveTypeSummary(state.id, { primary: idol.primary, secondary: idol.secondary, comboName: combo.name });
+  }, [state.id, idol.primary, idol.secondary, combo.name]);
 
   return (
     <>
-      <IdolResultCard idol={idol} />
-
-      <div className="decision-card" style={{ marginBottom: 16 }}>
-        <div className={styles.ttResultTag} style={{ position: 'relative' }}>
-          02 · 나의 묵상과 기도
-        </div>
-        <div className={styles.ttSubLabel} style={{ position: 'relative' }}>
-          묵상
-        </div>
-        <p style={{ position: 'relative', color: '#f5ede0', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{medT.desc}</p>
-        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {medSocialNote}</p>
-        <div className={styles.ttStatPill} style={{ position: 'relative' }}>
-          하루 평균 묵상 시간 · {med.time}
-        </div>
-
-        <div className={styles.ttSubLabel} style={{ position: 'relative', marginTop: 20 }}>
-          기도
-        </div>
-        <p style={{ position: 'relative', color: '#f5ede0', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{prayT.desc}</p>
-        <p style={{ position: 'relative', color: '#d9cdbb', fontSize: 14.5, marginTop: 8 }}>+ {prayFocusNote}</p>
-        <div className={styles.ttStatPill} style={{ position: 'relative' }}>
-          하루 평균 기도 시간 · {pray.time}
-        </div>
-      </div>
+      {/* 진단과 처방을 위아래로 이어 붙이면 처방이 한참 내려야 나오는 덤이 된다.
+          좌우로 두 장을 두고, 진단 끝의 질문이 곧 처방으로 넘어가는 손잡이가 된다. */}
+      <ResultDeck
+        slides={[
+          {
+            key: 'idol',
+            tab: '우상 진단',
+            render: (goTo) => (
+              <>
+                <IdolResultCard idol={idol} band={quality.band} />
+                <BridgeNudge onNext={() => goTo(1)} />
+              </>
+            ),
+          },
+          {
+            key: 'walk',
+            tab: '영적 처방',
+            render: () => <PrescriptionCard walk={walk} />,
+          },
+        ]}
+      />
 
       {saveStatus === 'error' && (
         <button className="btn" style={{ marginBottom: 10 }} onClick={persist}>
@@ -567,7 +814,12 @@ function ResultView({
       <button className="btn ghost" onClick={onRestart}>
         다시 검사하기
       </button>
-      <p className="tiny">이 결과는 진단이 아니라, 나를 돌아보고 하나님 앞에 더 솔직해지기 위한 도구예요.</p>
+      {/* 나눔은 검사 직후가 아니라 진행자가 시간을 잡았을 때 여정에서 열린다.
+          여기서는 그런 자리가 있다는 것만 알려둔다. */}
+      <p className="tiny">
+        이 결과는 진단이 아니라, 나를 돌아보고 하나님 앞에 더 솔직해지기 위한 도구예요. 같은 유형끼리 나누는 시간은
+        여정 화면에서 열려요.
+      </p>
     </>
   );
 }

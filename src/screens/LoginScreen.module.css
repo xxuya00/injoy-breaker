@@ -5,6 +5,12 @@
   line-height: 0.9;
   color: var(--text);
   position: relative;
+  white-space: nowrap;
+}
+/* 이어하기 화면은 담을 내용이 적어서 FitBox가 최대 배율(1.4배)까지 키운다.
+   그 배율에서도 로고가 폭을 넘지 않도록 이 화면에서만 작게 둔다. */
+.brandSm {
+  font-size: 50px;
 }
 .crack {
   color: var(--accent);

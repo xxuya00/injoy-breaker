@@ -1,13 +1,68 @@
-.briefCard {
+/* 영문 이름이 섞인 제목("Breaker, 양파링")이라 라틴 글자가 또렷한 본문 글꼴을 쓴다.
+   제목 기본 글꼴(Do Hyeon)은 한글에 맞춰 만들어져서 라틴 글자가 어색하게 붙는다. */
+.title {
+  font-family: 'Gothic A1', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 6px 0 16px;
+}
+
+/* 복구 코드 — 다짐 아래에 작게 둔다. 잃어버리면 돌아올 수 없으니 눈에는 띄어야 하지만,
+   이 화면의 주인공은 다짐이라 카드 자체는 낮게 깔아둔다. */
+.codeCard {
   background: var(--ink-2);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 22px;
-  margin-top: 8px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
 }
-.q {
-  color: var(--accent-soft);
-  font-size: 14px;
+.codeLabel {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
   font-weight: 700;
   margin-bottom: 4px;
+}
+.codeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  /* 닉네임이 길어도 줄이 밀리지 않게 넘치는 만큼만 잘라 보여준다. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyBtn {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.copyBtn:active {
+  transform: scale(0.95);
+}
+.copyBtnDone {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.codeHint {
+  font-size: 11.5px;
+  color: var(--mute);
+  margin-top: 6px;
 }

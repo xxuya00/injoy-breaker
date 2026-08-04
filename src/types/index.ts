@@ -35,6 +35,7 @@ export interface DayData {
 export type Day = 1 | 2 | 3;
 
 export type ScreenId =
+  | 'intro'
   | 'login'
   | 'brief'
   | 'journey'
@@ -42,6 +43,7 @@ export type ScreenId =
   | 'decide'
   | 'rank'
   | 'type'
+  | 'share'
   | 'schedule'
   | 'prayer'
   | 'qt'
@@ -54,6 +56,9 @@ export interface AppState {
   nickname: string;
   // 등록할 때 고른 내 조. 기도제목 화면이 이 조로 바로 열린다.
   group: string;
+  // 등록할 때 적은 "나의 다짐". 여정 화면에서 언제든 다시 꺼내 볼 수 있고,
+  // 기기를 바꿔도 그대로 따라오도록 시트에도 함께 남긴다.
+  vow: string;
   day: Day;
   opened: Record<string, boolean>;
   screen: ScreenId;

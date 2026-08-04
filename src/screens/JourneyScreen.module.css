@@ -1,13 +1,45 @@
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
+/* 순위 버튼 왼쪽에 개요·다짐을 작게 나란히 둔다. */
+.headerBtns {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.iconBtn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+.iconBtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+.iconBtn:active {
+  transform: scale(0.95);
+}
+
 .rankBtn {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--ink-2);
   border: 1px solid var(--line);
@@ -16,11 +48,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
 }
 .rankBtn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.8;
@@ -35,6 +66,42 @@
   border: 0;
   margin: 16px 0 10px;
 }
+
+/* 내 정보 시트의 복구 코드 줄 */
+.codeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.codeValue {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyBtn {
+  flex: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.copyBtn:active {
+  transform: scale(0.95);
+}
 .sectionLabel {
   font-size: 11.5px;
   letter-spacing: 0.1em;
@@ -42,30 +109,6 @@
   font-weight: 700;
   margin-bottom: 10px;
   text-transform: uppercase;
-}
-
-.progressWrap {
-  margin: 4px 0 2px;
-}
-.progressNum {
-  font-family: 'Bebas Neue';
-  font-size: 15px;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-}
-.bar {
-  height: 5px;
-  background: var(--ink-3);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-top: 8px;
-}
-.barFill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
-  transition: width 0.6s ease;
-  border-radius: 99px;
 }
 
 .daytabRow {
@@ -200,6 +243,18 @@
   font-size: 11px;
   color: var(--mute);
   letter-spacing: 0.04em;
+}
+/* 찾긴 했는데 아직 아무것도 안 적은 칸. 눌러서 그때 적을 수 있다는 표시라
+   "미발견"과 달리 눈에 들어와야 한다. */
+.recordWrite {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(236, 147, 163, 0.4);
+  border-radius: 99px;
+  padding: 3px 9px;
 }
 .recordBody {
   display: grid;

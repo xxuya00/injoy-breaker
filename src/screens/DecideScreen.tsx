@@ -3,8 +3,10 @@ import { useApp } from '../context/AppContext';
 import Sheet from '../components/Sheet';
 import RevealCard from '../components/RevealCard';
 import BackLink from '../components/BackLink';
+import { useScrollFit } from '../components/FitBox';
 
 export default function DecideScreen() {
+  useScrollFit();
   const { state, openLock, setTab, goScreen } = useApp();
   const [keep, setKeep] = useState('');
   const [done, setDone] = useState(false);

@@ -2,19 +2,21 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { PRAYER_GROUPS } from '../data/prayerGroups';
+import { looksLikePlayerCode, normalizePlayerCode } from '../lib/playerCode';
 import styles from './LoginScreen.module.css';
 
 export default function LoginScreen() {
-  const { enroll, restoreById } = useApp();
+  const { enroll, restoreById, goScreen } = useApp();
   const toast = useToast();
   const [mode, setMode] = useState<'new' | 'restore'>('new');
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
   const [group, setGroup] = useState<string | null>(null);
-  const [restoreName, setRestoreName] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+  const [restoreCode, setRestoreCode] = useState('');
   const [restoring, setRestoring] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const v = name.trim();
     const nv = nickname.trim();
     if (!v) {
@@ -29,40 +31,49 @@ export default function LoginScreen() {
       toast('조를 선택해주세요');
       return;
     }
-    enroll(v, nv, group, v);
+    setEnrolling(true);
+    await enroll(v, nv, group);
+    setEnrolling(false);
   };
 
   const handleRestore = async () => {
-    const v = restoreName.trim();
+    const v = normalizePlayerCode(restoreCode);
     if (!v) {
-      toast('이름을 입력해주세요');
+      toast('복구 코드를 입력해주세요');
+      return;
+    }
+    // 본명만 적어 넣는 경우가 가장 흔한 실수다. 무엇이 빠졌는지 먼저 알려준다.
+    if (!looksLikePlayerCode(v)) {
+      toast('복구 코드 형식이 아니에요 (예: 양파링#428)');
       return;
     }
     setRestoring(true);
     const ok = await restoreById(v);
     setRestoring(false);
-    if (!ok) toast('해당 이름을 찾을 수 없어요');
+    if (!ok) toast('그 코드로 등록된 기록을 찾을 수 없어요');
   };
 
   if (mode === 'restore') {
     return (
       <section className="center-min">
-        <div className={styles.brand}>
+        <div className={`${styles.brand} ${styles.brandSm}`}>
           BR<span className={styles.crack}>/</span>EAKER
         </div>
-        <div className={styles.tagline}>이름으로 이어하기</div>
+        <div className={styles.tagline}>복구 코드로 이어하기</div>
         <hr className="divider" />
         <p className="lead" style={{ marginBottom: 22 }}>
-          등록할 때 입력한 이름을 그대로 입력하면
+          등록할 때 받은 <b style={{ color: 'var(--accent-soft)' }}>복구 코드</b>로
           <br />
-          진행 상황을 그대로 이어갈 수 있어요.
+          진행 상황을 이어갈 수 있어요.
+          <br />
+          <span className="muted">본명으로는 들어올 수 없어요.</span>
         </p>
         <input
           className="field"
-          placeholder="예: 김여니"
-          value={restoreName}
-          onChange={(e) => setRestoreName(e.target.value)}
-          maxLength={20}
+          placeholder="예: 양파링#428"
+          value={restoreCode}
+          onChange={(e) => setRestoreCode(e.target.value)}
+          maxLength={24}
         />
         <button className="btn" onClick={handleRestore} disabled={restoring}>
           {restoring ? '확인 중…' : '이어하기'}
@@ -111,7 +122,7 @@ export default function LoginScreen() {
         onChange={(e) => setNickname(e.target.value)}
       />
       <p className="tiny" style={{ margin: '-8px 0 16px' }}>
-        게임 기록판 등 다른 사람에게 보이는 곳엔 이 닉네임이 쓰여요.
+        게임 기록판에 보이고, 다시 들어올 때 쓰는 복구 코드도 이 닉네임으로 만들어져요.
       </p>
 
       <div className={styles.fieldLabel}>조 선택</div>
@@ -127,11 +138,14 @@ export default function LoginScreen() {
         ))}
       </div>
 
-      <button className="btn" style={{ marginTop: 18 }} onClick={handleConfirm}>
-        브레이커로 등록
+      <button className="btn" style={{ marginTop: 18 }} onClick={handleConfirm} disabled={enrolling}>
+        {enrolling ? '등록 중…' : '브레이커로 등록'}
       </button>
       <button className={styles.switchLink} onClick={() => setMode('restore')}>
-        이미 등록했나요? 이어하기
+        이미 등록했나요? 복구 코드로 이어하기
+      </button>
+      <button className={styles.switchLink} onClick={() => goScreen('intro')}>
+        수련회 개요 다시 보기
       </button>
     </section>
   );

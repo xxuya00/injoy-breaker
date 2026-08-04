@@ -29,6 +29,21 @@
   width: 100%;
 }
 
+/* 남는 높이를 화면이 통째로 넘겨받는 모드(useFillFit). 내용 높이를 재지 않고
+   바깥 높이를 그대로 물려주므로, 화면 쪽에서 flex로 나눠 쓰면 된다. */
+.fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fill > .inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* 줄여 담을 때 폭도 같은 비율로 넓혀두면, 축소 후 폭이 화면에 딱 맞는다.
    (글씨만 작아지고 여백이 생기지 않는다) */
 .inner {

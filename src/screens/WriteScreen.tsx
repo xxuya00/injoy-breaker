@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useApp } from '../context/AppContext';
 import BackLink from '../components/BackLink';
+import { useScrollFit } from '../components/FitBox';
 
 export default function WriteScreen() {
+  // 여정에서 들어오는 화면들도 제목 크기를 탭 화면과 맞춘다.
+  useScrollFit();
   const toast = useToast();
   const { goScreen } = useApp();
   const [copy, setCopy] = useState('');

@@ -1,0 +1,207 @@
+/* 개요는 "한 장에 한 호흡"이라 화면을 위(진행 표시)·가운데(본문)·아래(넘기기)로 나눠 쓴다.
+   useFillFit()으로 배율을 1로 고정해서, 장마다 글 길이가 달라도 글씨 크기가 널뛰지 않는다. */
+.stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 넘기려고 좌우를 탭할 때 글자가 선택되거나 파랗게 반짝이지 않도록. */
+  user-select: none;
+}
+
+/* ---------- 위: 장 진행 표시 ---------- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.ticks {
+  display: flex;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+.tick {
+  flex: 1 1 0;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tickFill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+.tickOn .tickFill {
+  width: 100%;
+}
+.skip {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--mute);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  /* 첫 장에서는 자리만 잡아두고 보이지 않게 둔다(넘길수록 나타나 레이아웃이 흔들리지 않게). */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.skipOn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- 가운데: 본문 ---------- */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 장이 바뀔 때마다 통째로 다시 그려지므로(key), 아래 애니메이션이 매번 다시 돈다. */
+  padding: 12px 0;
+  overflow: hidden;
+}
+
+.eyebrow {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.3em;
+  font-size: 11.5px;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 68px;
+  line-height: 0.9;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+.crack {
+  color: var(--accent);
+  display: inline-block;
+  /* 로고 안의 '/'가 진짜로 금이 간 자국처럼 보이도록 살짝 기울여 둔다. */
+  transform: rotate(4deg) translateY(2px);
+}
+.tagline {
+  margin-top: 12px;
+  color: var(--mute);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.line {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #d9cdbb;
+  /* 빈 줄("")은 문단 사이 숨 고르기 — 높이만 차지한다. */
+  min-height: 1.85em;
+}
+.lineAccent {
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+
+.verse {
+  font-size: 19px;
+  line-height: 1.75;
+  color: var(--text);
+  font-weight: 600;
+  /* 말씀 장은 따옴표를 크게 세워 한 장 전체가 인용처럼 보이게 한다. */
+  position: relative;
+  padding-top: 26px;
+}
+.verse::before {
+  content: '\201C';
+  position: absolute;
+  top: 4px;
+  left: -4px;
+  /* Bebas Neue의 따옴표는 짧은 막대라 인용부호처럼 보이지 않는다. 세리프체로 크게 세운다. */
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 72px;
+  line-height: 0;
+  color: rgba(236, 147, 163, 0.35);
+}
+.ref {
+  margin-top: 16px;
+  color: var(--accent);
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+}
+
+/* 한 줄씩 차례로 떠오른다. 순서는 인라인 style의 animation-delay가 준다. */
+.rise {
+  opacity: 0;
+  animation: rise 0.6s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 아래: 넘기기 ---------- */
+.foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+.navBtn {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  cursor: pointer;
+  color: var(--mute);
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.navBtn:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.next {
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+.next svg {
+  animation: nudge 1.6s ease-in-out infinite;
+}
+@keyframes nudge {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.hint {
+  color: var(--mute);
+  font-size: 11.5px;
+  text-align: center;
+  margin-top: 10px;
+  opacity: 0.75;
+}
+
+.cta {
+  margin-top: 4px;
+}

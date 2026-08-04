@@ -1,7 +1,5 @@
 import type { Day, DayData } from '../types';
 
-export const TOTAL = 16;
-
 export const LOCKS: Record<Day, DayData> = {
   1: {
     caption: '일상을 떠나 도착했습니다. 잠긴 뇌를 가볍게 두드려 깨우는 날.',
@@ -76,8 +74,8 @@ export const LOCKS: Record<Day, DayData> = {
     items: [
       {
         id: 'd2a',
-        name: '쾌락의 크랙',
-        sub: 'QR · 계곡 근처',
+        name: '계곡 근처',
+        sub: 'QR 미션',
         type: 'mission',
         q: '흐르는 물소리에 귀를 대보세요. 물은 붙잡지 않아도 60초 내내 쉬지 않고 흘러갑니다. 그 소리를 그저 60초간 들어보세요.',
         hint: '다 들었다면 아래 버튼으로 알에 금을 냅니다. 속도는 중요하지 않아요.',
@@ -85,8 +83,8 @@ export const LOCKS: Record<Day, DayData> = {
       },
       {
         id: 'd2b',
-        name: '재물의 크랙',
-        sub: 'QR · 숲길 벤치',
+        name: '숲길 벤치',
+        sub: 'QR 미션',
         type: 'mission',
         q: '주변에서 아무도 값을 매기지 않았는데도 그 자리에 있는 것 하나(돌, 나뭇잎, 이끼 등)를 찾아보세요. 그것을 보며 "이게 없으면 불안한 것" 하나를 마음속으로 내려놓아 보세요.',
         hint: '내려놓았다면 아래 버튼으로 크랙을 냅니다.',
@@ -94,8 +92,8 @@ export const LOCKS: Record<Day, DayData> = {
       },
       {
         id: 'd2c',
-        name: '지혜의 크랙',
-        sub: 'QR · 숙소 뒤편',
+        name: '숙소 뒤편',
+        sub: 'QR 미션',
         type: 'mission',
         q: '방금 지나온 길을 천천히 돌아보며, 평소라면 그냥 지나쳤을 것 하나(나무의 결, 벌레, 그림자 모양 등)를 찾아 기억하세요.',
         hint: '관찰이 곧 깨어남입니다. 찾았다면 크랙을 냅니다.',
@@ -103,8 +101,8 @@ export const LOCKS: Record<Day, DayData> = {
       },
       {
         id: 'd2e',
-        name: '사람의 크랙',
-        sub: 'QR · 만남의 장소',
+        name: '만남의 장소',
+        sub: 'QR 미션',
         type: 'mission',
         q: '함께 온 사람과 나란히 서서 같은 방향(하늘, 나무, 능선)을 30초간 바라본 뒤, 그 사람에게 감사한 점 하나를 직접 말해보세요.',
         hint: '말했다면 크랙이 생깁니다.',
@@ -112,8 +110,8 @@ export const LOCKS: Record<Day, DayData> = {
       },
       {
         id: 'd2f',
-        name: '인정의 크랙',
-        sub: 'QR · 게시판 앞',
+        name: '게시판 앞',
+        sub: 'QR 미션',
         type: 'mission',
         q: '하늘을 30초간 올려다보세요. 구름은 누구에게 보이려고 그 모양이 되지 않았습니다. SNS에 자랑하고 싶었던 순간 하나를, 사람 대신 하나님께만 조용히 말해보세요.',
         hint: '마음속으로 말했다면 크랙을 냅니다.',
@@ -121,8 +119,8 @@ export const LOCKS: Record<Day, DayData> = {
       },
       {
         id: 'd2g',
-        name: '권력의 크랙',
-        sub: 'QR · 전망대',
+        name: '전망대',
+        sub: 'QR 미션',
         type: 'mission',
         q: '전망대에서 가장 멀리 보이는 산이나 능선 하나를 고르세요. 저것은 내가 어떻게 애써도 옮기거나 통제할 수 없습니다. 내가 통제할 수 없는 것 하나를 떠올리고, 하나님께 맡기는 짧은 기도를 해보세요.',
         hint: '기도했다면 알을 마저 깹니다.',
@@ -174,6 +172,7 @@ export const SECTION_GATES = {
   d2Type: { id: 'd2_type', label: 'DAY 2 · IDOL-X 유형 검사', lockedSub: '아직 열리지 않았어요' },
   d2Qr: { id: 'd2_qr', label: 'DAY 2 · QR 스캔(알 깨기)', lockedSub: '아직 열리지 않았어요' },
   d2Write: { id: 'd2_write', label: 'DAY 2 · 숲의 기록', lockedSub: '아직 열리지 않았어요' },
+  d2Share: { id: 'd2_share', label: 'DAY 2 · 유형 나눔', lockedSub: '나눔 시간에 열려요' },
   d3Decide: { id: 'd3_decide', label: 'DAY 3 · 마지막 열쇠(결단)', lockedSub: '아직 열리지 않았어요' },
 } as const satisfies Record<string, GateMeta>;
 

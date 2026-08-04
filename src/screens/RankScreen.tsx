@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { firebaseEnabled, subscribeLeaderboard, type LeaderboardEntry } from '../lib/sync';
 import { PRAYER_GROUPS } from '../data/prayerGroups';
 import BackLink from '../components/BackLink';
+import { useScrollFit } from '../components/FitBox';
 import styles from './RankScreen.module.css';
 
 interface GroupTotal {
@@ -13,6 +14,8 @@ interface GroupTotal {
 }
 
 export default function RankScreen() {
+  // 조 수에 따라 목록 길이가 달라져도 제목 크기는 그대로여야 한다.
+  useScrollFit();
   const { goScreen } = useApp();
   const toast = useToast();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);

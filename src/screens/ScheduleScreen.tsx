@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { MERGED_BLOCKS, SCHEDULE, SCHEDULE_ROWS, type ScheduleSegment } from '../data/schedule';
+import { useScrollFit } from '../components/FitBox';
 import styles from './ScheduleScreen.module.css';
 
 type Cell = { render: true; span: number; label: string | null } | { render: false };
@@ -14,6 +15,9 @@ function expandSegments(segments: ScheduleSegment[]): Cell[] {
 }
 
 export default function ScheduleScreen() {
+  // 탭으로 오가는 화면은 배율을 1로 고정한다. 내용이 적다고 FitBox가 키워 버리면
+  // 탭을 옮길 때마다 같은 제목이 커졌다 작아졌다 해서 다른 앱처럼 보인다.
+  useScrollFit();
   const dayCells = useMemo(() => SCHEDULE.map((day) => expandSegments(day.segments)), []);
 
   return (

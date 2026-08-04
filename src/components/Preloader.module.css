@@ -1,0 +1,67 @@
+/* 앱이 뜨자마자 덮는 문. 글꼴이 다 내려올 때까지 기다렸다가 열리므로,
+   글씨가 기본 글꼴로 한 번 그려졌다가 바뀌며 튀는 일이 없다.
+   (에르메스 전시 웹앱처럼, 진행바가 화면 맨 아래 끝을 가로지르며 차오른다.) */
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(236, 147, 163, 0.1), transparent 60%), var(--ink);
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+/* 로고 한가운데의 '/'가 자물쇠에 난 금처럼 벌어졌다 좁아졌다 한다. */
+.crack {
+  color: var(--accent);
+  display: inline-block;
+  animation: crack 1.6s ease-in-out infinite;
+}
+@keyframes crack {
+  0%,
+  100% {
+    transform: rotate(2deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(8deg) scaleY(1.18);
+  }
+}
+
+.label {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.3em;
+  font-size: 11.5px;
+  color: var(--mute);
+}
+
+/* 진행바 — 폭을 바꾸지 않고 통째로 밀어 넣는다(레이아웃 계산 없이 부드럽게 흐른다). */
+.barWrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  overflow: hidden;
+}
+.bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform: translateX(-100%);
+}

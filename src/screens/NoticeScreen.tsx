@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import { fetchNotices, gasEnabled, sendMessage, type NoticeEntry } from '../lib/gas';
+import { useScrollFit } from '../components/FitBox';
 import styles from './NoticeScreen.module.css';
 
 export default function NoticeScreen() {
+  // 공지 개수에 따라 내용 길이가 크게 달라진다. 배율을 1로 고정하지 않으면
+  // 공지가 없을 때만 글씨가 커지는, 같은 화면인데 매번 다른 크기가 된다.
+  useScrollFit();
   const { state } = useApp();
   const toast = useToast();
   const [notices, setNotices] = useState<NoticeEntry[]>([]);

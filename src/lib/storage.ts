@@ -2,6 +2,10 @@ import type { AppState } from '../types';
 
 const LAST_ID_KEY = 'breaker:lastId';
 const GROUP_KEY = 'breaker:group';
+// 개요를 이미 본 기기인지. 앱을 켤 때마다 개요가 처음부터 다시 나오면 성가시므로
+// 한 번 끝까지(또는 건너뛰기로) 본 뒤에는 바로 등록 화면에서 시작한다.
+// 등록 화면의 "개요 다시 보기"로는 언제든 다시 볼 수 있다.
+const INTRO_SEEN_KEY = 'breaker:introSeen';
 
 function stateKey(id: string) {
   return `breaker:state:${id}`;
@@ -42,12 +46,40 @@ export function clearLocalPlayer() {
   keys.forEach((key) => localStorage.removeItem(key));
 }
 
+export function hasSeenIntro(): boolean {
+  return localStorage.getItem(INTRO_SEEN_KEY) === '1';
+}
+
+export function markIntroSeen() {
+  localStorage.setItem(INTRO_SEEN_KEY, '1');
+}
+
 export function saveGroup(group: string) {
   localStorage.setItem(GROUP_KEY, group);
 }
 
 export function loadGroup(): string | null {
   return localStorage.getItem(GROUP_KEY);
+}
+
+// "함께 기도하기"를 이미 누른 기도제목 id들. 시트에는 숫자만 쌓이고 누가 눌렀는지는
+// 남지 않으므로, 같은 사람이 여러 번 누르는 건 이 기기 기록으로만 막는다.
+// (기기를 바꾸거나 저장소를 비우면 다시 누를 수 있다 — 정확한 집계가 아니라 마음을 보태는 표시다.)
+const PRAYED_KEY = 'breaker:prayed';
+
+export function loadPrayedIds(): string[] {
+  const raw = localStorage.getItem(PRAYED_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function savePrayedIds(ids: string[]) {
+  localStorage.setItem(PRAYED_KEY, JSON.stringify(ids));
 }
 
 // 타임어택형 미니게임의 누적 경과시간(ms).
@@ -116,4 +148,56 @@ export function loadTypeProgress(id: string, version: number): StoredTypeProgres
 
 export function clearTypeProgress(id: string) {
   localStorage.removeItem(typeProgressKey(id));
+}
+
+// 검사를 마쳤을 때 결론만 따로 남겨둔다. 나눔 화면은 "내 1위 유형이 무엇인가"만 알면 되는데,
+// 답변 전체를 다시 채점하려면 문항 구성(version)까지 알아야 해서 검사 화면과 얽히게 된다.
+// 문항이 바뀌어도 이미 받은 결과는 그대로 두는 편이 낫기 때문에 version도 걸지 않는다.
+export interface StoredTypeSummary {
+  primary: string;
+  secondary: string;
+  comboName: string;
+}
+
+function typeSummaryKey(id: string) {
+  return `breaker:typeSummary:${id}`;
+}
+
+export function saveTypeSummary(id: string, summary: StoredTypeSummary) {
+  localStorage.setItem(typeSummaryKey(id), JSON.stringify(summary));
+}
+
+export function loadTypeSummary(id: string): StoredTypeSummary | null {
+  const raw = localStorage.getItem(typeSummaryKey(id));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as StoredTypeSummary;
+    return parsed.primary ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+// 아침 큐티에 적은 답변. 인도자에게 내는 기록이 아니라 본인만 보는 글이라
+// 시트에도 Firestore에도 올리지 않고 이 기기에만 둔다.
+// key는 `${일차}_${섹션}_${질문}` — 문항이 바뀌면 예전 답이 엉뚱한 질문에 붙지만,
+// 유형검사와 달리 본인이 읽고 지우면 그만이라 버전을 따로 두지 않는다.
+function qtAnswersKey(id: string) {
+  return `breaker:qt:${id}`;
+}
+
+export function saveQtAnswers(id: string, answers: Record<string, string>) {
+  localStorage.setItem(qtAnswersKey(id), JSON.stringify(answers));
+}
+
+export function loadQtAnswers(id: string): Record<string, string> {
+  const raw = localStorage.getItem(qtAnswersKey(id));
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as Record<string, string>;
+  } catch {
+    return {};
+  }
 }

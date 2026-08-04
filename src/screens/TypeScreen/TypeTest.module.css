@@ -1,15 +1,18 @@
 /* ---------- likert / AB scale (dot track) ---------- */
+/* 점 크기는 화면 너비(vw)가 아니라 점이 놓이는 칸 너비(%)를 기준으로 정한다.
+   FitBox가 화면 전체를 키우거나 줄이면 이 칸의 실제 너비는 화면 너비와 달라지므로,
+   vw로 재면 배율이 커진 기기에서 점이 칸을 넘쳐 마지막 점이 잘린다. */
 .scaleTrack {
-  --dot: 44px;
+  --dot: min(44px, calc((100% - 32px) / 5));
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin: 28px 6px 12px;
 }
-/* 7점 척도는 점이 7개라 좁은 화면에서 44px로는 한 줄에 안 들어간다. 화면 너비에 맞춰 줄인다. */
+/* 7점 척도는 점이 7개라 한 칸에 담으려면 더 잘게 나눠야 한다. */
 .scaleTrackLikert {
-  --dot: clamp(30px, 10.5vw, 42px);
+  --dot: min(42px, calc((100% - 42px) / 7));
 }
 .scaleLine {
   position: absolute;
@@ -26,7 +29,8 @@
   z-index: 1;
   flex: 0 0 auto;
   width: var(--dot);
-  height: var(--dot);
+  /* --dot에 %가 섞여 있어 height로 쓰면 칸의 "높이"를 기준으로 풀려 타원이 된다. 가로세로비로 맞춘다. */
+  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--ink-2);
   border: 1.5px solid var(--line);
@@ -80,6 +84,15 @@
   line-height: 1.5;
   color: #d9cdbb;
   margin-top: 8px;
+  word-break: keep-all;
+}
+/* 문항과 같은 이유로, A·B 문장 길이가 달라져도 카드 높이가 그대로이게 한다. */
+.abStack {
+  display: grid;
+  align-items: start;
+}
+.abStack > p {
+  grid-area: 1 / 1;
 }
 .abBadge {
   display: inline-flex;
@@ -148,24 +161,256 @@
   border-radius: 6px;
   background: linear-gradient(90deg, var(--accent), var(--accent-soft));
 }
-.ttStatPill {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 99px;
-  background: var(--ink-3);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--mute);
-  margin-top: 8px;
-}
+/* 카드 머리줄(.cardTagRow) 안에 놓이므로 아래 여백은 그 줄이 가진다. */
 .ttResultTag {
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--accent);
+}
+
+/* 제목이 'IDOL-B: "야심 찬 실력자"'로 길어지므로 기본 h1(44px)보다 줄여 두 줄 안에 담는다. */
+.resultTitle {
+  font-size: 29px;
+  line-height: 1.22;
+  margin-bottom: 14px;
+}
+
+/* 카드 머리줄. 왼쪽은 이 카드가 무엇인지, 오른쪽은 내 조합 이름표. */
+.cardTagRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+/* 조합 이름표. 한 줄을 통째로 차지하지 않고 카드 머리줄에 곁들이는 크기로 둔다.
+   응답이 얼마나 또렷했는지는 이 이름표의 색이 겸해서 전한다 — '신뢰성 낮음' 같은 등급을
+   글자로 박아두면 참가자가 채점당했다고 읽기 때문이다. 빨강·초록 신호등을 피해 브랜드 색
+   계열(핑크·노랑·보라)에서 골라, 낮아도 경고가 아니라 안내로 읽히게 했다.
+   무슨 색인지 궁금한 사람만 길게 눌러 설명을 보도록 title로만 붙여둔다. */
+.comboPill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+  cursor: default;
+  white-space: nowrap;
+}
+.qualityHigh {
+  color: var(--accent-soft);
+  border-color: rgba(236, 147, 163, 0.5);
+  background: rgba(236, 147, 163, 0.12);
+}
+.qualityMid {
+  color: var(--accent-yellow);
+  border-color: rgba(240, 215, 138, 0.45);
+  background: rgba(240, 215, 138, 0.1);
+}
+.qualityLow {
+  color: var(--accent-purple);
+  border-color: rgba(185, 168, 214, 0.45);
+  background: rgba(185, 168, 214, 0.1);
+}
+
+/* ---------- 결과 덱 (우상 진단 ↔ 영적 처방) ---------- */
+/* 두 장을 위아래로 이어 붙이면 처방이 한참 내려야 나오는 덤이 된다. 좌우로 넘겨보게 두고,
+   이름표는 점 대신 글자로 쓴다 — 넘기기 전에도 저쪽에 무엇이 있는지 보여야 넘길 마음이 생긴다. */
+.deckTabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 99px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+}
+.deckTab {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 99px;
+  border: 0;
+  background: none;
+  color: var(--mute);
+  font-family: 'Gothic A1';
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.deckTabOn {
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: var(--ink);
+}
+
+/* 높이는 지금 보는 장에 맞춰 JS가 넣어준다(짧은 장 아래에 빈 자리가 남지 않게).
+   넘기는 동안에는 가장 큰 높이를 쓰므로 들어오는 장이 잘리지 않는다. */
+.deck {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  /* 슬라이드는 각자 제 높이를 갖는다(짧은 쪽을 늘려 속이 빈 카드를 만들지 않는다). */
+  align-items: flex-start;
+  margin-bottom: 16px;
+  transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.deck::-webkit-scrollbar {
+  display: none;
+}
+.deckSlide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: center;
+}
+
+/* 진단 끝에 놓이는 질문. 이 질문 자체가 처방으로 넘어가는 손잡이다. */
+.bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-family: 'Gothic A1';
+  cursor: pointer;
+}
+.bridgeLine {
+  width: 1px;
+  height: 16px;
+  background: linear-gradient(180deg, transparent, var(--accent));
+}
+.bridgeText {
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--mute);
+  word-break: keep-all;
+}
+.bridgeText b {
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+.bridgeGo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 18px;
+  border-radius: 99px;
+  background: rgba(236, 147, 163, 0.14);
+  border: 1px solid rgba(236, 147, 163, 0.45);
+  color: var(--accent-soft);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.bridge:active .bridgeGo {
+  transform: scale(0.97);
+  background: rgba(236, 147, 163, 0.22);
+}
+
+/* ---------- 영적 처방 카드 ---------- */
+/* 결 이름은 "또 하나의 유형 이름"이 아니라 처방의 머리말이다. 우상 조합 이름(제목)보다
+   작게 두고, 카드의 무게는 융합 메시지와 실천 가이드가 가져가게 한다. */
+.walkHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 6px;
 }
-/* 묵상·기도를 한 카드에 합쳐 담으면서, 카드 안에서 둘을 구분해주는 소제목 */
+.walkName {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+.walkName em {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-left: 7px;
+}
+.walkAxis {
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--mute);
+  white-space: nowrap;
+}
+.walkTagline {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-soft);
+  margin-bottom: 12px;
+  word-break: keep-all;
+}
+.walkFusion {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #d9cdbb;
+  word-break: keep-all;
+}
+.guideLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+/* 처방은 읽고 끝나는 글이 아니라 오늘 해볼 두 가지다. 번호를 붙여 순서가 아니라
+   "두 개뿐"이라는 것이 먼저 보이게 한다. */
+.guideList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  counter-reset: guide;
+}
+.guideList li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #efe3d0;
+  word-break: keep-all;
+  counter-increment: guide;
+}
+.guideList li::before {
+  content: counter(guide);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(236, 147, 163, 0.16);
+  border: 1px solid rgba(236, 147, 163, 0.4);
+  color: var(--accent);
+  font-family: 'Bebas Neue';
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+
+/* 카드 안에서 소제목 역할을 한다(내 응답 분포 등) */
 .ttSubLabel {
   font-size: 12.5px;
   font-weight: 700;
@@ -180,7 +425,6 @@
   display: flex;
   gap: 8px;
   margin: 14px 0 8px;
-  position: relative;
 }
 /* 1·2위 자리는 눌러서 다른 유형으로 바꿔볼 수 있는 버튼이다. */
 .rankBadge {
@@ -245,7 +489,6 @@
 
 /* 1·2위 자리를 눌렀을 때 열리는 유형 선택 */
 .typePicker {
-  position: relative;
   margin-bottom: 10px;
   padding: 10px 12px 12px;
   border-radius: 14px;
@@ -293,14 +536,19 @@
   color: var(--accent-soft);
 }
 
+.comboDesc {
+  font-size: 14.5px;
+  color: #d9cdbb;
+  margin-bottom: 8px;
+  word-break: keep-all;
+}
+
 .exploreHint {
-  position: relative;
   font-size: 11.5px;
   color: var(--mute);
   margin-bottom: 10px;
 }
 .backToMine {
-  position: relative;
   display: block;
   width: 100%;
   padding: 9px 12px;
@@ -317,7 +565,6 @@
 
 /* 조합별 상세 설명 토글 */
 .detailToggle {
-  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
@@ -334,7 +581,6 @@
   cursor: pointer;
 }
 .detailBody {
-  position: relative;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.3s ease;
@@ -358,14 +604,13 @@
   border-radius: 12px;
   border-left: 2px solid var(--accent);
   background: rgba(24, 20, 15, 0.5);
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: #d9cdbb;
-  font-style: italic;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #efe3d0;
 }
 .detailVerseRef {
   display: block;
-  font-style: normal;
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -373,10 +618,95 @@
   margin-bottom: 4px;
 }
 
+/* 제목 위 영문 줄이 두 줄로 접히지 않게 한 줄에 담는다. */
+.ttEyebrow {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+}
+
+/* FitBox가 이 화면을 키우지 않으므로(shrink 모드) 여기 적은 크기가 곧 눈에 보이는 크기다.
+   한글은 어절 중간에서 끊기면 읽는 속도가 크게 떨어져 keep-all로 어절째 넘긴다. */
 .qHeading {
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+/* 1부·2부로 들어서는 전환 화면. 예전에는 안내 문장이 h2로 화면을 가득 채웠는데,
+   정작 알려야 하는 건 "지금 몇 부에 들어선다"는 것이라 위계를 뒤집었다. */
+.sectionStep {
+  font-family: 'Bebas Neue';
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.sectionTitle {
+  font-size: 23px;
+  margin-bottom: 10px;
+}
+.sectionBody {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #d9cdbb;
+  word-break: keep-all;
+  margin-bottom: 22px;
+}
+
+/* 문항을 푸는 동안에는 제목이 주인공이 아니다. 결과 화면에서만 원래 크기로 돌아간다. */
+.testTitle {
+  font-size: 26px;
+  margin-bottom: 14px;
+}
+
+/* 문항마다 글이 한 줄이었다 세 줄이었다 하면, 화면 전체를 기기 높이에 맞춰 담는 배율(FitBox)이
+   문항마다 달라져 글씨 크기가 계속 들썩인다. 가장 긴 문항을 보이지 않게 같은 자리에 겹쳐 두어
+   어떤 문항에서도 문항 자리의 높이가 같게 만든다(폭이 달라져도 함께 따라간다). */
+.qStack {
+  display: grid;
+  align-items: start;
   margin-bottom: 8px;
-  font-size: 17px;
-  line-height: 1.35;
+}
+.qStack > * {
+  grid-area: 1 / 1;
+}
+.ghost {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 이전은 되돌아가는 보조 동작이라, 아래를 다 차지하지 않고 왼쪽 아래에 작게 둔다. */
+.qNav {
+  display: flex;
+  margin-top: 22px;
+}
+.prevBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 99px;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  font-family: 'Gothic A1';
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, transform 0.12s;
+}
+.prevBtn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+.prevBtn:active {
+  transform: scale(0.96);
+  color: var(--accent);
+  border-color: rgba(236, 147, 163, 0.5);
 }
 
 .progressWrap {

@@ -1,6 +1,17 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState, type ReactNode } from 'react';
 import type { AppState, Day, ScreenId, TabId } from '../types';
-import { loadLastId, loadState, saveLastId, saveState, loadGroup, saveGroup, clearLocalPlayer } from '../lib/storage';
+import {
+  loadLastId,
+  loadState,
+  saveLastId,
+  saveState,
+  loadGroup,
+  saveGroup,
+  clearLocalPlayer,
+  hasSeenIntro,
+  markIntroSeen,
+} from '../lib/storage';
+import { makePlayerCode } from '../lib/playerCode';
 import { gasEnabled, loadRemoteProgress, saveRemoteProgress } from '../lib/gas';
 import { saveRemoteProgress as saveLeaderboardScore, deleteRemotePlayer } from '../lib/sync';
 import { useToast } from './ToastContext';
@@ -21,6 +32,7 @@ type Action =
   | { type: 'SET_TAB'; tab: TabId }
   | { type: 'SELECT_DAY'; day: Day }
   | { type: 'SET_GROUP'; group: string }
+  | { type: 'SET_VOW'; vow: string }
   | { type: 'OPEN_LOCK'; id: string };
 
 const initialState: AppState = {
@@ -28,16 +40,33 @@ const initialState: AppState = {
   nick: '',
   nickname: '',
   group: '',
+  vow: '',
   day: 1,
   opened: {},
   screen: 'login',
   activeTab: 'journey',
 };
 
+// 이 기기에서 처음 앱을 여는 사람만 개요부터 시작한다.
+// 이미 등록했거나(lastId) 개요를 본 적이 있으면 곧장 등록·이어하기 화면으로 간다.
+function initScreen(base: AppState): AppState {
+  if (loadLastId() || hasSeenIntro()) return base;
+  return { ...base, screen: 'intro' };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ENROLL':
-      return { ...state, id: action.id, nick: action.nick, nickname: action.nickname, group: action.group, screen: 'brief' };
+      // 다짐은 등록 다음 화면(브리핑)에서 적으므로 여기서는 비워둔 채로 시작한다.
+      return {
+        ...state,
+        id: action.id,
+        nick: action.nick,
+        nickname: action.nickname,
+        group: action.group,
+        vow: '',
+        screen: 'brief',
+      };
     case 'RESTORE':
       return { ...state, ...action.state, screen: 'journey', activeTab: 'journey' };
     case 'RESET':
@@ -50,6 +79,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, day: action.day };
     case 'SET_GROUP':
       return { ...state, group: action.group };
+    case 'SET_VOW':
+      return { ...state, vow: action.vow };
     case 'OPEN_LOCK':
       return { ...state, opened: { ...state.opened, [action.id]: true } };
     default:
@@ -59,12 +90,15 @@ function reducer(state: AppState, action: Action): AppState {
 
 interface AppContextValue {
   state: AppState;
-  enroll: (name: string, nickname: string, group: string, id: string) => void;
+  /** 등록. 닉네임으로 복구 코드를 만들어 그것을 id로 삼는다. */
+  enroll: (name: string, nickname: string, group: string) => Promise<void>;
   restoreById: (id: string) => Promise<boolean>;
   goScreen: (screen: ScreenId) => void;
   setTab: (tab: TabId) => void;
   selectDay: (day: Day) => void;
   setGroup: (group: string) => void;
+  setVow: (vow: string) => void;
+  logout: () => void;
   openLock: (id: string) => void;
 }
 
@@ -77,7 +111,7 @@ export function useApp() {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState, initScreen);
   const toast = useToast();
   // 이어하기(lastId) 복원 중에는 구글 시트 조회가 끝나기 전까지 아무 것도 시트에 다시 쓰지 않는다.
   // 안 그러면 로컬 캐시로 보여준 화면이 그대로 저장 이펙트를 타면서, 관리자가 시트에서 지운 기록을
@@ -128,6 +162,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             nick: remote.nick,
             nickname: remote.nickname || '',
             group: remote.group || loadGroup() || '',
+            // 다짐은 등록할 때 한 번 쓰고 마는 값이라, 시트가 비어 있으면(옛 기록) 이 기기에 남은 걸 쓴다.
+            vow: remote.vow || local?.vow || '',
             day: (remote.day as Day) || 1,
             opened: remote.opened || {},
           },
@@ -147,7 +183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const group = state.group || loadGroup() || undefined;
     const id = state.id;
     const create = allowCreate.current;
-    saveRemoteProgress(id, state.nick, state.day, state.opened, state.nickname, group, create)
+    saveRemoteProgress(id, state.nick, state.day, state.opened, state.nickname, group, create, state.vow)
       .then((res) => {
         // 관리자가 시트에서 이 참가자를 지운 경우. 진행도를 다시 써넣지 않고 이 기기를 정리한다.
         if (res.missing) {
@@ -165,7 +201,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, hydrated]);
 
-  const enroll = (name: string, nickname: string, group: string, id: string) => {
+  const enroll = async (name: string, nickname: string, group: string) => {
+    // 같은 닉네임을 쓴 사람과 숫자까지 겹치면 서로의 기록을 덮어쓴다.
+    // 시트에 이미 있는 코드면 다시 뽑는다. 조회 자체가 실패하면(네트워크 등) 등록을 막지 않고 그대로 진행한다.
+    let id = makePlayerCode(nickname);
+    if (gasEnabled) {
+      for (let i = 0; i < 8; i++) {
+        try {
+          if (!(await loadRemoteProgress(id))) break;
+        } catch {
+          break;
+        }
+        id = makePlayerCode(nickname);
+      }
+    }
     saveLastId(id);
     saveGroup(group);
     // 신규 등록만 시트에 행을 새로 만들 수 있다. 저장이 성공해야 꺼지므로 실패하면 다음 저장에서 다시 시도된다.
@@ -197,6 +246,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         nick: remote?.nick ?? local?.nick ?? '',
         nickname: remote?.nickname ?? local?.nickname ?? '',
         group: remote?.group || local?.group || loadGroup() || '',
+        vow: remote?.vow || local?.vow || '',
         day: ((remote?.day ?? local?.day ?? 1) as Day),
         opened: remote ? remote.opened : local?.opened ?? {},
       },
@@ -213,10 +263,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveGroup(group);
     dispatch({ type: 'SET_GROUP', group });
   };
+  const setVow = (vow: string) => dispatch({ type: 'SET_VOW', vow });
+
+  // 이 기기에서만 나간다. 시트와 순위판의 기록은 그대로 두므로, 복구 코드만 있으면 언제든 돌아올 수 있다.
+  // (관리자가 참가자를 지웠을 때 쓰는 wipePlayer와 달리 원격 기록을 건드리지 않는다.)
+  const logout = () => {
+    clearLocalPlayer();
+    // 개요를 이미 본 기기라는 표시까지 지워지면 다음에 켤 때 개요가 처음부터 다시 나온다. 그것만 되살린다.
+    markIntroSeen();
+    allowCreate.current = false;
+    dispatch({ type: 'RESET' });
+  };
+
   const openLock = (id: string) => dispatch({ type: 'OPEN_LOCK', id });
 
   return (
-    <AppContext.Provider value={{ state, enroll, restoreById, goScreen, setTab, selectDay, setGroup, openLock }}>
+    <AppContext.Provider
+      value={{ state, enroll, restoreById, goScreen, setTab, selectDay, setGroup, setVow, logout, openLock }}
+    >
       {children}
     </AppContext.Provider>
   );

@@ -1,3 +1,244 @@
+/* 이 화면은 FitBox에게 남는 높이를 통째로 받아(useFillFit) 스스로 나눠 쓴다.
+   제목·조 칩바·남기기 버튼은 제 높이만 차지하고, 남는 높이는 전부 목록이 가져간다. */
+.wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 조를 아직 안 고른 화면은 목록이 없어 위쪽만 채워지므로, 남는 높이를 위아래로 나눠 가운데에 둔다. */
+.wrapCenter {
+  justify-content: center;
+}
+
+.head {
+  flex: 0 0 auto;
+}
+/* 제목 크기는 다른 탭과 같은 기본값(44px)을 쓴다. 여기만 줄이면 탭을 옮길 때
+   제목이 눈에 띄게 작아져, 목록에서 아낀 20px보다 어색함이 더 크다.
+   아래 여백만 조금 줄여 목록 자리를 돌려준다. */
+.title {
+  margin: 6px 0 14px;
+}
+
+/* ---------- 조 전환 칩 ---------- */
+/* 펼쳤다 접는 그리드 대신 가로로 넘겨 고른다. 아래 목록이 밀려 내려가지 않는다. */
+.chips {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  /* 좌우 여백을 화면 끝까지 늘려, 넘어가는 칩이 가장자리에서 잘리지 않고 흘러가 보이게 한다. */
+  margin: 0 -24px 14px;
+  padding: 2px 24px 8px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 8px 15px;
+  color: var(--mute);
+  font-family: 'Gothic A1';
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.chipOn {
+  background: rgba(236, 147, 163, 0.16);
+  border-color: var(--accent);
+  color: var(--accent-soft);
+}
+.chipTag {
+  font-family: 'Bebas Neue';
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--accent);
+  border-radius: 99px;
+  padding: 1px 7px 0;
+}
+.chipOn .chipTag {
+  background: var(--accent-soft);
+}
+
+/* ---------- 기도제목 목록 ---------- */
+/* 몇 개가 쌓일지 정해져 있지 않다. 남는 높이를 전부 가져가고, 넘치는 만큼만 여기서 스크롤한다. */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* 아래로 더 있다는 걸 알리는 흐림. 끝까지 내리면 이 여백만 걸쳐서 마지막 카드는 또렷하다. */
+  mask-image: linear-gradient(180deg, #000 calc(100% - 20px), transparent);
+  padding-bottom: 20px;
+}
+.list::-webkit-scrollbar {
+  width: 0;
+}
+
+.card {
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  margin-bottom: 10px;
+}
+/* 내가 남긴 기도제목은 테두리로 표시한다. */
+.cardMine {
+  border-color: rgba(236, 147, 163, 0.45);
+  background: linear-gradient(160deg, var(--ink-3), var(--ink-2));
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.nick {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.meTag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-radius: 99px;
+  padding: 1px 7px;
+}
+/* 시간은 오른쪽 끝으로 밀어, 닉네임이 길어도 자리가 흔들리지 않게 한다. */
+.time {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--mute);
+}
+
+.cardText {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #d9cdbb;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------- 함께 기도하기 ---------- */
+.pray {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 5px 12px;
+  color: var(--mute);
+  font-family: 'Gothic A1';
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pray:active {
+  transform: scale(0.96);
+}
+.prayOn {
+  border-color: rgba(236, 147, 163, 0.5);
+  color: var(--accent-soft);
+  /* 이미 누른 버튼은 disabled라 눌리지 않지만, 흐릿해 보이면 안 눌린 것처럼 읽힌다. */
+  opacity: 1;
+}
+.prayCount {
+  font-family: 'Bebas Neue';
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  padding-left: 2px;
+}
+/* 내 기도제목에는 누를 게 아니라 몇 명이 함께했는지만 보여준다. */
+.prayedFor {
+  margin-top: 9px;
+  font-size: 11.5px;
+  color: var(--accent-soft);
+}
+
+/* ---------- 비어 있을 때 ---------- */
+.empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.emptyMark {
+  font-size: 30px;
+  opacity: 0.55;
+}
+.emptyText {
+  text-align: center;
+  color: var(--mute);
+  font-size: 13.5px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+/* ---------- 하단 남기기 ---------- */
+.compose {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 15px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: var(--ink);
+  font-family: 'Gothic A1';
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.compose:active {
+  transform: scale(0.97);
+}
+
+.viewingNote {
+  flex: 0 0 auto;
+  margin-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--mute);
+  text-align: center;
+}
+
+/* ---------- 조를 아직 안 고른 참가자용 ---------- */
 .groupGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -18,67 +259,4 @@
 .groupBtn:active {
   border-color: var(--accent);
   background: var(--ink-3);
-}
-
-.groupBadge {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-.groupLabel {
-  font-family: 'Bebas Neue';
-  font-size: 18px;
-  letter-spacing: 0.05em;
-  color: var(--accent-soft);
-}
-.switchLink {
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-size: 12.5px;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0;
-}
-
-/* 기도제목은 몇 개가 쌓일지 정해져 있지 않다. 전부 펼쳐 놓으면 FitBox가 화면 전체를
-   글씨가 안 보일 만큼 줄이고 그래도 넘쳐 페이지가 통째로 드래그되므로, 목록만 이 높이
-   안에서 넘겨 보게 한다. 이 높이도 FitBox가 기기에 맞춰 함께 키우고 줄인다. */
-.list {
-  max-height: 300px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  /* 마지막 항목 아래 여백. 목록이 잘린 게 아니라 끝났다는 게 보이도록 조금 남긴다. */
-  padding-bottom: 2px;
-}
-
-.item {
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-}
-.itemNick {
-  font-size: 11px;
-  color: var(--accent);
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.itemText {
-  font-size: 14.5px;
-  color: #d9cdbb;
-  white-space: pre-wrap;
-}
-.empty {
-  text-align: center;
-  color: var(--mute);
-  font-size: 13.5px;
-  padding: 30px 0;
 }

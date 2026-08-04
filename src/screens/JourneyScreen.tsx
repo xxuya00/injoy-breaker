@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { LOCKS, TOTAL, FINAL_REQUIRED, DAY_GATES, SECTION_GATES, type GateMeta } from '../data/locks';
+import { LOCKS, FINAL_REQUIRED, DAY_GATES, SECTION_GATES, type GateMeta } from '../data/locks';
 import { generateFlashRound, type FlashRound } from '../data/memoryGame';
 import { TILE_PUZZLE } from '../data/tilePuzzle';
 import { MAZE_STAGES, generateMazePath } from '../data/maze';
@@ -10,6 +10,7 @@ import { generateLightsOut, toggleLight } from '../data/lightsOut';
 import { generateCrossMathRound, checkCrossMath, crossMathLines, type CrossMathRound } from '../data/crossMath';
 import { generateCodeBreakRound, CODEBREAK_STAGES, type CodeBreakRound, type ShapeId } from '../data/codeBreak';
 import { generateBalanceRound, BALANCE_STAGES, ITEM_LABELS, type BalanceRound } from '../data/balance';
+import { VOW_PROMPT } from '../data/intro';
 import { fetchLockGates, type LockGate } from '../lib/gas';
 import { getAccumulatedMs, setAccumulatedMs, getGameAttempts, incrementGameAttempts } from '../lib/storage';
 import {
@@ -22,6 +23,7 @@ import {
 } from '../lib/sync';
 import type { Day, LockItem, LockType } from '../types';
 import Sheet from '../components/Sheet';
+import { useScrollFit } from '../components/FitBox';
 import RevealCard from '../components/RevealCard';
 import EggCrack from '../components/EggCrack';
 import QrScanner from '../components/QrScanner';
@@ -597,23 +599,38 @@ function parseQrText(text: string): string | null {
   return ALL_LOCK_IDS.has(raw) ? raw : null;
 }
 
-function MissionRecordAccordion({ items, answers }: { items: LockItem[]; answers: MissionAnswers }) {
+// 크랙을 낸 것(=QR을 찾은 것)과 글을 남긴 것은 이제 별개다. 글은 안 써도 크랙이 나기 때문에,
+// 찾았지만 아직 안 적은 칸은 여기서 "적기"로 다시 열어 그때 적을 수 있게 한다.
+// 아직 못 찾은 칸은 눌리지 않는다 — 여기로 미션을 열어버리면 QR을 찾지 않고도 깰 수 있게 된다.
+function MissionRecordAccordion({
+  items,
+  answers,
+  opened,
+  onWrite,
+}: {
+  items: LockItem[];
+  answers: MissionAnswers;
+  opened: Record<string, boolean>;
+  onWrite: (item: LockItem) => void;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   return (
     <div className={styles.recordList}>
       {items.map((item) => {
         const answer = answers[item.id];
+        const found = Boolean(opened[item.id]);
         const answered = Boolean(answer);
         const isOpen = openId === item.id;
         return (
           <div key={item.id} className={styles.recordItem}>
             <button
               className={styles.recordHead}
-              disabled={!answered}
-              onClick={() => setOpenId(isOpen ? null : item.id)}
+              disabled={!found}
+              onClick={() => (answered ? setOpenId(isOpen ? null : item.id) : onWrite(item))}
             >
-              <span className={`${styles.recordDot} ${answered ? styles.recordDotOn : ''}`} />
+              <span className={`${styles.recordDot} ${found ? styles.recordDotOn : ''}`} />
               <span className={styles.recordName}>{item.name}</span>
+              {found && !answered && <span className={styles.recordWrite}>적기</span>}
               {answered ? (
                 <svg
                   className={`${styles.recordChev} ${isOpen ? styles.recordChevOpen : ''}`}
@@ -627,7 +644,7 @@ function MissionRecordAccordion({ items, answers }: { items: LockItem[]; answers
                   <path d="M9 6l6 6-6 6" />
                 </svg>
               ) : (
-                <span className={styles.recordPending}>미발견</span>
+                !found && <span className={styles.recordPending}>미발견</span>
               )}
             </button>
             <div className={`${styles.recordBody} ${isOpen ? styles.recordBodyOpen : ''}`}>
@@ -643,7 +660,11 @@ function MissionRecordAccordion({ items, answers }: { items: LockItem[]; answers
 }
 
 export default function JourneyScreen() {
-  const { state, selectDay, openLock, goScreen, setTab } = useApp();
+  const { state, selectDay, openLock, goScreen, setTab, logout } = useApp();
+  // 날마다 담을 내용의 길이가 크게 다르다(DAY 1은 자물쇠 아홉 칸, DAY 2는 알·QR·기록까지).
+  // 화면 높이에 맞춰 줄였다 키웠다 하면 날짜 탭만 눌러도 글씨 크기가 통째로 달라지므로,
+  // 원래 크기로 두고 넘치는 만큼만 스크롤한다. 날짜를 바꾸면 맨 위에서 다시 시작한다.
+  useScrollFit(state.day);
   const toast = useToast();
   const [sheet, setSheet] = useState<SheetState | null>(null);
   // 진행 중(아직 완료 전)인 자물쇠 id. X로 닫았다가 같은 자물쇠를 다시 열면
@@ -718,10 +739,40 @@ export default function JourneyScreen() {
   const [nowTick, setNowTick] = useState(Date.now());
   const [lastElapsed, setLastElapsed] = useState<number | null>(null);
   const [lockGates, setLockGates] = useState<Record<string, LockGate>>({});
+  const warnedLockFetch = useRef(false);
   const [missionAnswers, setMissionAnswers] = useState<MissionAnswers>({});
   const [answerDraft, setAnswerDraft] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
+  // 등록할 때 적은 "나의 다짐"과 내 정보(복구 코드·로그아웃)를 꺼내 보는 시트.
+  // 게임용 시트와 성격이 달라서 따로 연다.
+  const [vowOpen, setVowOpen] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [logoutArmed, setLogoutArmed] = useState(false);
   const qrHandled = useRef(false);
+
+  // 시트를 닫으면 로그아웃 확인 단계도 처음으로 되돌린다(다음에 열었을 때 확인 문구가 떠 있지 않도록).
+  const closeVow = () => {
+    setVowOpen(false);
+    setLogoutArmed(false);
+    setCodeCopied(false);
+  };
+
+  const copyCode = async () => {
+    if (!state.id) return;
+    try {
+      await navigator.clipboard.writeText(state.id);
+      setCodeCopied(true);
+      toast('복구 코드를 복사했어요');
+    } catch {
+      toast('복사가 안 됐어요. 코드를 직접 적어두세요');
+    }
+  };
+
+  // 시트는 화면 위에 덮개로 그려지므로, 닫지 않고 로그아웃하면 등록 화면 위에 그대로 떠 있는다.
+  const handleLogout = () => {
+    closeVow();
+    logout();
+  };
 
   // QR 미션에 남긴 답변은 기기가 바뀌어도 볼 수 있도록 DB에서 불러온다.
   useEffect(() => {
@@ -753,7 +804,14 @@ export default function JourneyScreen() {
         .then((gates) => {
           if (!cancelled) setLockGates(gates);
         })
-        .catch(() => {});
+        // 1분마다 도는 폴링이라 참가자에게 토스트를 띄우면 화면을 계속 가린다.
+        // 다만 조용히 삼키면 잠금이 통째로 안 걸린 걸 아무도 모르므로 콘솔에는 한 번 남긴다.
+        .catch((err) => {
+          if (!warnedLockFetch.current) {
+            warnedLockFetch.current = true;
+            console.warn('[locks] 자물쇠 설정을 불러오지 못했어요 — 모든 칸이 열린 상태로 동작합니다.', err);
+          }
+        });
     };
     load();
     const interval = setInterval(load, 60000);
@@ -807,7 +865,6 @@ export default function JourneyScreen() {
   }, [sheet]);
 
   const dayData = LOCKS[state.day];
-  const openedCount = Object.keys(state.opened).length;
 
   // 시트에 적힌 잠금 상태를 읽는다. locked=TRUE면 시각과 무관하게 잠겨 있고,
   // unlock_at이 아직 안 지났으면 그 시각까지 잠겨 있다. 둘 다 없으면 열려 있다.
@@ -1505,7 +1562,16 @@ export default function JourneyScreen() {
     }
   };
 
+  // 이미 깨둔 크랙에 기록만 나중에 덧붙이려고 시트를 다시 여는 길(기록 목록의 "적기").
+  const writeMissionRecord = (item: LockItem) => {
+    setAnswerDraft(missionAnswers[item.id]?.answer ?? '');
+    setSheet({ kind: 'mission', item });
+  };
+
   const completeMission = (item: LockItem) => {
+    // 크랙은 QR을 찾은 순간 이미 났을 수도 있다(글은 나중에 적을 수 있으므로).
+    // 그 경우엔 축하 화면을 다시 띄우지 않고 기록만 더한다.
+    const alreadyOpen = !!state.opened[item.id];
     openLock(item.id);
     if (DAY2_MISSION_IDS.includes(item.id)) {
       const trimmed = answerDraft.trim();
@@ -1518,6 +1584,11 @@ export default function JourneyScreen() {
         }
       }
       setAnswerDraft('');
+      if (alreadyOpen) {
+        setSheet(null);
+        if (trimmed) toast('기록을 남겼어요');
+        return;
+      }
       const allDone = DAY2_MISSION_IDS.every((id) => id === item.id || state.opened[id]);
       if (allDone) {
         setSheet({ kind: 'eggComplete', item });
@@ -1613,27 +1684,32 @@ export default function JourneyScreen() {
 
   return (
     <section>
+      {/* 제목이 버튼에 밀려 두 줄이 되지 않도록, 버튼은 제목이 아니라 그 윗줄(eyebrow)과 나란히 둔다. */}
       <div className={styles.header}>
-        <div>
-          <div className="eyebrow">The Journey</div>
-          <h1>3일 간 여정</h1>
+        <div className="eyebrow">The Journey</div>
+        <div className={styles.headerBtns}>
+          <button className={styles.iconBtn} onClick={() => goScreen('intro')} aria-label="수련회 개요 다시 보기">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 5h14M5 10h14M5 15h9" />
+            </svg>
+          </button>
+          <button className={styles.iconBtn} onClick={() => setVowOpen(true)} aria-label="나의 다짐 보기">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3.6L6 20V5a1 1 0 0 1 1-1z" />
+            </svg>
+          </button>
+          <button className={styles.rankBtn} onClick={() => goScreen('rank')} aria-label="순위 보기">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 21h8M12 17v4M6 4h12v5a6 6 0 0 1-12 0V4z" />
+            </svg>
+          </button>
         </div>
-        <button className={styles.rankBtn} onClick={() => goScreen('rank')} aria-label="순위 보기">
-          <svg viewBox="0 0 24 24">
-            <path d="M8 21h8M12 17v4M6 4h12v5a6 6 0 0 1-12 0V4z" />
-          </svg>
-        </button>
       </div>
+      <h1>3일 간 여정</h1>
 
-      <div className={styles.progressWrap}>
-        <span className={styles.progressNum}>
-          {openedCount} / {TOTAL} UNLOCKED
-        </span>
-        <div className={styles.bar}>
-          <span className={styles.barFill} style={{ width: `${Math.min(100, (openedCount / TOTAL) * 100)}%` }} />
-        </div>
-      </div>
-
+      {/* 전체 진행 바(n/16)는 뺐다. 날마다 이미 자기 진행이 눈에 보이고(자물쇠 그리드의 켜진 칸,
+          알에 늘어나는 금), 무엇보다 그날 할 일을 다 해도 절반쯤에서 멈춰 있는 바라
+          채워지는 맛 대신 덜 한 것 같은 느낌만 줬다. */}
       <div className={styles.daytabRow}>
         {([1, 2, 3] as Day[]).map((d) => {
           // 시트에서 그 날을 통째로 잠가두면 탭 자체가 열리지 않는다.
@@ -1670,6 +1746,27 @@ export default function JourneyScreen() {
               locked={g.locked}
               lockedSub={g.at ? `${formatKST(g.at)}에 열려요` : SECTION_GATES.d2Type.lockedSub}
               onClick={() => (g.locked ? toastGate(g) : goScreen('type'))}
+            />
+          );
+        })()}
+
+      {/* 검사 결과를 혼자 읽고 끝내지 않고 입 밖으로 꺼내는 자리.
+          검사 직후가 아니라 진행자가 나눔 시간을 잡았을 때 열어준다. */}
+      {state.day === 2 &&
+        (() => {
+          const g = sectionGate(SECTION_GATES.d2Share);
+          return (
+            <NavCard
+              icon={
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 5h16v10H8l-4 4z" />
+                </svg>
+              }
+              name="유형 나눔"
+              sub="같은 유형끼리, 그리고 우리 조에서"
+              locked={g.locked}
+              lockedSub={g.at ? `${formatKST(g.at)}에 열려요` : SECTION_GATES.d2Share.lockedSub}
+              onClick={() => (g.locked ? toastGate(g) : goScreen('share'))}
             />
           );
         })()}
@@ -1770,11 +1867,60 @@ export default function JourneyScreen() {
           <div className={styles.sectionLabel}>
             나의 기록 · {day2CrackCount}/{DAY2_MISSION_IDS.length}
           </div>
-          <MissionRecordAccordion items={DAY2_MISSIONS} answers={missionAnswers} />
+          <MissionRecordAccordion
+            items={DAY2_MISSIONS}
+            answers={missionAnswers}
+            opened={state.opened}
+            onWrite={writeMissionRecord}
+          />
         </>
       )}
 
       {scannerOpen && <QrScanner parse={parseQrText} onDetect={handleScanDetect} onClose={() => setScannerOpen(false)} />}
+
+      <Sheet open={vowOpen} onClose={closeVow}>
+        <span className="pill">{VOW_PROMPT.recallTitle}</span>
+        <h2 style={{ margin: '8px 0 12px' }}>{VOW_PROMPT.question}</h2>
+        {state.vow ? (
+          <p style={{ whiteSpace: 'pre-wrap', fontSize: 15.5, lineHeight: 1.85, color: '#d9cdbb' }}>{state.vow}</p>
+        ) : (
+          <p className="muted">등록할 때 남겨둔 다짐이 없어요.</p>
+        )}
+
+        <hr className={styles.sectionDivider} />
+        <div className={styles.sectionLabel}>내 정보 · {state.nickname || state.nick}</div>
+        <div className={styles.codeRow}>
+          <div className={styles.codeValue}>{state.id}</div>
+          <button className={styles.copyBtn} onClick={copyCode}>
+            {codeCopied ? '복사됨' : '복사'}
+          </button>
+        </div>
+
+        {logoutArmed ? (
+          <>
+            <p className="tiny" style={{ color: 'var(--danger)', textAlign: 'left', marginTop: 12 }}>
+              복구 코드를 적어두었나요? 코드가 없으면 이 기록으로 다시 들어올 수 없어요.
+            </p>
+            <div className="row" style={{ marginTop: 8 }}>
+              <button className="btn ghost" onClick={() => setLogoutArmed(false)}>
+                취소
+              </button>
+              <button className="btn" onClick={handleLogout}>
+                로그아웃
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="tiny" style={{ textAlign: 'left', marginTop: 12 }}>
+              로그아웃해도 기록은 그대로 남아요. 위 코드로 다시 들어올 수 있어요.
+            </p>
+            <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => setLogoutArmed(true)}>
+              로그아웃
+            </button>
+          </>
+        )}
+      </Sheet>
 
       <Sheet open={sheet !== null} onClose={closeSheet} fullscreen action={restartAction}>
         {sheet?.kind === 'intro' &&
@@ -1819,24 +1965,26 @@ export default function JourneyScreen() {
             </span>
             <h2 style={{ margin: '6px 0 10px' }}>{sheet.item.name}</h2>
             <p style={{ fontSize: 15.5, color: '#d9cdbb', marginBottom: 8 }}>{sheet.item.q}</p>
-            <p className="muted" style={{ marginBottom: 12 }}>
-              {sheet.item.hint}
-            </p>
+            {/* hint는 "다 했으면 크랙을 냅니다" 같은 안내라, 이미 깨둔 크랙에 기록만 더하러
+                들어온 경우엔 이미 지나간 이야기다. */}
+            {!state.opened[sheet.item.id] && (
+              <p className="muted" style={{ marginBottom: 12 }}>
+                {sheet.item.hint}
+              </p>
+            )}
             {DAY2_MISSION_IDS.includes(sheet.item.id) && (
               <textarea
                 className="field"
                 style={{ minHeight: 96, resize: 'none', lineHeight: 1.6 }}
-                placeholder="떠오른 생각이나 답을 적어보세요…"
+                placeholder="떠오른 생각이 있으면 적어보세요 (안 적어도 괜찮아요)"
                 value={answerDraft}
                 onChange={(e) => setAnswerDraft(e.target.value)}
               />
             )}
-            <button
-              className="btn"
-              disabled={DAY2_MISSION_IDS.includes(sheet.item.id) && answerDraft.trim().length === 0}
-              onClick={() => completeMission(sheet.item)}
-            >
-              완료했어요 · 크랙 내기
+            {/* 글은 넘어가는 조건이 아니다. 계곡에서 손이 젖은 채로, 어두운 데서 타이핑을 강제하면
+                "QR을 찾았다"는 것 자체가 막힌다. 못 적었으면 기록 목록에서 나중에 적을 수 있다. */}
+            <button className="btn" onClick={() => completeMission(sheet.item)}>
+              {state.opened[sheet.item.id] ? '기록 저장' : '완료했어요 · 크랙 내기'}
             </button>
           </>
         )}
