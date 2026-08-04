@@ -76,10 +76,14 @@ export function useFillFit() {
 
 interface Props {
   children: ReactNode;
+  // 담기는 화면이 스스로 고르는 대신 바깥에서 통째로 정해주는 모드(시트처럼 무엇이 들어올지
+  // 미리 아는 자리). 값이 있으면 안쪽 화면의 useFitMode()보다 이쪽이 이긴다.
+  mode?: FitMode;
 }
 
-export default function FitBox({ children }: Props) {
-  const [mode, setMode] = useState<FitMode>('fit');
+export default function FitBox({ children, mode: fixedMode }: Props) {
+  const [ownMode, setMode] = useState<FitMode>('fit');
+  const mode = fixedMode ?? ownMode;
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const outerRef = useRef<HTMLDivElement>(null);

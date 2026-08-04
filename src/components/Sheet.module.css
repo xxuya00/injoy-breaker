@@ -66,18 +66,27 @@
   min-height: 0;
 }
 
-/* 닫기 버튼(34px) 바로 왼쪽 자리. 여기 달리는 메뉴가 시트 내용 위로 뜨도록 z-index를 준다. */
-.actionSlot {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 60px;
+/* 머리말과 버튼이 나란히 놓이는 줄. 내용 위에 겹쳐 띄우지 않고 자리를 차지하게 둬서,
+   내용이 아무리 커지거나 줄어도 버튼을 덮어 탭을 막는 일이 없게 한다.
+   (겹쳐 뒀을 때는 FitBox가 뒤에 그려지며 닫기 버튼을 통째로 가려 눌리지 않았다) */
+.topBar {
+  flex: none;
+  position: relative;
   z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 34px;
+}
+/* 머리말이 길어도 버튼을 밀어내지 않고 스스로 줄바꿈한다. */
+.topBarMain {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .closeBtn {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 18px;
+  flex: none;
   width: 34px;
   height: 34px;
   border-radius: 50%;

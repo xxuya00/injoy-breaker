@@ -1604,13 +1604,46 @@ export default function JourneyScreen() {
   const elapsedText =
     sheet && isPreciseGame(sheet.kind) ? formatPreciseElapsed(elapsedMs) : formatElapsed(elapsedMs);
 
-  // 9개 미니게임이 공통으로 쓰는 상단 줄 — 게임 이름 · 경과시간. (재시작은 시트 우상단에 따로 있다)
+  // 9개 미니게임이 공통으로 쓰는 상단 줄 — 게임 이름 · 경과시간.
+  // 이 줄은 게임 내용이 아니라 시트 머리말 자리(닫기·재시작 버튼과 같은 줄)에 놓인다.
+  // 내용 쪽에 두면 기기에 따라 함께 커지거나 줄어서, 버튼과 겹치거나 두 줄로 밀려났다.
   const gameHeader = (label: React.ReactNode, showTimer = true) => (
     <div className={styles.timerRow}>
-      <span className="pill">{label}</span>
+      <span className={`pill ${styles.gamePill}`}>{label}</span>
       {showTimer && <span className={styles.timerBadge}>⏱ {elapsedText}</span>}
     </div>
   );
+
+  // 지금 열려 있는 게임의 머리말. 시트가 버튼과 같은 줄에 그려준다.
+  const sheetHeader = (() => {
+    if (!sheet) return null;
+    switch (sheet.kind) {
+      case 'crossmath':
+        return gameHeader('✝️ 성경 십자 연산');
+      case 'codebreak':
+        return gameHeader(`🔺 부호 해독 · ${cbStageIdx + 1}/${CODEBREAK_STAGES.length}단계`);
+      case 'balance':
+        return gameHeader(`⚖️ 가짜 찾기 · ${balStageIdx + 1}/${BALANCE_STAGES.length}단계`);
+      case 'reflex':
+        return gameHeader(`⚡ 순발력 타격 · ${reflexHits}/${REFLEX_TARGET_HITS}`);
+      case 'memory':
+        // 시계는 '시작'을 눌러야 돌기 시작한다. 한 번 돌기 시작하면 준비 화면에서도 계속 보여준다.
+        return gameHeader(
+          `🧠 플래시 기억 · ${flashRoundIdx + 1}/${FLASH_ROUNDS.length}세트`,
+          flashPhase !== 'ready' || sessionStart !== null,
+        );
+      case 'maze':
+        return gameHeader(`🧭 기억의 미로 · ${mazeStageIdx + 1}/${MAZE_STAGES.length}단계`);
+      case 'combo':
+        return gameHeader(`🎴 결합 찾기 · ${comboRoundIdx + 1}/${comboRounds.length}세트`);
+      case 'equation':
+        return gameHeader(`🔢 수식 만들기 · ${eqStreak}/${EQ_TARGET_STREAK}`);
+      case 'lightsout':
+        return gameHeader(`💡 라이트 아웃 · ${loStageIdx + 1}/${LO_STAGES.length}단계`);
+      default:
+        return null;
+    }
+  })();
 
   // 타임어택 게임을 보고 있을 때만 시트 우상단(닫기 왼쪽)에 재시작 아이콘이 붙는다.
   // 여러 단계짜리 게임은 "이 단계만"과 "처음부터" 중에 고르게 하고, 한 판짜리는 곧바로 처음부터 다시 시작한다.
@@ -1922,7 +1955,7 @@ export default function JourneyScreen() {
         )}
       </Sheet>
 
-      <Sheet open={sheet !== null} onClose={closeSheet} fullscreen action={restartAction}>
+      <Sheet open={sheet !== null} onClose={closeSheet} fullscreen action={restartAction} header={sheetHeader}>
         {sheet?.kind === 'intro' &&
           (() => {
             const intro = GAME_INTRO[sheet.item.type];
@@ -1991,8 +2024,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'crossmath' && cmRound && (
           <>
-            {gameHeader('✝️ 성경 십자 연산')}
-            <h2 style={{ margin: '6px 0 4px' }}>1~9를 겹치지 않게 채워 합을 맞추세요</h2>
+            <h2 style={{ margin: '0 0 4px' }}>1~9를 겹치지 않게 채워 합을 맞추세요</h2>
             <p className="muted" style={{ marginBottom: 6 }}>
               {cmRound.hint}
             </p>
@@ -2046,7 +2078,7 @@ export default function JourneyScreen() {
             <p className="muted" style={{ margin: '0 0 14px', textAlign: 'center' }}>
               맞춘 줄 {cmLines.rows.filter(Boolean).length + cmLines.cols.filter(Boolean).length} / 6
             </p>
-            <div className={styles.eqNumRow}>
+            <div className={styles.digitPad}>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
                 <button
                   key={d}
@@ -2063,8 +2095,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'codebreak' && cbRound && (
           <>
-            {gameHeader(`🔺 부호 해독 · ${cbStageIdx + 1}/${CODEBREAK_STAGES.length}단계`)}
-            <h2 style={{ margin: '6px 0 4px' }}>도형마다 숨은 숫자를 추리하세요</h2>
+            <h2 style={{ margin: '0 0 4px' }}>도형마다 숨은 숫자를 추리하세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
               {cbRound.shapeCount}개 도형에 0~9 중 겹치지 않는 숫자가 배정되어 있어요. 힌트 {cbRound.hints.length}개를 보고
               최종식을 풀어보세요.
@@ -2085,14 +2116,14 @@ export default function JourneyScreen() {
               <span className={styles.cbOp}>=</span>
               <span className={styles.cbInputDisplay}>{cbInput || '?'}</span>
             </div>
-            <div className={styles.eqNumRow}>
+            <div className={styles.digitPad}>
               {[1, 2, 3, 4, 5].map((d) => (
                 <button key={d} className={styles.eqNumBtn} onClick={() => tapCbDigit(d)}>
                   {d}
                 </button>
               ))}
             </div>
-            <div className={styles.eqNumRow}>
+            <div className={styles.digitPad}>
               {[6, 7, 8, 9, 0].map((d) => (
                 <button key={d} className={styles.eqNumBtn} onClick={() => tapCbDigit(d)}>
                   {d}
@@ -2112,10 +2143,9 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'balance' && balRound && (
           <>
-            {gameHeader(
-              `⚖️ 가짜 찾기 · ${balStageIdx + 1}/${BALANCE_STAGES.length}단계 (${balRound.itemCount}개)`,
-            )}
-            <h2 style={{ margin: '6px 0 4px' }}>딱 하나, 무게가 다른 가짜를 찾으세요</h2>
+            <h2 style={{ margin: '0 0 4px' }}>
+              {balRound.itemCount}개 중 딱 하나, 무게가 다른 가짜를 찾으세요
+            </h2>
             <p className="muted" style={{ marginBottom: 14 }}>
               아래는 이미 진행된 저울질 결과예요. 결과를 보고 어떤 것이 가짜(더 무거운 것)인지 아래에서 골라보세요.
             </p>
@@ -2160,8 +2190,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'reflex' && (
           <>
-            {gameHeader(`⚡ 순발력 타격 · ${reflexHits}/${REFLEX_TARGET_HITS}`)}
-            <h2 style={{ margin: '6px 0 4px' }}>빛나는 칸을 최대한 빠르게 탭하세요</h2>
+            <h2 style={{ margin: '0 0 4px' }}>빛나는 칸을 최대한 빠르게 탭하세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
               {REFLEX_TARGET_HITS}번 맞히면 열려요. 속도가 곧 실력!
             </p>
@@ -2179,14 +2208,9 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'memory' && (
           <>
-            {/* 시계는 '시작'을 눌러야 돌기 시작한다. 한 번 돌기 시작하면 준비 화면에서도 계속 보여준다. */}
-            {gameHeader(
-              `🧠 플래시 기억 · ${flashRoundIdx + 1}/${FLASH_ROUNDS.length}세트`,
-              flashPhase !== 'ready' || sessionStart !== null,
-            )}
             {flashPhase === 'ready' && (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>단어 {FLASH_ROUNDS[flashRoundIdx]}개가 한 개씩 스쳐 지나가요</h2>
+                <h2 style={{ margin: '0 0 4px' }}>단어 {FLASH_ROUNDS[flashRoundIdx]}개가 한 개씩 스쳐 지나가요</h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
                   준비되면 시작을 눌러보세요. 순서까지 기억해야 해요.
                 </p>
@@ -2197,7 +2221,7 @@ export default function JourneyScreen() {
             )}
             {flashPhase === 'show' && flashRound && (
               <>
-                <p className="muted" style={{ margin: '6px 0 0', textAlign: 'center' }}>
+                <p className="muted" style={{ margin: '0 0 0', textAlign: 'center' }}>
                   {flashCursor + 1} / {flashRound.sequence.length}번째
                 </p>
                 <div className={styles.flashShowBox}>
@@ -2219,7 +2243,7 @@ export default function JourneyScreen() {
             )}
             {flashPhase === 'choose' && flashRound && (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>방금 본 순서대로 탭하세요</h2>
+                <h2 style={{ margin: '0 0 4px' }}>방금 본 순서대로 탭하세요</h2>
                 <p className="muted" style={{ marginBottom: 12 }}>
                   {flashProgress}/{flashRound.sequence.length}개 선택함
                 </p>
@@ -2266,19 +2290,18 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'maze' && (
           <>
-            {gameHeader(
-              `🧭 기억의 미로 · ${mazeStageIdx + 1}/${MAZE_STAGES.length}단계 (${mazeStage.rows}x${mazeStage.cols})`,
-            )}
             {mazePhase === 'reveal' ? (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>안전한 길을 잘 기억하세요</h2>
+                <h2 style={{ margin: '0 0 4px' }}>
+                  {mazeStage.rows}x{mazeStage.cols} · 안전한 길을 잘 기억하세요
+                </h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
                   초록색 칸이 곧 사라집니다. 잠시 후 기억으로만 이동해야 해요.
                 </p>
               </>
             ) : (
               <>
-                <h2 style={{ margin: '6px 0 4px' }}>출구까지 길을 찾아보세요</h2>
+                <h2 style={{ margin: '0 0 4px' }}>출구까지 길을 찾아보세요</h2>
                 <p className="muted" style={{ marginBottom: 16 }}>
                   화살표로 이동해서 깃발까지 도착하면 열려요. 함정을 밟으면 이 단계부터 다시예요.
                 </p>
@@ -2286,7 +2309,12 @@ export default function JourneyScreen() {
             )}
             <div
               className={`${styles.mazeGrid} ${mazeWrong ? styles.mazeWrongFx : ''}`}
-              style={{ gridTemplateColumns: `repeat(${mazeStage.cols}, 1fr)` }}
+              style={
+                {
+                  gridTemplateColumns: `repeat(${mazeStage.cols}, 1fr)`,
+                  '--board-ratio': mazeStage.cols / mazeStage.rows,
+                } as React.CSSProperties
+              }
             >
               {Array.from({ length: mazeStage.rows }).map((_, r) =>
                 Array.from({ length: mazeStage.cols }).map((_, c) => {
@@ -2328,8 +2356,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'combo' && comboRounds[comboRoundIdx] && (
           <>
-            {gameHeader(`🎴 결합 찾기 · ${comboRoundIdx + 1}/${comboRounds.length}세트`)}
-            <h2 style={{ margin: '6px 0 4px' }}>보이는 결합을 모두 찾아보세요</h2>
+            <h2 style={{ margin: '0 0 4px' }}>보이는 결합을 모두 찾아보세요</h2>
             <p className="muted" style={{ marginBottom: 16 }}>
               모양·색·배경이 각각 셋 다 같거나 셋 다 달라야 결합이에요. 더 찾을 결합이 없으면 아래 "결" 버튼을 눌러
               다음 세트로 넘어가세요. 오답이면 리셋 없이 경과시간에 10초가 더해져요.
@@ -2374,8 +2401,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'equation' && eqRound && (
           <>
-            {gameHeader(`🔢 수식 만들기 · ${eqStreak}/${EQ_TARGET_STREAK}`)}
-            <h2 style={{ margin: '6px 0 4px' }}>목표 숫자: {eqRound.target}</h2>
+            <h2 style={{ margin: '0 0 4px' }}>목표 숫자: {eqRound.target}</h2>
             <p className="muted" style={{ marginBottom: 12 }}>
               숫자 4개를 전부 한 번씩만 써서 목표를 만드세요. {EQ_TARGET_STREAK}문제 연속 성공하면 열려요.
             </p>
@@ -2411,8 +2437,7 @@ export default function JourneyScreen() {
 
         {sheet?.kind === 'lightsout' && loGrid && (
           <>
-            {gameHeader(`💡 라이트 아웃 · ${loStageIdx + 1}/${LO_STAGES.length}단계`)}
-            <h2 style={{ margin: '6px 0 4px' }}>
+            <h2 style={{ margin: '0 0 4px' }}>
               {loSize}×{loSize} 불을 전부 꺼보세요
             </h2>
             <p className="muted" style={{ marginBottom: 16 }}>
