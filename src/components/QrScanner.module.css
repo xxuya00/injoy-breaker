@@ -17,6 +17,12 @@
   object-fit: cover;
 }
 
+/* 아직 카메라가 안 열렸을 때. display:none으로 빼면 아이폰이 재생을 막아버려서, 자리는 두고 안 보이게만 한다. */
+.videoHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .hiddenCanvas {
   display: none;
 }

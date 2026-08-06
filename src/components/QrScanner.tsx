@@ -14,6 +14,10 @@ interface Props {
 // 기기 문제가 아니라 주소 문제라서 안내를 따로 둔다.
 type CamState = 'starting' | 'ready' | 'denied' | 'insecure' | 'unsupported' | 'error';
 
+// 훑어볼 그림의 최대 한 변. 카메라 원본은 이보다 훨씬 큰데, 그대로 보면 한 프레임에 오래 걸려
+// 손이 흔들리는 사이 판을 놓친다. 줄여서 자주 보는 쪽이 결과적으로 더 빨리 잡힌다.
+const SCAN_MAX_SIDE = 720;
+
 export default function QrScanner({ onDetect, onClose, parse }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,60 +48,78 @@ export default function QrScanner({ onDetect, onClose, parse }: Props) {
 
     let cancelled = false;
 
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
-      .then((stream) => {
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-        setCamState('ready');
-        tick();
-      })
-      .catch((err) => {
+    (async () => {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (err) {
         if (cancelled) return;
-        setCamState(err?.name === 'NotAllowedError' ? 'denied' : 'error');
-      });
+        const name = (err as { name?: string } | null)?.name;
+        setCamState(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'error');
+        return;
+      }
+      if (cancelled) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      streamRef.current = stream;
+
+      // video는 상태와 상관없이 늘 붙어 있다(아래 render 참고). 예전처럼 'ready'가 된 뒤에
+      // 붙이려 하면, 그 시점엔 아직 그려지기 전이라 스트림을 놓치고 화면이 까맣게 남는다.
+      const video = videoRef.current;
+      if (!video) {
+        setCamState('error');
+        return;
+      }
+      video.srcObject = stream;
+      setCamState('ready');
+      video.play().catch(() => {});
+      tick();
+    })();
 
     function tick() {
+      if (doneRef.current) return;
+      // 다음 프레임을 먼저 걸어둔다. 아직 첫 화면이 안 들어왔을 때 그냥 돌아가버리면
+      // 루프가 그대로 끊겨서, 카메라는 켜져 있는데 아무리 대도 인식이 안 된다.
+      rafRef.current = requestAnimationFrame(tick);
+
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      if (!video || !canvas || doneRef.current) return;
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        const w = video.videoWidth;
-        const h = video.videoHeight;
-        if (w && h) {
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, w, h);
-            const frame = ctx.getImageData(0, 0, w, h);
-            const code = jsQR(frame.data, w, h, { inversionAttempts: 'dontInvert' });
-            if (code?.data) {
-              const id = parseRef.current(code.data);
-              if (id) {
-                doneRef.current = true;
-                onDetectRef.current(id);
-                return;
-              }
-              if (!hintTimer.current) {
-                setHint('인식은 됐지만 이 여정의 QR이 아니에요');
-                hintTimer.current = setTimeout(() => {
-                  setHint(null);
-                  hintTimer.current = null;
-                }, 1400);
-              }
-            }
-          }
-        }
+      if (!video || !canvas) return;
+      if (video.readyState < video.HAVE_CURRENT_DATA) return;
+
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return;
+
+      // 원본 그대로(보통 1920px)를 매 프레임 훑으면 폰에서 한 장에 수백 ms가 걸린다.
+      // 화면 가운데 QR 하나 읽는 데는 이 정도면 충분하고, 대신 훨씬 자주 본다.
+      const scale = Math.min(1, SCAN_MAX_SIDE / Math.max(vw, vh));
+      const w = Math.round(vw * scale);
+      const h = Math.round(vh * scale);
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, w, h);
+      const frame = ctx.getImageData(0, 0, w, h);
+      const code = jsQR(frame.data, w, h, { inversionAttempts: 'dontInvert' });
+      if (!code?.data) return;
+
+      const id = parseRef.current(code.data);
+      if (id) {
+        doneRef.current = true;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        onDetectRef.current(id);
+        return;
       }
-      rafRef.current = requestAnimationFrame(tick);
+      if (!hintTimer.current) {
+        setHint('인식은 됐지만 이 여정의 QR이 아니에요');
+        hintTimer.current = setTimeout(() => {
+          setHint(null);
+          hintTimer.current = null;
+        }, 1400);
+      }
     }
 
     return () => {
@@ -120,20 +142,28 @@ export default function QrScanner({ onDetect, onClose, parse }: Props) {
         </svg>
       </button>
 
+      {/* 카메라를 열기 전에도 자리를 지키고 있어야 스트림을 받아 바로 붙일 수 있다.
+          숨길 때도 display:none 대신 투명하게만 둔다 — 아이폰은 감춰진 video를 재생하지 않는다. */}
+      <video
+        ref={videoRef}
+        className={camState === 'ready' ? styles.video : `${styles.video} ${styles.videoHidden}`}
+        playsInline
+        muted
+        autoPlay
+        onLoadedMetadata={() => videoRef.current?.play().catch(() => {})}
+      />
+
       {camState === 'ready' && (
-        <>
-          <video ref={videoRef} className={styles.video} playsInline muted />
-          <div className={styles.frameWrap}>
-            <div className={styles.scanFrame}>
-              <span className={styles.corner} data-pos="tl" />
-              <span className={styles.corner} data-pos="tr" />
-              <span className={styles.corner} data-pos="bl" />
-              <span className={styles.corner} data-pos="br" />
-            </div>
-            <p className={styles.guide}>QR을 네모 안에 맞춰주세요</p>
-            {hint && <p className={styles.hintMsg}>{hint}</p>}
+        <div className={styles.frameWrap}>
+          <div className={styles.scanFrame}>
+            <span className={styles.corner} data-pos="tl" />
+            <span className={styles.corner} data-pos="tr" />
+            <span className={styles.corner} data-pos="bl" />
+            <span className={styles.corner} data-pos="br" />
           </div>
-        </>
+          <p className={styles.guide}>QR을 네모 안에 맞춰주세요</p>
+          {hint && <p className={styles.hintMsg}>{hint}</p>}
+        </div>
       )}
 
       {camState === 'starting' && <p className={styles.statusMsg}>카메라를 여는 중…</p>}
