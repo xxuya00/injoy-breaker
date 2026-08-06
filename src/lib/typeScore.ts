@@ -229,7 +229,7 @@ export function computeResponseQuality(answers: Record<string, number>, order?: 
 // 화면에 박아두면 참가자가 자기 답변이 채점당했다고 읽기 때문이다.
 // 아래 설명은 그 알약을 눌러봤을 때만 나오는 보충 설명이라, 낮은 밴드도 나무람이 아니라
 // 결과를 어떻게 받아들이면 되는지 알려주는 쪽으로 썼다.
-export const QUALITY_NOTE: Record<QualityBand, string> = {
+const QUALITY_NOTE: Record<QualityBand, string> = {
   high: '처음부터 끝까지 흔들림 없이 한 방향으로 답하셨어요. 그만큼 결과도 또렷해요.',
   mid: '대체로 일관되면서도, 문항에 따라 마음이 조금씩 다르게 움직였어요. 자연스러운 모습이에요.',
   low: '같은 주제 안에서도 답이 여러 갈래로 나뉘었어요. 결과는 참고로만 보시고, 마음이 좀 더 잔잔할 때 다시 해보셔도 좋아요.',

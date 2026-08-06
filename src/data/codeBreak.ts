@@ -1,6 +1,6 @@
 export type ShapeId = 0 | 1 | 2 | 3 | 4;
 
-export const SHAPES: ShapeId[] = [0, 1, 2, 3, 4];
+const SHAPES: ShapeId[] = [0, 1, 2, 3, 4];
 
 export type CodeBreakOp = '+' | '-' | '×';
 

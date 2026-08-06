@@ -131,7 +131,7 @@ export function hintMove(s: DialOffsets): Move | null {
 }
 
 /** 남은 최소 조작 횟수. 다이얼 아래에 "몇 걸음 남았는지" 대신 쓰지는 않고, 섞을 때만 쓴다. */
-export function stepsLeft(s: DialOffsets): number {
+function stepsLeft(s: DialOffsets): number {
   return lookup(s)?.dist ?? Infinity;
 }
 

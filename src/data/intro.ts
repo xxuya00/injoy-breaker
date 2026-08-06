@@ -99,7 +99,7 @@ export const INTRO_CTA = '등록하러 가기';
 // 채워지지 않는 헛됨이 아니라 맞아주고 축복하고 사랑하는 쪽으로만 골랐다.
 // 갈래는 셋이다 — 초대(오라·쉬라), 축복(지키시고 채우시고), 사랑(너는 내 것이라).
 // 화면의 인용 블록에 서너 줄로 담기도록 한 구절당 50자 안팎으로 끊어 적는다.
-export const WELCOME_VERSES: { verse: string; ref: string }[] = [
+const WELCOME_VERSES: { verse: string; ref: string }[] = [
   // — 초대
   { verse: '수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라', ref: '마태복음 11:28' },
   { verse: '오호라 너희 모든 목마른 자들아 물로 나아오라', ref: '이사야 55:1' },

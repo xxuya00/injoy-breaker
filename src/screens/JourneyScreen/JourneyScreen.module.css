@@ -1589,87 +1589,6 @@
   50% { outline-color: rgba(233, 196, 106, 1); }
 }
 
-.lock {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 13px 16px;
-  margin-bottom: 10px;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.3s;
-  opacity: 0.7;
-}
-.lockOpen {
-  opacity: 1;
-  border-color: rgba(236, 147, 163, 0.45);
-}
-.lockOpen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(80% 120% at 100% 0%, rgba(236, 147, 163, 0.12), transparent 70%);
-  pointer-events: none;
-}
-/* 시트(locks)에서 잠가둔 구역. 눌리긴 하지만(언제 열리는지 알려줘야 하므로) 꺼진 것처럼 보인다. */
-.lockGated {
-  opacity: 0.5;
-}
-.tapable {
-  cursor: pointer;
-}
-.tapable:active {
-  transform: scale(0.985);
-}
-.ic {
-  width: 46px;
-  height: 46px;
-  flex: none;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ink-3);
-  border: 1px solid var(--line);
-}
-.lockOpen .ic {
-  background: rgba(236, 147, 163, 0.14);
-  border-color: rgba(236, 147, 163, 0.4);
-}
-.ic svg {
-  width: 22px;
-  height: 22px;
-  stroke: var(--mute);
-  fill: none;
-  stroke-width: 1.8;
-}
-.lockOpen .ic svg {
-  stroke: var(--accent);
-}
-.body {
-  flex: 1;
-  min-width: 0;
-}
-.name {
-  font-weight: 700;
-  font-size: var(--fs-body);
-}
-.lockLocked .name {
-  color: var(--mute);
-}
-.sub {
-  font-size: var(--fs-sm);
-  color: var(--mute);
-  margin-top: 1px;
-}
-.chev {
-  color: var(--mute);
-  flex: none;
-}
-
 /* ---------- 성경 십자 연산 ---------- */
 /* 목표 합은 채워 넣는 칸이 아니라 눈금에 가깝다. 칸과 같은 크기로 잡으면 오른쪽 한 줄과
    아래 한 줄이 통째로 비어 보이고, 정작 눌러야 할 칸은 그만큼 작아진다. 숫자만큼만 준다. */
@@ -2208,19 +2127,11 @@
 }
 /* 두 번 탭해서 전부 꺼지기까지가 한 바퀴(6초).
    ~21% 첫 탭 전 / 22~51% 첫 탭 후 / 52~92% 두 번째 탭 후(전부 꺼짐) / 93%~ 처음으로 되감기 */
-.demoLoA {
-  animation: demoLoA 6s steps(1) infinite;
-}
 .demoLoB {
   animation: demoLoB 6s steps(1) infinite;
 }
 .demoLoC {
   animation: demoLoC 6s steps(1) infinite;
-}
-@keyframes demoLoA {
-  0%, 51% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
-  52%, 92% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
-  93%, 100% { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(236, 147, 163, 0.6); }
 }
 @keyframes demoLoB {
   0%, 21% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }

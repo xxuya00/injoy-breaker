@@ -491,17 +491,6 @@
   border-color: rgba(236, 147, 163, 0.5);
 }
 
-/* 카드 안에서 소제목 역할을 한다(내 응답 분포 등) */
-.ttSubLabel {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--accent-soft);
-  margin-bottom: 4px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-}
-
 /* 육각형 옆에 세로로 쌓는다(예전엔 가로로 나란히 놓여 한 줄을 통째로 썼다).
    도형에 자리를 내주느라 이름표는 한 단계 작아졌다 — 여기 적힌 두 이름은 카드 제목과
    맨 윗줄 알약이 이미 한 번씩 말한 것이라, 작아도 못 읽을 일이 없다. */

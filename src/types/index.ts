@@ -64,9 +64,3 @@ export interface AppState {
   screen: ScreenId;
   activeTab: TabId;
 }
-
-export interface RankEntry {
-  nick: string;
-  pt: number;
-  me?: boolean;
-}

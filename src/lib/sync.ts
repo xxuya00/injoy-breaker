@@ -85,7 +85,7 @@ export interface GameTimeEntry {
 // 힌트를 한 번이라도 더 쓴 기록은 시간과 무관하게 반드시 뒤로 밀린다.
 const HINT_WEIGHT_MS = 24 * 60 * 60 * 1000;
 
-export function gameRankKey(elapsedMs: number, hints: number): number {
+function gameRankKey(elapsedMs: number, hints: number): number {
   const clamped = Math.min(Math.max(0, elapsedMs), HINT_WEIGHT_MS - 1);
   return Math.max(0, hints) * HINT_WEIGHT_MS + clamped;
 }
