@@ -44,7 +44,7 @@ export default function LoginScreen() {
     }
     // 본명만 적어 넣는 경우가 가장 흔한 실수다. 무엇이 빠졌는지 먼저 알려준다.
     if (!looksLikePlayerCode(v)) {
-      toast('복구 코드 형식이 아니에요 (예: 양파링#428)');
+      toast('복구 코드 형식이 아니에요 (예: 뿌셔뿌셔#428)');
       return;
     }
     setRestoring(true);
@@ -70,12 +70,12 @@ export default function LoginScreen() {
         </p>
         <input
           className="field"
-          placeholder="예: 양파링#428"
+          placeholder="예: 뿌셔뿌셔#428"
           value={restoreCode}
           onChange={(e) => setRestoreCode(e.target.value)}
           maxLength={24}
         />
-        <button className="btn" onClick={handleRestore} disabled={restoring}>
+        <button className={`btn sm ${styles.submit}`} onClick={handleRestore} disabled={restoring}>
           {restoring ? '확인 중…' : '이어하기'}
         </button>
         <button className={styles.switchLink} onClick={() => setMode('new')}>
@@ -94,11 +94,11 @@ export default function LoginScreen() {
 
       <hr className="divider" />
       <p className="lead" style={{ marginBottom: 22 }}>
-        당신과 하나님 사이를 가두는 잠금장치는 얼마나 있나요?
+        하나님보다 앞에 둔 것, 하나쯤 있지 않나요?
         <br />
-        수많은 자극이 참된 평안과 쉼을 가둬 놓았어요.
+        그 자물쇠를 하나씩 열어 보는 3일.
         <br />
-        <span style={{ color: 'var(--accent-soft)' }}>앞으로 3일, 당신은 ??? 브레이커입니다.</span>
+        <span style={{ color: 'var(--accent-soft)' }}>지금부터 당신은 브레이커입니다.</span>
       </p>
 
       <div className={styles.fieldLabel}>이름 (본명)</div>
@@ -116,13 +116,13 @@ export default function LoginScreen() {
       <div className={styles.fieldLabel}>닉네임</div>
       <input
         className="field"
-        placeholder="예: 양파링"
+        placeholder="예: 뿌셔뿌셔"
         maxLength={12}
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
       />
       <p className="tiny" style={{ margin: '-8px 0 16px' }}>
-        게임 기록판에 보이고, 다시 들어올 때 쓰는 복구 코드도 이 닉네임으로 만들어져요.
+        기록판에 보이고, 복구 코드에도 쓰여요.
       </p>
 
       <div className={styles.fieldLabel}>조 선택</div>
@@ -138,8 +138,8 @@ export default function LoginScreen() {
         ))}
       </div>
 
-      <button className="btn" style={{ marginTop: 18 }} onClick={handleConfirm} disabled={enrolling}>
-        {enrolling ? '등록 중…' : '브레이커로 등록'}
+      <button className={`btn sm ${styles.submit}`} onClick={handleConfirm} disabled={enrolling}>
+        {enrolling ? '등록 중…' : '등록'}
       </button>
       <button className={styles.switchLink} onClick={() => setMode('restore')}>
         이미 등록했나요? 복구 코드로 이어하기

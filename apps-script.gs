@@ -5,6 +5,7 @@ function doGet(e) {
   if (action === 'getPrayers') return getPrayers_(e.parameter.group);
   if (action === 'getNotices') return getNotices_();
   if (action === 'getLocks') return getLocks_();
+  if (action === 'getTeamScores') return getTeamScores_();
   if (action === 'getTypeResult') return getTypeResult_(e.parameter.playerId);
   return json_({ error: 'unknown action' });
 }
@@ -14,6 +15,7 @@ function doPost(e) {
   var action = body.action;
   if (action === 'savePlayer') return savePlayer_(body);
   if (action === 'addPrayer') return addPrayer_(body);
+  if (action === 'editPrayer') return editPrayer_(body);
   if (action === 'prayFor') return prayFor_(body);
   if (action === 'saveTypeResult') return saveTypeResult_(body);
   if (action === 'addMessage') return addMessage_(body);
@@ -126,10 +128,20 @@ function saveRow_(sh, map, rowIndex, values, prev) {
 var PLAYERS_HEADERS = ['id', 'nick', 'day', 'opened', 'score', 'updated_at', 'nickname', 'group', 'vow'];
 // pray_count : 조원들이 "함께 기도하기"를 누른 횟수. 이름 없이 숫자만 쌓인다
 //              (누가 눌렀는지는 기록하지 않고, 중복 방지는 각자 기기에서만 한다).
-var PRAYERS_HEADERS = ['id', 'group', 'nick', 'text', 'created_at', 'pray_count'];
+// author_id  : 남긴 사람의 참가자 id. 본인만 고칠 수 있게 하려고 둔다. 이 칸이 생기기 전에
+//              쌓인 행은 비어 있어서, 그때는 실명(nick)이 같은지로 본인을 가린다.
+// edited_at  : 고친 시각. 비어 있으면 한 번도 고치지 않은 글이다.
+var PRAYERS_HEADERS = ['id', 'group', 'nick', 'text', 'created_at', 'pray_count', 'author_id', 'edited_at'];
 var NOTICES_HEADERS = ['id', 'title', 'body', 'created_at'];
 var LOCKS_HEADERS = ['id', 'name', 'unlock_at', 'note', 'locked'];
-var MESSAGES_HEADERS = ['id', 'playerId', 'nick', 'text', 'urgent', 'created_at'];
+// urgent 칸은 없앴다. "지금 바로 도움이 필요해요"를 스스로 켜고 끄게 두면 급한 일과
+// 그렇지 않은 일이 보내는 사람 기준으로 갈려, 정작 급한 신고가 묻힌다.
+// 이미 만들어진 시트에 남아 있는 urgent 열은 이제 아무것도 쓰지 않으니 손으로 지우면 된다.
+var MESSAGES_HEADERS = ['id', 'playerId', 'nick', 'text', 'created_at'];
+// 조별 순위판에 진행자가 직접 얹는 점수. 자물쇠를 깬 만큼 자동으로 오르는 점수 위에 더해진다.
+//  · bonus : 더할 점수. 음수를 적으면 깎인다(감점).
+//  · note  : 왜 얹었는지(예: "레크리에이션 1위"). 참가자 화면에 그대로 보인다.
+var TEAM_SCORES_HEADERS = ['group', 'bonus', 'note'];
 
 // typeResults 칸 읽는 법
 //  · walkCode  : 묵상+기도를 하나로 요약한 유형
@@ -142,7 +154,8 @@ var MESSAGES_HEADERS = ['id', 'playerId', 'nick', 'text', 'urgent', 'created_at'
 //  · idolScores : 6개 우상 카테고리 원점수 (1·2위만으로는 분포를 볼 수 없어서 함께 남긴다)
 //  · consistency: 같은 주제 안에서 답이 얼마나 모였는지 (0~100)
 //  · clarity    : 주제끼리 얼마나 갈렸는지 (0~100). 낮으면 1·2위 차이가 크지 않다는 뜻
-//  · flat       : TRUE면 거의 모든 문항에 같은 답을 준 경우 (성의 없는 응답일 수 있음)
+//  · flat       : TRUE면 답이 두세 종류뿐이거나 같은 답이 20문항 넘게 이어진 경우
+//                 (문항을 읽지 않은 응답일 수 있어, 이 경우 참가자 화면의 신뢰도 색도 최하로 내려간다)
 // consistency/clarity/flat은 참가자 화면에 숫자로 보이지 않는다. 인도자만 보는 값이다.
 //
 // 다른 칸에서 그대로 유도되는 값은 적지 않는다 —
@@ -179,6 +192,9 @@ function messagesCtx_() {
 }
 function typeResultsCtx_() {
   return ctx_('typeResults', TYPE_RESULTS_HEADERS);
+}
+function teamScoresCtx_() {
+  return ctx_('teamScores', TEAM_SCORES_HEADERS);
 }
 
 // ---------------------------------------------------------------------------
@@ -261,8 +277,30 @@ function addPrayer_(body) {
     text: body.text,
     created_at: nowKST_(),
     pray_count: 0,
+    author_id: body.authorId || '',
+    edited_at: '',
   });
   return json_({ ok: true, id: id });
+}
+
+// 본인이 남긴 기도제목의 글만 고친다. 조·이름·올린 시각·함께 기도한 수는 그대로 두고,
+// 고친 시각만 따로 적어 목록에서 "고침"으로 알린다.
+// 본인 확인은 author_id로 한다. 그 칸이 생기기 전에 쌓인 행은 비어 있으므로,
+// 그때만 실명(nick)이 같은지로 갈음한다(같은 조에 동명이인이 있으면 서로의 글도 고칠 수 있다 —
+// 이 앱은 로그인이 없어서 여기까지가 한계다).
+function editPrayer_(body) {
+  var c = prayersCtx_();
+  var data = c.sh.getDataRange().getValues();
+  var row = findRow_(data, c.map, 'id', body.id);
+  if (row < 0) return json_({ error: '기도제목을 찾을 수 없어요' });
+  var prev = data[row - 1];
+  var owner = String(cell_(prev, c.map, 'author_id') || '');
+  var ok = owner ? owner === String(body.authorId || '') : String(cell_(prev, c.map, 'nick')) === String(body.nick);
+  if (!ok) return json_({ error: '내가 남긴 기도제목만 고칠 수 있어요' });
+  var text = String(body.text || '').trim();
+  if (!text) return json_({ error: '내용을 적어주세요' });
+  saveRow_(c.sh, c.map, row, { text: text, edited_at: nowKST_() }, prev);
+  return json_({ ok: true });
 }
 
 // "함께 기도하기"를 누르면 그 행의 숫자만 1 올린다.
@@ -299,6 +337,8 @@ function getPrayers_(group) {
       text: cell_(data[i], c.map, 'text'),
       createdAt: cell_(data[i], c.map, 'created_at'),
       prayCount: Number(cell_(data[i], c.map, 'pray_count')) || 0,
+      authorId: String(cell_(data[i], c.map, 'author_id') || ''),
+      editedAt: String(cell_(data[i], c.map, 'edited_at') || ''),
     });
   }
   rows.reverse();
@@ -332,7 +372,6 @@ function addMessage_(body) {
     playerId: body.playerId,
     nick: body.nick,
     text: body.text,
-    urgent: !!body.urgent,
     created_at: nowKST_(),
   });
   return json_({ ok: true, id: id });
@@ -372,6 +411,23 @@ function getLocks_() {
     var unlockAt = toKSTIso_(cell_(data[i], c.map, 'unlock_at'));
     var locked = isTrue_(cell_(data[i], c.map, 'locked'));
     if (unlockAt || locked) rows.push({ id: id, unlockAt: unlockAt, locked: locked });
+  }
+  return json_(rows);
+}
+
+// teamScores 시트를 읽어 조마다 진행자가 얹은 점수를 내려줍니다.
+// 자물쇠를 깬 만큼 자동으로 오르는 점수는 그대로 두고, 여기 적은 값을 거기에 더해서 보여줍니다.
+// 0이거나 비어 있는 조는 응답에서 빠집니다(메모만 적어둔 줄도 마찬가지).
+function getTeamScores_() {
+  var c = teamScoresCtx_();
+  var data = c.sh.getDataRange().getValues();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var group = String(cell_(data[i], c.map, 'group') || '').trim();
+    if (!group) continue;
+    var bonus = Number(cell_(data[i], c.map, 'bonus'));
+    if (!bonus) continue;
+    rows.push({ group: group, bonus: bonus, note: String(cell_(data[i], c.map, 'note') || '').trim() });
   }
   return json_(rows);
 }
@@ -444,12 +500,14 @@ function setupAllSheets() {
   locksCtx_();
   typeResultsCtx_();
   messagesCtx_();
+  teamScoresCtx_();
 }
 
 // ---- 관리자용: 시험 삼아 쌓인 참가자 기록을 비웁니다 (정식 시작 직전에 한 번) ----
 // 지우는 것 : players / typeResults / prayers / messages 의 데이터 행
-// 남기는 것 : 각 시트의 헤더 1행, 그리고 locks·notices
-//             (자물쇠 시각과 공지는 관리자가 직접 채운 설정이라 건드리지 않습니다)
+// 남기는 것 : 각 시트의 헤더 1행, 그리고 locks·notices·teamScores
+//             (자물쇠 시각·공지·조별 가감점은 관리자가 직접 채운 설정이라 건드리지 않습니다)
+//             ⚠️ 시험 삼아 넣어둔 조별 가감점이 있다면 teamScores 시트의 bonus 칸을 직접 비워주세요.
 //
 // ⚠️ 되돌릴 수 없습니다. 실행 전에 "파일 → 사본 만들기"로 백업해두세요.
 // ⚠️ 순위판은 이 시트가 아니라 Firestore를 보고 그립니다.
@@ -488,7 +546,11 @@ function clearParticipantData() {
     report.push(name + ' : ' + removed + '행 삭제');
   });
   var summary = report.join('\n');
-  ui.alert('정리 완료', summary + '\n\n순위판을 비우려면 Firebase 콘솔도 확인해주세요.', ui.ButtonSet.OK);
+  ui.alert(
+    '정리 완료',
+    summary + '\n\n순위판을 비우려면 Firebase 콘솔과 teamScores 시트의 bonus 칸도 확인해주세요.',
+    ui.ButtonSet.OK,
+  );
   return summary;
 }
 
@@ -508,7 +570,6 @@ function clearParticipantData() {
 //  · day1 / day2 / day3 : 그 날 탭 전체 (잠그면 그 날로 넘어갈 수 없음)
 //  · d2_type  : DAY 2 · IDOL-X 유형 검사
 //  · d2_qr    : DAY 2 · QR 스캔(알 깨기)
-//  · d2_write : DAY 2 · 숲의 기록
 //  · d2_share : DAY 2 · 유형 나눔
 //  · d3_decide: DAY 3 · 마지막 열쇠(결단)
 function setupLocksSheet() {
@@ -521,9 +582,9 @@ function setupLocksSheet() {
     ['d2e', '사람의 자물쇠'], ['d2f', '인정의 자물쇠'], ['d2g', '권력의 자물쇠'],
     // 아래는 자물쇠 하나가 아니라 화면 한 덩어리를 통째로 잠그는 칸이다.
     ['day1', 'DAY 1 전체'], ['day2', 'DAY 2 전체'], ['day3', 'DAY 3 전체'],
+    ['d1_intro', 'DAY 1 · 자기소개 나눔'],
     ['d2_type', 'DAY 2 · IDOL-X 유형 검사'],
     ['d2_qr', 'DAY 2 · QR 스캔(알 깨기)'],
-    ['d2_write', 'DAY 2 · 숲의 기록'],
     ['d2_share', 'DAY 2 · 유형 나눔'],
     ['d3_decide', 'DAY 3 · 마지막 열쇠(결단)'],
   ];
@@ -531,5 +592,30 @@ function setupLocksSheet() {
   ids.forEach(function (pair) {
     if (findRow_(data, c.map, 'id', pair[0]) > 0) return;
     saveRow_(c.sh, c.map, -1, { id: pair[0], name: pair[1] });
+  });
+}
+
+// ---- 관리자용: 이 함수도 편집기에서 딱 한 번 수동 실행(▶ 버튼)하세요 ----
+// teamScores 시트에 조 이름이 한 줄씩 깔립니다. 이미 있는 조는 건드리지 않으니
+// 조가 늘었을 때 다시 실행해도 안전합니다.
+//
+// [쓰는 법] bonus 칸에 숫자를 적으면 조별 순위판 점수에 그대로 더해집니다.
+//   · 레크리에이션 1등에게 5점 → bonus 칸에 5
+//   · 벌점으로 2점 깎기       → bonus 칸에 -2
+//   · 되돌리기                → 칸을 비우거나 0
+// note 칸에 적은 말("레크리에이션 1위" 등)은 참가자 순위판에 그대로 보입니다. 비워둬도 됩니다.
+//
+// 자물쇠를 깨서 자동으로 오르는 점수는 그대로 살아 있고, 여기 적은 값이 거기에 얹힙니다.
+// 앱은 1분마다 이 시트를 다시 읽으므로 고치면 최대 1분 안에 순위판에 반영됩니다.
+//
+// ⚠️ 조 이름은 앱의 조 목록(src/data/prayerGroups.ts)과 글자까지 똑같아야 합니다.
+//    이름이 다르면 그 줄은 어느 조에도 붙지 않고 조용히 무시됩니다.
+function setupTeamScoresSheet() {
+  var c = teamScoresCtx_();
+  var groups = ['1조', '2조', '3조', '4조', '5조', '6조', '7조', '8조'];
+  var data = c.sh.getDataRange().getValues();
+  groups.forEach(function (group) {
+    if (findRow_(data, c.map, 'group', group) > 0) return;
+    saveRow_(c.sh, c.map, -1, { group: group, bonus: '', note: '' });
   });
 }

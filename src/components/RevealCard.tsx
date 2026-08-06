@@ -19,8 +19,8 @@ export default function RevealCard({ pill, title, children, footnote }: Props) {
       </div>
       <span className="pill">{pill}</span>
       <h2 style={{ margin: '12px 0 8px' }}>{title}</h2>
-      <div style={{ color: '#d9cdbb', fontSize: 15, marginBottom: 8 }}>{children}</div>
-      {footnote && <p className="muted" style={{ fontSize: 12.5 }}>{footnote}</p>}
+      <div style={{ color: '#d9cdbb', fontSize: 'var(--fs-body)', marginBottom: 8 }}>{children}</div>
+      {footnote && <p className="muted" style={{ fontSize: 'var(--fs-sm)' }}>{footnote}</p>}
     </div>
   );
 }

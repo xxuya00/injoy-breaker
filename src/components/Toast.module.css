@@ -8,12 +8,17 @@
   color: var(--accent-soft);
   padding: 11px 18px;
   border-radius: 99px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   z-index: 60;
   opacity: 0;
   transition: all 0.35s;
-  white-space: nowrap;
+  /* 짧은 문구는 알약이 글자만큼만 줄어들어 그대로 한 줄로 남는다.
+     긴 문구(단어 완성 알림 등)만 화면 안에서 접힌다 — nowrap이면 좁은 기기에서 밖으로 삐져나갔다. */
+  max-width: min(88%, 320px);
+  text-align: center;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 .toastShow {
   transform: translate(-50%, 0);

@@ -1,9 +1,9 @@
 /* 영문 이름이 섞인 제목("Breaker, 양파링")이라 라틴 글자가 또렷한 본문 글꼴을 쓴다.
    제목 기본 글꼴(Do Hyeon)은 한글에 맞춰 만들어져서 라틴 글자가 어색하게 붙는다. */
 .title {
-  font-family: 'Gothic A1', sans-serif;
+  font-family: var(--font-body);
   font-weight: 800;
-  font-size: 34px;
+  font-size: var(--fs-title-l);
   line-height: 1.15;
   letter-spacing: -0.01em;
   margin: 6px 0 16px;
@@ -19,7 +19,7 @@
   margin-bottom: 16px;
 }
 .codeLabel {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.12em;
   color: var(--accent);
   font-weight: 700;
@@ -33,8 +33,8 @@
 .code {
   flex: 1 1 auto;
   min-width: 0;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-s);
   letter-spacing: 0.04em;
   color: var(--text);
   /* 닉네임이 길어도 줄이 밀리지 않게 넘치는 만큼만 잘라 보여준다. */
@@ -49,7 +49,7 @@
   border: 1px solid var(--line);
   background: var(--ink);
   color: var(--accent);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.12s ease;
@@ -62,7 +62,7 @@
   color: var(--ok);
 }
 .codeHint {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   color: var(--mute);
   margin-top: 6px;
 }

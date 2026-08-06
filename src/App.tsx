@@ -9,11 +9,12 @@ import IntroScreen from './screens/IntroScreen';
 import LoginScreen from './screens/LoginScreen';
 import BriefScreen from './screens/BriefScreen';
 import JourneyScreen from './screens/JourneyScreen';
-import WriteScreen from './screens/WriteScreen';
+import IntroSheetScreen from './screens/IntroSheetScreen';
 import DecideScreen from './screens/DecideScreen';
 import RankScreen from './screens/RankScreen';
 import TypeTest from './screens/TypeScreen/TypeTest';
 import TypeShare from './screens/TypeScreen/TypeShare';
+import ProverbScreen from './screens/TypeScreen/ProverbScreen';
 import ScheduleScreen from './screens/ScheduleScreen';
 import PrayerScreen from './screens/PrayerScreen';
 import QtScreen from './screens/QtScreen';
@@ -29,11 +30,12 @@ const SCREENS: { id: ScreenId; render: () => React.ReactNode }[] = [
   { id: 'login', render: () => <LoginScreen /> },
   { id: 'brief', render: () => <BriefScreen /> },
   { id: 'journey', render: () => <JourneyScreen /> },
-  { id: 'write', render: () => <WriteScreen /> },
+  { id: 'introsheet', render: () => <IntroSheetScreen /> },
   { id: 'decide', render: () => <DecideScreen /> },
   { id: 'rank', render: () => <RankScreen /> },
   { id: 'type', render: () => <TypeTest /> },
   { id: 'share', render: () => <TypeShare /> },
+  { id: 'proverb', render: () => <ProverbScreen /> },
   { id: 'schedule', render: () => <ScheduleScreen /> },
   { id: 'prayer', render: () => <PrayerScreen /> },
   { id: 'qt', render: () => <QtScreen /> },

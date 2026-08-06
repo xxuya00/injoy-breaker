@@ -21,7 +21,7 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { loadTypeResult, saveTypeResult } from '../../lib/gas';
 import { clearTypeProgress, loadTypeProgress, saveTypeProgress, saveTypeSummary } from '../../lib/storage';
-import { computeResponseQuality, computeWalk, QUALITY_NOTE, type QualityBand, type WalkMeta } from '../../lib/typeScore';
+import { computeResponseQuality, computeWalk, qualityNote, type QualityBand, type WalkMeta } from '../../lib/typeScore';
 import BackLink from '../../components/BackLink';
 import { useFitMode } from '../../components/FitBox';
 import styles from './TypeTest.module.css';
@@ -130,7 +130,7 @@ function computePray(answers: Record<string, number>) {
 
 function SectionTag({ label }: { label: string }) {
   return (
-    <div className="muted" style={{ fontSize: 12, letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
+    <div className="muted" style={{ fontSize: 'var(--fs-caption)', letterSpacing: '0.08em', marginBottom: 8, color: 'var(--accent-soft)' }}>
       {label}
     </div>
   );
@@ -175,10 +175,9 @@ export default function TypeTest() {
   const version = screens.length;
   const isResult = current.type === 'result';
 
-  // 결과지는 한 화면에 우겨넣을 내용이 아니다(카드 두 장에 상세 설명 토글까지 열린다).
-  // 억지로 줄이면 글씨만 작아지므로 원래 크기로 두고 읽어 내려가게 한다.
-  // 반대로 문항 화면은 글이 한 줄뿐이라 남는 높이만큼 키우면 글씨만 커진 확대경이 된다.
-  useFitMode(isResult ? 'scroll' : 'shrink', idx);
+  // 결과지는 위에서부터 읽어 내려간다(카드 두 장에 상세 설명 토글까지 열린다).
+  // 문항 화면은 글이 한 줄뿐이라 가운데에 놓는 편이 눈이 덜 흔들린다.
+  useFitMode(isResult ? 'scroll' : 'fit', idx);
 
   // 이 화면은 앱이 켜질 때(로그인 전) 이미 마운트되므로, 로그인해서 id가 생긴 뒤에 저장된 답변을 불러온다.
   // 이 기기에 남은 게 없으면 시트에 백업해둔 답변으로 결과를 되살린다
@@ -394,7 +393,11 @@ export default function TypeTest() {
           </>
         )}
 
-        {current.type === 'result' && <ResultView answers={answers} version={version} onRestart={restart} />}
+        {/* order(문항을 보여준 차례)는 채점에는 필요 없지만, "같은 답을 내리 몇 개 찍었나"는
+            참가자가 실제로 본 순서대로 세야 해서 결과 화면까지 함께 넘긴다. */}
+        {current.type === 'result' && (
+          <ResultView answers={answers} order={order} version={version} onRestart={restart} />
+        )}
       </div>
     </section>
   );
@@ -416,9 +419,124 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
+// 여섯 유형의 응답 분포. 축이 여섯 개라 정육각형 하나에 그대로 담기고, 막대 여섯 줄이
+// 차지하던 세로 자리를 1·2위 칸 옆으로 옮길 수 있다.
+// 긴 이름('도파민')이 걸리는 축을 왼쪽에 두어 오른쪽으로 넘치지 않게 했다.
+const RADAR_CX = 72;
+const RADAR_CY = 68;
+const RADAR_R = 40;
+const RADAR_LABEL_R = 53;
+function radarPoint(i: number, r: number): [number, number] {
+  const a = ((-90 + i * 60) * Math.PI) / 180;
+  return [RADAR_CX + r * Math.cos(a), RADAR_CY + r * Math.sin(a)];
+}
+const radarPolygon = (points: [number, number][]) => points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+/** 그 유형 문항에서 낼 수 있는 점수 대비 얼마나 세게 응답했나. 도형의 반지름과 같은 값이라
+    숫자를 켜도 모양과 어긋나 보이지 않는다(가장 낮게 응답해도 14%가 바닥이다). */
+const idolPct = (score: number) => Math.round((score / IDOL_CAT_MAX) * 100);
+
+// 축마다 몇 퍼센트인지는 늘 붙여 둔다. 도형만으로는 "얼마나 차이 나나"까지는 안 읽히는데,
+// 그걸 보려고 버튼을 한 번 눌러야 했다 — 숨겨둘 만큼 복잡한 숫자가 아니다.
+function IdolRadar({
+  scores,
+  primary,
+  secondary,
+}: {
+  scores: Record<IdolKey, number>;
+  primary: IdolKey;
+  secondary: IdolKey;
+}) {
+  // 어느 유형이든 최소 점수(문항 수 × 1점)가 깔리므로 도형이 한 점으로 오그라들지는 않는다.
+  const data = IDOL_ORDER.map((c, i) => radarPoint(i, RADAR_R * Math.min(1, Math.max(0.14, scores[c] / IDOL_CAT_MAX))));
+  return (
+    <svg
+      className={styles.radar}
+      viewBox="0 0 144 140"
+      role="img"
+      // 숫자를 켜지 않아도 화면을 읽어주는 기기에는 여섯 값을 그대로 말해준다.
+      aria-label={`여섯 유형의 응답 분포. ${IDOL_ORDER.map((c) => `${IDOL_META[c].label} ${idolPct(scores[c])}퍼센트`).join(', ')}`}
+    >
+      {[1, 0.66, 0.33].map((f) => (
+        <polygon key={f} className={styles.radarGrid} points={radarPolygon(IDOL_ORDER.map((_, i) => radarPoint(i, RADAR_R * f)))} />
+      ))}
+      {IDOL_ORDER.map((_, i) => {
+        const [x, y] = radarPoint(i, RADAR_R);
+        return <line key={i} className={styles.radarAxis} x1={RADAR_CX} y1={RADAR_CY} x2={x} y2={y} />;
+      })}
+      <polygon className={styles.radarShape} points={radarPolygon(data)} />
+      {data.map(([x, y], i) => (
+        <circle
+          key={IDOL_ORDER[i]}
+          className={`${styles.radarDot} ${IDOL_ORDER[i] === primary ? styles.radarDotTop : ''}`}
+          cx={x}
+          cy={y}
+          r={IDOL_ORDER[i] === primary ? 3.2 : 2.2}
+        />
+      ))}
+      {IDOL_ORDER.map((c, i) => {
+        // 맨 위 축만은 이름을 한 칸 더 밀어낸다. 그러지 않으면 이름 아래에 붙는
+        // 숫자가 바로 아래 꼭짓점과 겹친다(옆·아래 축은 숫자가 도형 바깥으로 흐른다).
+        const [x, y] = radarPoint(i, RADAR_LABEL_R + (i === 0 ? 9 : 0));
+        const cos = Math.cos(((-90 + i * 60) * Math.PI) / 180);
+        const anchor = cos > 0.3 ? 'start' : cos < -0.3 ? 'end' : 'middle';
+        const top = c === primary || c === secondary;
+        return (
+          <g key={c}>
+            <text className={`${styles.radarLabel} ${top ? styles.radarLabelTop : ''}`} x={x} y={y + 3} textAnchor={anchor}>
+              {IDOL_META[c].label}
+            </text>
+            {/* 1·2위 축은 이름도 숫자도 분홍으로 물들여, 여섯 값 중 어느 둘이 내 결과인지 숫자만 보고도 짚인다. */}
+            <text className={`${styles.radarPct} ${top ? styles.radarPctTop : ''}`} x={x} y={y + 11.7} textAnchor={anchor}>
+              {idolPct(scores[c])}%
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// 상세 설명은 대여섯 문장이 한 덩어리로 이어져 있어서, 펼치면 글의 벽이 선다.
+// 가운데에 가장 가까운 문장 경계에서 한 번 끊어 두 문단으로 세운다 — 그 자리가 대체로
+// "지금 내 모습"과 "그래서 어디로 가야 하나"의 경계라 뜻으로도 갈린다.
+// 데이터에 빈 줄을 넣어두면 손으로 잡은 그 자리를 그대로 쓴다.
+function detailParagraphs(text: string): string[] {
+  if (text.includes('\n\n')) {
+    return text
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+  const sentences = text.match(/[^.]+\.\s*/g);
+  // 마침표로 끝나지 않거나 문장이 둘 이하면 끊을 자리가 마땅치 않아 그대로 둔다.
+  if (!sentences || sentences.join('') !== text || sentences.length < 3) return [text];
+  let acc = 0;
+  let cut = 1;
+  let best = Infinity;
+  // 마지막 문장은 넘기지 않는다(그 앞에서 끊어야 뒤 문단이 생긴다).
+  sentences.slice(0, -1).forEach((s, i) => {
+    acc += s.length;
+    const diff = Math.abs(acc - text.length / 2);
+    if (diff < best) {
+      best = diff;
+      cut = i + 1;
+    }
+  });
+  return [sentences.slice(0, cut).join('').trim(), sentences.slice(cut).join('').trim()];
+}
+
 // 우상 유형 카드. 내 결과를 보여주는 것이 기본이지만, 1·2위 자리를 눌러 다른 유형 조합의
 // 결과도 그대로 열어볼 수 있다(내 점수와 저장되는 결과는 바뀌지 않는다).
-function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; band: QualityBand }) {
+function IdolResultCard({
+  idol,
+  band,
+  note,
+}: {
+  idol: ReturnType<typeof computeIdol>;
+  band: QualityBand;
+  /** 알약 색이 무슨 뜻인지 알려주는 한 줄. 같은 밴드라도 이유가 다를 수 있어 밖에서 받는다. */
+  note: string;
+}) {
   const [pick, setPick] = useState<{ p: IdolKey; s: IdolKey } | null>(null);
   const [openSlot, setOpenSlot] = useState<'p' | 's' | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -441,13 +559,13 @@ function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; 
   ];
 
   return (
-    <div className="decision-card">
+    <div className={`decision-card ${styles.resultCard}`}>
       {/* 내 조합은 이름표처럼 이 줄에 작게 붙인다. 응답이 얼마나 또렷했는지는 그 이름표의
           색으로만 전한다 — '신뢰성 낮음' 같은 등급을 글자로 박아두면 채점처럼 읽히기 때문이다. */}
       <div className={styles.cardTagRow}>
         <span className={styles.ttResultTag}>{isMine ? '내가 앞세우는 것' : '다른 유형 살펴보는 중'}</span>
         {isMine && (
-          <span className={`${styles.comboPill} ${QUALITY_BAND_CLASS[band]}`} title={QUALITY_NOTE[band]}>
+          <span className={`${styles.comboPill} ${QUALITY_BAND_CLASS[band]}`} title={note}>
             {IDOL_META[idol.primary].label} × {IDOL_META[idol.secondary].label}
           </span>
         )}
@@ -457,7 +575,14 @@ function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; 
       {!isMine && <h2 style={{ marginBottom: 10 }}>{combo.name}</h2>}
       <p className={styles.comboDesc}>{combo.desc}</p>
 
-      <div className={styles.rankBadges}>
+      {/* 여섯 유형을 가로 막대 여섯 줄로 늘어놓으면 그것만으로 화면 한 판을 먹어서, 정작
+          결과를 다 읽으려면 한참 내려야 했다. 여섯 축짜리 도형 하나로 바꾸면 같은 내용이
+          1·2위 자리 옆에 나란히 들어가고, "내 마음이 어느 쪽으로 치우쳤나"가 모양으로 먼저 읽힌다. */}
+      <div className={styles.shapeRow}>
+        <div className={styles.shapeChart}>
+          <IdolRadar scores={idol.scores} primary={idol.primary} secondary={idol.secondary} />
+        </div>
+        <div className={styles.rankBadges}>
         {slots.map(({ slot, rank, key }) => {
           const meta = IDOL_META[key];
           return (
@@ -478,6 +603,7 @@ function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; 
             </button>
           );
         })}
+        </div>
       </div>
 
       {openSlot ? (
@@ -518,33 +644,16 @@ function IdolResultCard({ idol, band }: { idol: ReturnType<typeof computeIdol>; 
       </button>
       <div className={`${styles.detailBody} ${detailOpen ? styles.detailBodyOpen : ''}`}>
         <div className={styles.detailInner}>
-          <p className={styles.detailText}>{combo.detail}</p>
+          {detailParagraphs(combo.detail).map((para) => (
+            <p key={para} className={styles.detailText}>
+              {para}
+            </p>
+          ))}
           <div className={styles.detailVerse}>
             <span className={styles.detailVerseRef}>추천 말씀</span>
             {combo.verse}
           </div>
         </div>
-      </div>
-
-      <div className={styles.ttSubLabel} style={{ marginTop: 18 }}>
-        내 응답 분포
-      </div>
-      <div className={styles.ttBars}>
-        {IDOL_ORDER.map((c) => {
-          const meta = IDOL_META[c];
-          const pct = Math.max(4, Math.round((idol.scores[c] / IDOL_CAT_MAX) * 100));
-          return (
-            <div className={styles.ttBarRow} key={c}>
-              <div className={styles.ttBarLabel}>
-                {meta.label}
-                <em>{meta.title}</em>
-              </div>
-              <div className={styles.ttBarTrack}>
-                <div className={styles.ttBarFill} style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -583,7 +692,7 @@ function BridgeNudge({ onNext }: { onNext: () => void }) {
 // 그래서 이름을 크게 앞세우지 않고, 무엇을 어떻게 해보면 되는지가 카드의 본문이 된다.
 function PrescriptionCard({ walk }: { walk: WalkMeta }) {
   return (
-    <div className="decision-card">
+    <div className={`decision-card ${styles.resultCard}`}>
       <div className={styles.walkHead}>
         <h2 className={styles.walkName}>
           {walk.name}
@@ -689,18 +798,20 @@ function ResultDeck({ slides }: { slides: DeckSlide[] }) {
 
   return (
     <>
-      <div className={styles.deckTabs} role="tablist">
-        {slides.map((s, i) => (
-          <button
-            key={s.key}
-            role="tab"
-            aria-selected={i === active}
-            className={`${styles.deckTab} ${i === active ? styles.deckTabOn : ''}`}
-            onClick={() => goTo(i)}
-          >
-            {s.tab}
-          </button>
-        ))}
+      <div className={styles.deckTabsWrap}>
+        <div className={styles.deckTabs} role="tablist">
+          {slides.map((s, i) => (
+            <button
+              key={s.key}
+              role="tab"
+              aria-selected={i === active}
+              className={`${styles.deckTab} ${i === active ? styles.deckTabOn : ''}`}
+              onClick={() => goTo(i)}
+            >
+              {s.tab}
+            </button>
+          ))}
+        </div>
       </div>
       <div className={styles.deck} ref={trackRef} onScroll={syncActive} style={{ height: trackH }}>
         {slides.map((s) => (
@@ -715,10 +826,12 @@ function ResultDeck({ slides }: { slides: DeckSlide[] }) {
 
 function ResultView({
   answers,
+  order,
   version,
   onRestart,
 }: {
   answers: Record<string, number>;
+  order: number[];
   version: number;
   onRestart: () => void;
 }) {
@@ -728,7 +841,7 @@ function ResultView({
   const med = computeMed(answers);
   const pray = computePray(answers);
   const walk = computeWalk(answers);
-  const quality = computeResponseQuality(answers);
+  const quality = computeResponseQuality(answers, order);
   const combo = IDOL_COMBOS[idol.primary][idol.secondary]!;
   const toast = useToast();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -778,9 +891,16 @@ function ResultView({
 
   // 나눔 화면이 내 유형을 알아야 하는데, 답변을 다시 채점하려면 문항 구성까지 알아야 한다.
   // 결론만 따로 남겨두면 나눔 화면은 검사 화면을 몰라도 된다.
+  // 결(walk) 코드도 함께 남긴다 — 나눔 자리에서 실천 가이드를 다시 펴 보게 되기 때문이다.
   useEffect(() => {
-    if (state.id) saveTypeSummary(state.id, { primary: idol.primary, secondary: idol.secondary, comboName: combo.name });
-  }, [state.id, idol.primary, idol.secondary, combo.name]);
+    if (state.id)
+      saveTypeSummary(state.id, {
+        primary: idol.primary,
+        secondary: idol.secondary,
+        comboName: combo.name,
+        walkCode: walk.code,
+      });
+  }, [state.id, idol.primary, idol.secondary, combo.name, walk.code]);
 
   return (
     <>
@@ -793,7 +913,7 @@ function ResultView({
             tab: '우상 진단',
             render: (goTo) => (
               <>
-                <IdolResultCard idol={idol} band={quality.band} />
+                <IdolResultCard idol={idol} band={quality.band} note={qualityNote(quality)} />
                 <BridgeNudge onNext={() => goTo(1)} />
               </>
             ),
@@ -811,15 +931,19 @@ function ResultView({
           결과 다시 저장하기
         </button>
       )}
-      <button className="btn ghost" onClick={onRestart}>
-        다시 검사하기
-      </button>
-      {/* 나눔은 검사 직후가 아니라 진행자가 시간을 잡았을 때 여정에서 열린다.
-          여기서는 그런 자리가 있다는 것만 알려둔다. */}
-      <p className="tiny">
-        이 결과는 진단이 아니라, 나를 돌아보고 하나님 앞에 더 솔직해지기 위한 도구예요. 같은 유형끼리 나누는 시간은
-        여정 화면에서 열려요.
-      </p>
+      {/* 다시 검사하는 건 결과지에서 가장 덜 하는 일인데 화면 폭을 다 쓰는 버튼이라
+          결과보다 눈에 먼저 들어왔다. 글자 길이만큼만 차지하는 작은 버튼으로 내린다.
+          아래 두 줄은 "이건 채점이 아니다"와 "나눔은 여정에서 열린다"로 하는 말이 서로 달라서,
+          한 문단으로 붙여두면 둘 다 흘려 읽게 된다. 가운뎃점으로 끊어 한 줄씩 세운다. */}
+      <div className={styles.resultFoot}>
+        <button className={styles.restartBtn} onClick={onRestart}>
+          다시 검사하기
+        </button>
+        <p className={styles.footNote}>
+          <span>이 결과는 채점이 아니라 나를 돌아보는 도구예요</span>
+          <span>같은 유형끼리 나누는 시간은 여정 화면에서 열려요</span>
+        </p>
+      </div>
     </>
   );
 }

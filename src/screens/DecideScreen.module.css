@@ -1,0 +1,89 @@
+/* 다이얼 바로 아래 줄. 표식이 몇 개 맞았는지와, 지금 열두 시에 선 "때"를 함께 보여준다.
+   숫자로 남은 걸음을 알려주면 퍼즐이 아니라 계기판이 되므로 일부러 세지 않는다. */
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+}
+.pips {
+  display: flex;
+  gap: 5px;
+}
+.statusPip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.statusPipOn {
+  background: var(--accent);
+  transform: scale(1.25);
+}
+/* 가운데 링을 열두 시부터 읽은 줄. 어긋나 있으면 말이 안 되므로 글자 간격을 벌려
+   "아직 글자 나열"로 보이게 두고, 맞는 순간 간격이 좁아지며 BREAKTHROUGH로 읽힌다.
+   링 위의 글자와 같은 표제 글꼴이라, 이 줄이 그 링을 옮겨 적은 것임이 바로 읽힌다. */
+.reading {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--mute);
+  letter-spacing: 0.22em;
+  transition: letter-spacing 0.3s ease, color 0.3s ease;
+}
+.readingOn {
+  color: var(--accent-soft);
+  letter-spacing: 0.02em;
+}
+
+.verseNote {
+  font-size: var(--fs-sm);
+  line-height: 1.8;
+  color: var(--mute);
+  text-align: center;
+  margin: 6px 0 14px;
+}
+
+/* 마지막 한 칸을 어떻게 넘기는지 짚어주는 줄. 위 설명과 달리 "지금 손으로 할 일"이라
+   분홍으로 한 눈금 올려두고, 다이얼 위에서 숨 쉬는 화살과 같은 박자로 함께 밝아진다. */
+.pushNudge {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--accent-soft);
+  margin-bottom: 10px;
+  animation: nudgeBreathe 1.9s ease-in-out infinite;
+}
+@keyframes nudgeBreathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pushNudge {
+    animation: none;
+  }
+}
+
+.pushBox {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--ink-2);
+  padding: 16px 16px 14px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* 시트 마지막에 놓이는 한 줄. DAY 1의 BACK TO GOD와 같은 글꼴·같은 자리다. */
+.wordBanner {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-align: center;
+  margin: 18px 0 20px;
+}

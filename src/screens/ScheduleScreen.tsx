@@ -1,83 +1,95 @@
 import { useMemo } from 'react';
-import { MERGED_BLOCKS, SCHEDULE, SCHEDULE_ROWS, type ScheduleSegment } from '../data/schedule';
+import { DAY_END, DAY_START, SCHEDULE } from '../data/schedule';
 import { useScrollFit } from '../components/FitBox';
 import styles from './ScheduleScreen.module.css';
 
-type Cell = { render: true; span: number; label: string | null } | { render: false };
+// 한 칸 = 30분. 선은 정시에만 긋는다. 그래서 9:30에 시작하는 일정은 9시 선과 10시 선
+// 사이(칸 하나 아래)에서 시작해, 눈으로도 "반 시간 늦게 시작한다"가 보인다.
+const SLOT_MIN = 30;
 
-function expandSegments(segments: ScheduleSegment[]): Cell[] {
-  const cells: Cell[] = [];
-  segments.forEach((seg) => {
-    cells.push({ render: true, span: seg.span, label: seg.label });
-    for (let i = 1; i < seg.span; i++) cells.push({ render: false });
-  });
-  return cells;
+function toMin(hhmm: string): number {
+  const [h, m] = hhmm.split(':');
+  return Number(h) * 60 + Number(m);
 }
 
+const START = toMin(DAY_START);
+const END = toMin(DAY_END);
+const SLOTS = (END - START) / SLOT_MIN;
+
+// 격자 줄 번호. 1번 줄은 날짜 머리글이 쓰므로 시간 칸은 2번부터 시작한다.
+const rowOf = (min: number) => (min - START) / SLOT_MIN + 2;
+
 export default function ScheduleScreen() {
-  // 탭으로 오가는 화면은 배율을 1로 고정한다. 내용이 적다고 FitBox가 키워 버리면
-  // 탭을 옮길 때마다 같은 제목이 커졌다 작아졌다 해서 다른 앱처럼 보인다.
+  // 일정표는 화면보다 길다. 배율을 줄여 억지로 담으면 글씨가 안 보이므로 넘치는 만큼 스크롤한다.
   useScrollFit();
-  const dayCells = useMemo(() => SCHEDULE.map((day) => expandSegments(day.segments)), []);
+
+  // 정시마다 선 하나와 시각 하나. 맨 윗줄(8시)은 머리글 아래 테두리가 이미 선을 대신하므로
+  // 시각만 얹고, 맨 아랫줄(24시)은 표의 바닥 테두리가 끝을 알려주므로 넣지 않는다.
+  const ticks = useMemo(() => {
+    const out: { min: number; row: number; label: string }[] = [];
+    for (let m = START; m < END; m += 60) {
+      out.push({ min: m, row: rowOf(m), label: `${m / 60}:00` });
+    }
+    return out;
+  }, []);
 
   return (
     <section>
       <div className="eyebrow">Timetable</div>
-      <h1>수련회 일정표</h1>
-      <p className="muted" style={{ marginBottom: 18 }}>
-        3일간의 일정을 미리 확인해보세요. (초안 · 변경될 수 있어요)
+      <h1>일정표</h1>
+      <p className="muted" style={{ marginBottom: 16 }}>
+        INJOY 수련회에 오신 것을 환영하고 축복합니다 (๑'ᵕ'๑)⸝*
       </p>
 
-      <div className={styles.wrap}>
-        <table className={styles.table}>
-          <colgroup>
-            <col className={styles.timeCol} />
-            {SCHEDULE.map((day) => (
-              <col className={styles.dayCol} key={day.date} />
-            ))}
-          </colgroup>
-          <thead>
-            <tr>
-              <th></th>
-              {SCHEDULE.map((day) => (
-                <th key={day.date}>
-                  {day.date}
-                  <br />
-                  {day.weekday}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {SCHEDULE_ROWS.map((rowLabel, r) => {
-              const merged = MERGED_BLOCKS.find((b) => b.startRow === r);
-              const mergedDates = merged ? new Set(merged.dayDates) : null;
-              return (
-                <tr key={rowLabel}>
-                  <td className={styles.timeCell}>{rowLabel}</td>
-                  {merged && mergedDates && (
-                    <td className={styles.labelCell} colSpan={mergedDates.size} rowSpan={merged.span}>
-                      {merged.label}
-                    </td>
-                  )}
-                  {SCHEDULE.map((day, d) => {
-                    if (mergedDates?.has(day.date)) return null;
-                    const cell = dayCells[d][r];
-                    if (!cell.render) return null;
-                    if (cell.label === null) {
-                      return <td key={day.date} className={styles.emptyCell} rowSpan={cell.span} />;
-                    }
-                    return (
-                      <td key={day.date} className={styles.labelCell} rowSpan={cell.span}>
-                        {cell.label}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div
+        className={styles.board}
+        style={{ gridTemplateRows: `auto repeat(${SLOTS}, minmax(var(--slot), auto))` }}
+      >
+        {/* 날짜 머리글 — 왼쪽 시각 자리는 비워둔다 */}
+        <div className={styles.corner} />
+        {SCHEDULE.map((day, d) => (
+          <div className={styles.dayHead} key={day.date} style={{ gridColumn: d + 2 }}>
+            <span className={styles.headDate}>{day.date}</span>
+            <span className={styles.headWeekday}>{day.weekday}</span>
+          </div>
+        ))}
+
+        {/* 날짜를 가르는 세로 선. 칸이 비어 있는 시간대에도 세 날짜가 나뉘어 보이게 한다. */}
+        {SCHEDULE.map((day, d) => (
+          <div
+            key={`col_${day.date}`}
+            className={styles.col}
+            style={{ gridColumn: d + 2, gridRow: `2 / span ${SLOTS}` }}
+          />
+        ))}
+
+        {/* 정시 선과 시각. 시각은 선 위에 걸터앉아 "이 선이 몇 시인지"를 가리킨다. */}
+        {ticks.map((t) => (
+          <span key={`time_${t.min}`} className={styles.tickLabel} style={{ gridRow: t.row }}>
+            {t.label}
+          </span>
+        ))}
+        {ticks.map((t) =>
+          t.min === START ? null : (
+            <span key={`line_${t.min}`} className={styles.tickLine} style={{ gridRow: t.row }} />
+          ),
+        )}
+
+        {/* 일정 칸. 선보다 나중에 그려져 지나가는 선을 덮는다. */}
+        {SCHEDULE.map((day, d) =>
+          day.items.map((it) => (
+            <div
+              key={`${day.date}_${it.start}`}
+              className={`${styles.item} ${styles[it.tone]}`}
+              style={{
+                gridColumn: `${d + 2} / span ${it.spanDays ?? 1}`,
+                gridRow: `${rowOf(toMin(it.start))} / ${rowOf(toMin(it.end))}`,
+              }}
+            >
+              <span className={styles.itemLabel}>{it.label}</span>
+            </div>
+          )),
+        )}
       </div>
     </section>
   );

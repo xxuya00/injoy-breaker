@@ -1,15 +1,10 @@
 export interface CrossMathRound {
   rowTargets: [number, number, number];
   colTargets: [number, number, number];
-  hint: string;
+  // 이 판을 만들 때 쓴 배치(9칸). 합만 같으면 다른 배치도 정답이 될 수 있지만,
+  // 힌트는 "적어도 이 배치로는 풀린다"는 한 줄기를 잡아주는 용도라 이거면 충분하다.
+  solution: number[];
 }
-
-const HINTS = [
-  '전도서 3장은 "범사에 기한이 있다"고 말합니다.',
-  '솔로몬은 잠언을 통해 지혜를 구하라 권합니다.',
-  '전도서 1장 2절 — "헛되고 헛되도다."',
-  '지혜자의 마음은 초상집에 있다 하였습니다(전도서 7:4).',
-];
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -25,8 +20,7 @@ export function generateCrossMathRound(): CrossMathRound {
   const grid = [nums.slice(0, 3), nums.slice(3, 6), nums.slice(6, 9)];
   const rowTargets = grid.map((row) => row[0] + row[1] + row[2]) as [number, number, number];
   const colTargets = [0, 1, 2].map((c) => grid[0][c] + grid[1][c] + grid[2][c]) as [number, number, number];
-  const hint = HINTS[Math.floor(Math.random() * HINTS.length)];
-  return { rowTargets, colTargets, hint };
+  return { rowTargets, colTargets, solution: nums };
 }
 
 // 한 줄(가로/세로)이 다 채워졌고 합까지 맞으면 그 줄을 "완성"으로 본다.

@@ -108,6 +108,11 @@ export interface PrayerEntry {
   createdAt: string;
   // 조원들이 "함께 기도하기"를 누른 횟수. pray_count 칸이 생기기 전에 쌓인 행은 값이 없다.
   prayCount: number;
+  /** 남긴 사람의 참가자 id. 본인 글만 고칠 수 있게 하는 기준이다.
+   *  author_id 칸이 생기기 전에 쌓인 행은 비어 있어서, 그때는 실명으로 가린다. */
+  authorId?: string;
+  /** 고친 시각. 비어 있으면 한 번도 고치지 않은 글이다. */
+  editedAt?: string;
 }
 
 export async function fetchPrayers(group: string): Promise<PrayerEntry[]> {
@@ -117,9 +122,16 @@ export async function fetchPrayers(group: string): Promise<PrayerEntry[]> {
   return (data as PrayerEntry[]).map((p) => ({ ...p, prayCount: Number(p.prayCount) || 0 }));
 }
 
-export async function addPrayer(group: string, nick: string, text: string) {
+export async function addPrayer(group: string, nick: string, text: string, authorId?: string) {
   if (!gasEnabled) return;
-  assertOk(await gasPost({ action: 'addPrayer', group, nick, text }), '기도제목');
+  assertOk(await gasPost({ action: 'addPrayer', group, nick, text, authorId }), '기도제목');
+}
+
+// 본인이 남긴 글만 고친다. 시트 쪽에서도 author_id(없으면 실명)로 한 번 더 확인하므로,
+// 남의 글 id를 넣어 보내도 반려된다.
+export async function editPrayer(id: string, text: string, authorId?: string, nick?: string) {
+  if (!gasEnabled) return;
+  assertOk(await gasPost({ action: 'editPrayer', id, text, authorId, nick }), '기도제목');
 }
 
 // 눌린 횟수만 1 올린다. 누가 눌렀는지는 시트에 남기지 않으므로,
@@ -160,6 +172,28 @@ export async function fetchLockGates(): Promise<Record<string, LockGate>> {
   const map: Record<string, LockGate> = {};
   (data as { id: string; unlockAt?: string | null; locked?: boolean }[]).forEach((row) => {
     map[row.id] = { unlockAt: row.unlockAt ?? undefined, locked: !!row.locked };
+  });
+  return map;
+}
+
+// 조별 순위판에 진행자가 직접 얹는 점수(teamScores 시트).
+// 자물쇠를 깬 만큼 자동으로 오르는 점수는 Firestore가 세고, 여기 값은 그 위에 더해진다 —
+// 레크리에이션처럼 앱 밖에서 난 점수를 순위판에 반영하는 통로다.
+export interface TeamBonus {
+  /** 더할 점수. 음수면 감점. */
+  bonus: number;
+  /** 왜 얹었는지. 참가자 순위판에 그대로 보인다. 안 적었으면 빈 문자열. */
+  note: string;
+}
+
+export async function fetchTeamBonuses(): Promise<Record<string, TeamBonus>> {
+  if (!gasEnabled) return {};
+  const data = await gasGet({ action: 'getTeamScores' });
+  if (!Array.isArray(data)) throw new Error('조별 가감점 형식이 올바르지 않아요');
+  const map: Record<string, TeamBonus> = {};
+  (data as { group: string; bonus?: number; note?: string }[]).forEach((row) => {
+    if (!row.group) return;
+    map[row.group] = { bonus: Number(row.bonus) || 0, note: row.note ?? '' };
   });
   return map;
 }
@@ -214,7 +248,7 @@ export async function loadTypeResult(playerId: string): Promise<RemoteTypeResult
   return { version: Number(data.version) || 0, answers: data.answers };
 }
 
-export async function sendMessage(playerId: string, nick: string, text: string, urgent: boolean) {
+export async function sendMessage(playerId: string, nick: string, text: string) {
   if (!gasEnabled) return;
-  assertOk(await gasPost({ action: 'addMessage', playerId, nick, text, urgent }), '메시지');
+  assertOk(await gasPost({ action: 'addMessage', playerId, nick, text }), '메시지');
 }

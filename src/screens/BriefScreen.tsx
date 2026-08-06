@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { VOW_PROMPT } from '../data/intro';
+import { VOW_PROMPT, pickWelcomeVerse } from '../data/intro';
 import styles from './BriefScreen.module.css';
 
 export default function BriefScreen() {
@@ -9,6 +9,8 @@ export default function BriefScreen() {
   const toast = useToast();
   const [text, setText] = useState('');
   const [copied, setCopied] = useState(false);
+  // 이 화면은 등록 전부터 떠 있어(App이 모든 화면을 미리 그린다) 복구 코드가 생긴 뒤에 다시 고른다.
+  const welcome = useMemo(() => pickWelcomeVerse(state.id ?? ''), [state.id]);
 
   const copyCode = async () => {
     if (!state.id) return;
@@ -38,14 +40,14 @@ export default function BriefScreen() {
       <h1 className={styles.title}>Breaker, {state.nickname}</h1>
 
       <div className="verse">
-        "눈은 보아도 족함이 없고 귀는 들어도 차지 아니하는도다"
+        "{welcome.verse}"
         <br />
         <span className="muted" style={{ fontStyle: 'normal' }}>
-          — 전도서 1:8
+          — {welcome.ref}
         </span>
       </div>
 
-      <h2 style={{ fontSize: 17, marginTop: 18 }}>{VOW_PROMPT.label}</h2>
+      <h2 style={{ fontSize: 'var(--fs-lg)', marginTop: 18 }}>{VOW_PROMPT.label}</h2>
       <p className="muted" style={{ marginBottom: 10 }}>
         {VOW_PROMPT.question}
         <br />

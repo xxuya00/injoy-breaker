@@ -14,7 +14,8 @@ import { IDOL_ORDER, IDOL_QUESTIONS, type IdolKey } from '../data/typeTest';
 const WALK_RHYTHM_KEYS = ['med_r_0', 'med_r_1', 'pray_r_0', 'pray_r_1'];
 const WALK_EXPRESSION_KEYS = ['med_m_0', 'med_m_1', 'pray_e_0', 'pray_e_1'];
 
-type WalkCode = 'B' | 'D' | 'F' | 'S';
+// 나눔 화면도 저장해둔 코드 하나로 결을 되찾아야 해서 밖으로 연다.
+export type WalkCode = 'B' | 'D' | 'F' | 'S';
 
 export interface WalkMeta {
   code: WalkCode;
@@ -114,12 +115,15 @@ export function computeWalk(answers: Record<string, number>): WalkMeta {
 // 사람이 아니라 결과를 평가하는 지표라서, 낮게 나와도 흠이 아니라 정보로 읽힌다.
 export type QualityBand = 'high' | 'mid' | 'low';
 
-interface ResponseQuality {
+export interface ResponseQuality {
   /** 같은 주제 안에서 답이 얼마나 모였는지 (0~100). 시트 저장용 정밀값. */
   consistency: number;
   /** 주제끼리 얼마나 갈렸는지 (0~100). 낮으면 어떤 유형도 뚜렷하지 않다는 뜻. */
   clarity: number;
-  /** 거의 모든 문항에 같은 답을 준 경우. 화면에는 쓰지 않고 인도자용으로만 남긴다. */
+  /**
+   * 문항을 읽지 않고 답한 것으로 보이는 응답. 답이 두세 종류뿐이거나, 같은 답이
+   * 아주 길게 이어진 경우다. 시트에는 예전부터 flat 칸으로 남는다.
+   */
   flat: boolean;
   band: QualityBand;
 }
@@ -152,7 +156,36 @@ const SD_LOOSE = 1.5; //  일관도 50
 // 주제 간 표준편차는 실제로 1.5를 넘기 어려워, 그 지점을 선명도 만점으로 둔다.
 const BETWEEN_SD_FULL = 1.5;
 
-export function computeResponseQuality(answers: Record<string, number>): ResponseQuality {
+// 같은 답이 몇 문항이나 내리 이어졌는지. 문항이 섞여 나오므로(order) 참가자가 실제로 본
+// 차례대로 세야 한다 — 원래 번호순으로 세면 연달아 찍은 답도 흩어져 보인다.
+function longestRun(answers: Record<string, number>, order: number[]): number {
+  let best = 0;
+  let run = 0;
+  let prev: number | undefined;
+  order.forEach((i) => {
+    const v = answers['idol_' + i];
+    if (v === undefined) {
+      run = 0;
+      prev = undefined;
+      return;
+    }
+    run = v === prev ? run + 1 : 1;
+    prev = v;
+    if (run > best) best = run;
+  });
+  return best;
+}
+
+// 같은 답이 이만큼 내리 이어지면(전체 90문항의 1/5) 그 구간은 읽지 않은 것으로 본다.
+// 경계는 모의로 잡았다 — 한 값에 답을 몰아 쓰는 사람이 잘못 걸리는 비율이
+//   · 15문항 기준: 자주 쓰는 답 60%인 사람 4.4%, 70%인 사람 21.9%
+//   · 20문항 기준: 각각 0.5%, 4.9%
+// 로 크게 갈린다. 20으로 잡아도 "중간부터 같은 답만 찍은" 응답은 그대로 걸린다 —
+// 그런 응답의 연속 길이는 보통 20을 훌쩍 넘기 때문이다.
+const STRAIGHT_RUN_MAX = 20;
+
+// order를 넘기지 않으면 연속 응답 검사는 건너뛴다(문항 순서를 모르는 호출부용).
+export function computeResponseQuality(answers: Record<string, number>, order?: number[]): ResponseQuality {
   const byCat = {} as Record<IdolKey, number[]>;
   IDOL_ORDER.forEach((c) => {
     byCat[c] = [];
@@ -175,11 +208,20 @@ export function computeResponseQuality(answers: Record<string, number>): Respons
   const betweenSd = stdev(answered.map((c) => mean(byCat[c])));
   const clarity = Math.round(clamp01(betweenSd / BETWEEN_SD_FULL) * 100);
 
-  // 답이 두 종류 이하로만 나왔으면 문항을 읽지 않았을 가능성이 높다.
-  // 표준편차만 보면 "전부 4번"이 오히려 완벽한 일관도로 잡히므로 따로 표시해둔다.
-  const flat = new Set(all).size <= 2;
+  // 답이 두 종류 이하로만 나왔거나, 같은 답이 한 주제 분량만큼 내리 이어졌으면
+  // 문항을 읽지 않았을 가능성이 높다.
+  const flat = new Set(all).size <= 2 || (order ? longestRun(answers, order) >= STRAIGHT_RUN_MAX : false);
 
-  const band: QualityBand = withinSd < SD_TIGHT ? 'high' : withinSd < SD_LOOSE ? 'mid' : 'low';
+  // 일관도만 보면 "전부 4번"이 편차 0이라 오히려 최상으로 잡힌다. 그래서 성의 없는 응답으로
+  // 보이면 일관도와 무관하게 가장 낮은 밴드로 내린다 — 그 응답에서 나온 1·2위는
+  // 문항에 대한 답이 아니라 손가락이 멈춘 자리이기 때문이다.
+  const band: QualityBand = flat
+    ? 'low'
+    : withinSd < SD_TIGHT
+      ? 'high'
+      : withinSd < SD_LOOSE
+        ? 'mid'
+        : 'low';
   return { consistency, clarity, flat, band };
 }
 
@@ -192,3 +234,12 @@ export const QUALITY_NOTE: Record<QualityBand, string> = {
   mid: '대체로 일관되면서도, 문항에 따라 마음이 조금씩 다르게 움직였어요. 자연스러운 모습이에요.',
   low: '같은 주제 안에서도 답이 여러 갈래로 나뉘었어요. 결과는 참고로만 보시고, 마음이 좀 더 잔잔할 때 다시 해보셔도 좋아요.',
 };
+
+// 같은 최하 밴드라도 "답이 갈렸다"와 "거의 같은 답만 이어졌다"는 정반대의 이유다.
+// 후자에게 "답이 여러 갈래로 나뉘었어요"라고 말하면 읽는 사람이 무슨 말인지 알 수 없다.
+const FLAT_NOTE =
+  '거의 같은 답이 이어져서, 이 결과는 마음보다 손가락을 따라간 쪽에 가까워요. 시간이 될 때 한 문항씩 다시 읽어보면 훨씬 또렷해져요.';
+
+export function qualityNote(quality: ResponseQuality): string {
+  return quality.flat ? FLAT_NOTE : QUALITY_NOTE[quality.band];
+}

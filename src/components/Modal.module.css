@@ -1,0 +1,89 @@
+/* 아래에서 올라오는 시트와 달리, 화면 한가운데 뜨는 창.
+   글을 적는 자리는 시트로 두면 "화면 밑에 딸린 서랍"처럼 읽혀서, 적다 만 글을 두고
+   무심코 바깥을 눌러 닫기 쉬웠다. 창으로 세우면 닫는 길이 X 하나로 분명해진다. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 6, 0.74);
+  backdrop-filter: blur(3px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  overflow: hidden;
+}
+.backdropShow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.box {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  /* 열릴 때 아주 살짝 커지며 뜬다. 크게 튀면 글 적으러 열 때마다 눈에 걸린다. */
+  transform: scale(0.96);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s ease;
+}
+.backdropShow .box {
+  transform: none;
+  opacity: 1;
+}
+
+/* X는 내용 위에 겹쳐 띄우지 않고 제 자리를 차지한다. 겹쳐 두면 제목이 길어졌을 때
+   글자 위에 올라앉아 어느 쪽을 눌러야 하는지 헷갈린다. */
+.head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 16px 0 20px;
+}
+.headMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 2px;
+}
+.close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease;
+}
+.close:active {
+  transform: scale(0.9);
+  border-color: rgba(236, 147, 163, 0.5);
+}
+
+/* 내용이 길면 창이 아니라 내용만 스크롤한다 — 머리(X)와 바닥(저장)은 늘 제자리에 있다. */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 20px 20px;
+}
+/* 바닥에 버튼이 서면 내용과 사이를 벌리고 경계선을 하나 둔다. */
+.foot {
+  flex: none;
+  padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}

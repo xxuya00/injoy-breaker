@@ -1,111 +1,359 @@
+/* 알은 밝은 덩어리가 아니라 어두운 돌이다. 밝은 건 그 안에서 새어나오는 빛이고,
+   금이 하나씩 늘수록 빛이 더 많이 새어나온다 — 진행도가 곧 밝기다.
+   --lit(0~1)은 지금까지 낸 금의 비율로, 바깥에서 넣어준다. */
 .wrap {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 0 2px;
+  padding: 6px 0 2px;
 }
 .glow {
   position: absolute;
-  top: 6px;
-  width: 140px;
-  height: 140px;
+  top: 2px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(236, 147, 163, 0.22), transparent 72%);
+  background: radial-gradient(circle, rgba(236, 147, 163, 0.3), transparent 70%);
+  opacity: calc(0.22 + var(--lit, 0) * 0.78);
+  transition: opacity 0.6s ease;
   pointer-events: none;
 }
 .svg {
   position: relative;
-  width: 108px;
+  /* 옆에 무엇을 세우느냐에 따라 바깥에서 줄일 수 있게 열어둔다(껍질 조각을 좌우에 세울 때 등). */
+  width: var(--egg-size, 122px);
   height: auto;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  overflow: visible;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
 }
 
-.crack {
-  opacity: 0;
-  stroke-dasharray: 60;
-  stroke-dashoffset: 60;
-  transition: opacity 0.25s ease;
+/* 알은 가만히 있지 않는다. 아주 느리게 부풀었다 줄었다 하며 안에서 무언가 숨쉬는 것처럼 둔다. */
+.egg {
+  transform-origin: 100px 128px;
+  animation: breathe 4.6s ease-in-out infinite;
 }
-.crackOn {
-  opacity: 1;
-  animation: drawCrack 0.5s ease forwards;
-}
-@keyframes drawCrack {
-  to {
-    stroke-dashoffset: 0;
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.022) rotate(-0.6deg);
   }
 }
 
-.burst {
-  animation: none;
+/* 껍질 안의 빛. 금이 없을 땐 거의 보이지 않다가 다 깨질 무렵엔 껍질 너머로 배어난다. */
+.inner {
+  opacity: calc(0.1 + var(--lit, 0) * 0.55);
+  transition: opacity 0.6s ease;
+  animation: innerPulse 3.2s ease-in-out infinite;
+}
+@keyframes innerPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.speckles ellipse {
+  fill: #f1e9db;
+  opacity: 0.045;
+}
+
+/* ---------- 금 ---------- */
+.crack {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* 넓게 번지는 빛. 금 자체보다 이쪽이 "새어나온다"는 느낌을 만든다. */
+.crackHalo {
+  fill: none;
+  stroke: rgba(236, 147, 163, 0.5);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: blur(2.6px);
+}
+/* 벌어진 틈 자체(껍질 두께). 빛과 실금 사이에 어둠이 한 겹 있어야 그어진 선이 아니라
+   벌어진 자리로 보인다. */
+.crackGap {
+  fill: none;
+  stroke: rgba(12, 9, 7, 0.9);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.crackLine {
+  fill: none;
+  stroke: #fff1f2;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* 곁가지는 본선보다 가늘다. 같은 굵기면 두 갈래가 아니라 한 덩어리로 보인다. */
+.crackBranch {
+  stroke-width: 1.4;
+  stroke: rgba(255, 241, 242, 0.8);
+}
+
+/* 방금 난 금만 그어지는 걸 보여준다(이미 나 있던 금은 처음부터 그어져 있다). */
+.crackFresh .crackLine,
+.crackFresh .crackGap,
+.crackFresh .crackHalo {
+  stroke-dasharray: 110;
+  animation: drawCrack 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.crackFresh .branchG path {
+  animation-delay: 0.26s;
+}
+@keyframes drawCrack {
+  from {
+    stroke-dashoffset: 110;
+    opacity: 0.4;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.shake {
+  animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-3.5px) rotate(-1.2deg);
+  }
+  35% {
+    transform: translateX(3px) rotate(1deg);
+  }
+  55% {
+    transform: translateX(-2px) rotate(-0.6deg);
+  }
+  78% {
+    transform: translateX(1px);
+  }
+}
+
+/* 금이 날 때 그 자리에서 튀는 껍질 조각 */
+.chip {
+  fill: #a4907a;
+  animation: chipFly 0.62s ease-out both;
+}
+@keyframes chipFly {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--r));
+    opacity: 0;
+  }
+}
+
+/* ---------- 다 깨진 순간 ---------- */
+/* 충격파 고리가 먼저 퍼지고, 빛살이 뻗고, 껍질이 지그재그 선을 따라 위아래로 갈라진다.
+   갈라진 자리에는 빛덩이가 남아 계속 숨쉰다. */
+.shock {
+  fill: none;
+  stroke: rgba(246, 195, 205, 0.9);
+  stroke-width: 2.5;
+  transform-origin: 100px 128px;
+  animation: shock 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes shock {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+    stroke-width: 6;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+    stroke-width: 0.6;
+  }
+}
+
+.rays line {
+  stroke: var(--accent-soft);
+  stroke-linecap: round;
 }
 .rays {
   opacity: 0;
   transform-origin: 100px 128px;
-  animation: raysBurst 0.7s ease forwards;
+  animation: raysBurst 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.06s forwards;
 }
 @keyframes raysBurst {
   0% {
     opacity: 0;
-    transform: scale(0.3);
+    transform: scale(0.25) rotate(-14deg);
   }
-  40% {
-    opacity: 1;
+  35% {
+    opacity: 0.95;
   }
   100% {
     opacity: 0;
-    transform: scale(1.6);
+    transform: scale(1.5) rotate(6deg);
   }
 }
+
+/* 껍질을 깨고 남는 것. 사라지지 않고 계속 숨쉰다. */
+.core {
+  transform-origin: 100px 128px;
+  animation: coreIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both,
+    corePulse 2.8s ease-in-out 0.9s infinite;
+}
+@keyframes coreIn {
+  from {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes corePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.09);
+    opacity: 0.86;
+  }
+}
+
+.spark {
+  fill: #fff6f4;
+  transform-origin: 100px 128px;
+  animation: sparkIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both,
+    sparkPulse 2.8s ease-in-out 1.1s infinite;
+}
+@keyframes sparkIn {
+  0% {
+    transform: scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+}
+@keyframes sparkPulse {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+}
+
 .eggTop {
   transform-origin: 100px 128px;
-  animation: eggTopMove 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+  animation: eggTopMove 0.85s cubic-bezier(0.22, 1.4, 0.4, 1) 0.06s both;
 }
 @keyframes eggTopMove {
   0% {
     transform: translate(0, 0) rotate(0deg);
   }
   100% {
-    transform: translate(-9px, -16px) rotate(-8deg);
+    transform: translate(-17px, -36px) rotate(-14deg);
   }
 }
 .eggBottom {
   transform-origin: 100px 128px;
-  animation: eggBottomMove 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+  animation: eggBottomMove 0.85s cubic-bezier(0.22, 1.4, 0.4, 1) 0.06s both;
 }
 @keyframes eggBottomMove {
   0% {
     transform: translate(0, 0) rotate(0deg);
   }
   100% {
-    transform: translate(9px, 16px) rotate(7deg);
+    transform: translate(16px, 32px) rotate(11deg);
   }
 }
 
+.debris path {
+  fill: #a4907a;
+  transform-origin: 100px 128px;
+  transform-box: fill-box;
+  animation: debrisFly 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes debrisFly {
+  0% {
+    transform: translate(100px, 128px) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(100px + var(--dx)), calc(128px + var(--dy))) rotate(var(--r));
+    opacity: 0;
+  }
+}
+
+/* ---------- 아래 글자 ---------- */
 .label {
-  margin-top: 8px;
+  margin-top: 10px;
   text-align: center;
 }
 .labelCount {
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.14em;
-  font-size: 15px;
+  font-family: var(--font-display);
+  letter-spacing: 0.16em;
+  font-size: var(--fs-sm);
+  color: var(--mute);
+}
+/* 지금까지 낸 금의 수만 밝게. 뒤의 "/ 6 CRACK"은 그 숫자를 읽는 단위일 뿐이다. */
+.labelCount b {
+  font-size: var(--fs-title-s);
+  font-weight: 400;
   color: var(--accent-soft);
+  margin-right: 2px;
 }
 .labelComplete {
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.1em;
-  font-size: 17px;
-  color: var(--accent);
-  animation: pulseGlow 1.6s ease-in-out infinite;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  font-size: var(--fs-title-s);
+  color: var(--accent-soft);
+  animation: pulseGlow 2.2s ease-in-out infinite;
 }
 @keyframes pulseGlow {
   0%,
   100% {
-    text-shadow: 0 0 6px rgba(236, 147, 163, 0.3);
+    text-shadow: 0 0 8px rgba(236, 147, 163, 0.35);
   }
   50% {
-    text-shadow: 0 0 16px rgba(236, 147, 163, 0.75);
+    text-shadow: 0 0 20px rgba(236, 147, 163, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .egg,
+  .inner,
+  .core,
+  .spark,
+  .labelComplete {
+    animation: none;
   }
 }

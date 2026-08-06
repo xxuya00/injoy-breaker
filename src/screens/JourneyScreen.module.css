@@ -1,6 +1,11 @@
+/* 윗글씨(eyebrow)와 버튼이 나란히 서는 줄. 버튼은 반드시 이 줄 안에 담겨 있어야 한다 —
+   음수 여백으로 위로 넘치게 두면 FitBox의 스크롤 상자 위쪽 밖으로 나가 잘려 나간다
+   (내용이 짧아 상자가 세로 가운데로 놓일 때는 멀쩡하고, 꽉 찰 때만 잘려서 더 헷갈렸다).
+   버튼은 윗글씨 한 줄보다 크므로 이 줄은 버튼 높이(32px)만큼 높아지고, 그만큼 제목을
+   위로 당겨(.headerTitle) 다른 탭과 같은 자리에서 시작하게 맞춘다. */
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -10,6 +15,19 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+/* 버튼이 부풀린 줄 높이만큼 되돌린다. 다른 탭은 윗글씨 한 줄(19px) 아래 8px에서 제목이
+   시작하는데, 여기는 32px 줄이라 그 차이(-5px)를 여기서 뺀다. */
+.headerTitle {
+  margin-top: -5px;
+  /* 긴 닉네임이 들어와 두 줄이 되면, 제목 줄 높이(0.98)가 너무 붙어 두 줄이 겹쳐 보인다. */
+  line-height: 1.05;
+  word-break: keep-all;
+}
+/* 닉네임. 제목보다 한 급 작게 — 길이를 정해줄 수 없는 값이라 같은 크기로 두면 쉽게 두 줄이 된다. */
+.headerNick {
+  font-size: 0.62em;
+  letter-spacing: 0.01em;
 }
 .iconBtn {
   flex: none;
@@ -23,7 +41,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
 }
 .iconBtn svg {
   width: 16px;
@@ -36,10 +53,12 @@
   transform: scale(0.95);
 }
 
+/* 두 버튼은 같은 크기로 둔다. 크기가 다르면 줄 높이는 큰 쪽이 정하는데, 그 높이가
+   곧 제목이 얼마나 내려오는지를 정하므로 둘을 맞춰두는 편이 헤아리기 쉽다. */
 .rankBtn {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--ink-2);
   border: 1px solid var(--line);
@@ -67,6 +86,41 @@
   margin: 16px 0 10px;
 }
 
+/* 내 정보 시트의 이름 줄. 본명이 제목이고 닉네임은 그 옆에 붙는 이름표다 —
+   같은 크기로 나란히 두면 어느 쪽이 나인지 두 번 읽게 된다. */
+.nameRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+.nameReal {
+  margin: 0;
+}
+.nameNick {
+  flex: 0 0 auto;
+  padding: 3px 9px 2px;
+  border-radius: 99px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  color: var(--accent-soft);
+  letter-spacing: 0.02em;
+}
+.nameNote {
+  margin: 6px 0 16px;
+  font-size: var(--fs-caption);
+}
+
+/* 내 정보 시트에 꺼내 보는, 등록할 때 적은 다짐 */
+.vowText {
+  white-space: pre-wrap;
+  font-size: var(--fs-body);
+  line-height: 1.85;
+  color: var(--text-2);
+}
+
 /* 내 정보 시트의 복구 코드 줄 */
 .codeRow {
   display: flex;
@@ -74,36 +128,54 @@
   gap: 10px;
   background: var(--ink-2);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 13px;
+  padding: 10px 12px;
 }
 .codeValue {
   flex: 1 1 auto;
   min-width: 0;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-s);
   letter-spacing: 0.04em;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 글자("복사") 대신 그림만. 코드 옆에서 자리를 덜 차지하고, 눌러야 할 것이 무엇인지도 분명하다. */
 .copyBtn {
   flex: none;
-  padding: 8px 12px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   border: 1px solid var(--line);
   background: var(--ink);
   color: var(--accent);
-  font-size: 12.5px;
-  font-weight: 700;
   cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.copyBtn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .copyBtn:active {
   transform: scale(0.95);
 }
+/* 복사된 뒤에는 색으로 알린다 — 글자가 없으니 "복사됨"이라고 적을 자리도 없다. */
+.copyBtnDone {
+  color: var(--ok);
+  border-color: rgba(147, 210, 164, 0.45);
+}
 .sectionLabel {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.1em;
   color: var(--mute);
   font-weight: 700;
@@ -114,12 +186,14 @@
 .daytabRow {
   display: flex;
   gap: 8px;
-  margin: 14px 0 16px;
+  margin: 10px 0 12px;
 }
+/* 좌우 여백을 4px에서 3px로 좁힌 건 멋이 아니라 줄 수 때문이다 — "BREAK THROUGH"가
+   한 글자 차이로 두 줄이 되면서 세 칸이 통째로 20px 넘게 키가 컸다. */
 .daytab {
   flex: 1;
   text-align: center;
-  padding: 12px 4px;
+  padding: 10px 3px;
   border-radius: 12px;
   background: var(--ink-2);
   border: 1px solid var(--line);
@@ -134,28 +208,34 @@
   opacity: 0.45;
 }
 .d {
-  font-family: 'Bebas Neue';
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-s);
   letter-spacing: 0.05em;
   color: var(--accent);
 }
+/* 10px은 --fs-caption(11px)에서 한 급 내린 값이다. 세 칸 중 가장 긴 "BREAK THROUGH"가
+   11px에서 한 글자 차이로 두 줄이 되고, 그 한 줄 때문에 세 칸이 통째로 20px 넘게 키가 컸다. */
 .t {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--mute);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   font-weight: 600;
 }
 .daytabOn .t {
   color: var(--text);
 }
 
+/* "며칠에 무엇을 하는 날"이라는 한 줄. 바로 아래 덱(자기소개 나눔·세 걸음·여정 되짚기)이
+   이 한 줄에 딸린 것으로 읽혀야 하므로 가깝게 두되, 붙여버리면 두 줄이 한 덩어리로
+   뭉쳐 각주가 덱의 두 번째 줄처럼 보인다. 글줄 아래 반쪽 여백(line-height)이 이미
+   4px쯤 되니, 여기서 6px을 더해 열 남짓 띄운다. */
 .dayCaption {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .lockLetter {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 32px;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-l);
   color: var(--accent);
   animation: lockLetterPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -173,105 +253,424 @@
   }
 }
 
+/* DAY 2는 세 걸음 한 줄과 알이 전부라, 알 아래로 화면 한 뼘이 그냥 비어 있었다.
+   DAY 1의 아홉 칸이 폭을 다 쓰며 아래까지 내려가 앉는 만큼, DAY 2도 그 선까지 내려오도록
+   남는 세로를 알과 세 걸음이 나눠 갖는다. --d2-grow가 그 나눠 갖는 양이다.
+   DAY 1의 아홉 칸은 화면 폭을 따라 커지지만 알과 세 걸음은 세로가 남을 때 커져야 하므로,
+   기준은 폭이 아니라 기기 높이다. 700px 아래(세로가 짧은 기기)에서는 0이다 —
+   거기서는 애초에 남는 자리가 없어서, 키우면 그만큼 스크롤만 는다. */
+.eggHero,
+.linkRow {
+  --d2-grow: clamp(0px, calc(var(--room) * 0.16), 40px);
+}
+
+/* 위 세 칸과의 사이는 .linkRow가 잡는다(여기서 또 벌리면 두 값이 겹쳐 늘어난다). */
 .eggHero {
+  text-align: center;
+}
+/* 알이 다 깨진 뒤 그 자리에 서는 "초심 기록". 화면 폭을 다 쓰던 큰 버튼을 글자만큼만
+   차지하는 알약으로 내린다 — 이 자리의 주인공은 깨진 알이지 버튼이 아니다. */
+.firstLoveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px auto 0;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--ink-2);
+  border: 1px solid rgba(236, 147, 163, 0.4);
+  color: var(--accent-soft);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.firstLoveBtn:active {
+  transform: scale(0.96);
+  background: rgba(236, 147, 163, 0.14);
+}
+
+/* 시트 아래 버튼 줄. 적는 칸이나 방금 깬 결과가 주인공인 화면이라, 버튼은 글자 길이만큼만
+   차지하고 한 줄에 나란히 선다. */
+.sheetActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+/* 결과 화면처럼 "되돌아가기 / 나가기"가 짝을 이루는 자리에서만 양 끝으로 벌린다.
+   나란히 붙여두면 두 버튼이 한 덩어리로 보여 어느 쪽이 앞으로 가는 길인지 매번 읽어야 한다. */
+.sheetActionsSplit {
+  justify-content: space-between;
+}
+/* 버튼 글자 옆의 작은 그림. 글자와 같은 색을 따라가고, 글자보다 커지지 않는다. */
+.btnIcon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* 알이 깨지는 연출은 그림 밖으로 1.5배까지 번져 나간다(빛살·충격파·부스러기).
+   알을 줄이고 그만큼 아래에 빈자리를 둬야 그 빛이 아래 글자 위를 지나가지 않는다. */
+.eggBurst {
+  --egg-size: 96px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+
+/* 알과, 알에서 떨어져 나온 껍질 조각들. 조각은 줄을 세우지 않고 알 둘레 아무 데나 흩어 붙는다.
+   --shard-x/--shard-y는 알 중심에서 조각까지의 기준 거리다. 조각마다 그 배수(--x/--y)만
+   다르게 받으므로, 기기 폭이 달라져도 흩어진 모양은 그대로 유지된 채 폭만 따라 줄고 는다. */
+/* 알이 커지면 조각도 그만큼 바깥으로 물러나야 껍질 위에 겹쳐 앉지 않는다.
+   알의 반지름보다 조금 더 빠르게 벌어지도록 배수를 잡았다. */
+.eggStage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  --shard-x: calc(clamp(60px, 21vw, 84px) + var(--d2-grow, 0px) * 0.9);
+  --shard-y: calc(clamp(44px, 15vw, 58px) + var(--d2-grow, 0px) * 0.9);
+}
+/* 그날의 주인공은 알이다. 아래 두 칸에서 각주 한 줄을 걷어낸 만큼과, 카드덱 아래
+   남아 있던 자리의 몫을 여기로 돌려준다. */
+.eggSlot {
+  --egg-size: calc(clamp(112px, 35vw, 136px) + var(--d2-grow, 0px) * 0.8);
+}
+/* 자리는 left/top으로만 잡는다. transform은 조각이 튀어나오는 연출(shardFly)이 쓰고 있어서
+   자리까지 transform으로 잡으면 서로 덮어쓴다. */
+.shard {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: calc(var(--x) * var(--shard-x) - var(--shard-size) / 2);
+  margin-top: calc(var(--y) * var(--shard-y) - var(--shard-size) / 2);
+  width: var(--shard-size, 40px);
+  height: var(--shard-size, 40px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.shardIcon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 조각마다 기울기가 다르다. 여섯 개가 같은 각도로 서 있으면 도장을 찍은 것처럼 보인다. */
+  transform: rotate(var(--rot, 0deg));
+  stroke-linejoin: round;
+  fill: #362d24;
+  stroke: rgba(236, 147, 163, 0.55);
+  stroke-width: 1.2;
+  transition: fill 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
+}
+/* 조각마다 한 글자씩 새겨진 "초심을 찾아서". 조각은 기울어 있어도 글자는 똑바로 서야 읽히므로,
+   조각에 준 기울기(--rot)를 글자에서만 제자리로 되돌린다. */
+.shardChar {
+  fill: var(--text-2);
+  stroke: none;
+  font-family: var(--font-title);
+  text-anchor: middle;
+  dominant-baseline: central;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(-1 * var(--rot, 0deg)));
+  transition: fill 0.4s ease;
+}
+/* 기록까지 남긴 조각에는 불이 들어온다. */
+.shardOn .shardIcon {
+  fill: rgba(236, 147, 163, 0.3);
+  stroke: var(--accent-soft);
+  filter: drop-shadow(0 0 6px rgba(236, 147, 163, 0.65));
+}
+/* 여섯 조각이 다 모인 순간, 흩어져 있던 글자가 한 말이 된다. 왼쪽 위부터 차례로 불이 들어와
+   여섯 글자가 "초심을 찾아서"로 읽히는 순서를 눈으로 짚어준다. */
+.eggStageDone .shardChar {
+  fill: var(--accent-soft);
+  animation: shardCharGlow 0.9s ease both;
+  animation-delay: calc(var(--i, 0) * 0.1s);
+}
+@keyframes shardCharGlow {
+  0% {
+    fill: var(--text-2);
+  }
+  45% {
+    fill: #fff;
+  }
+  100% {
+    fill: var(--accent-soft);
+  }
+}
+.shard:active .shardIcon {
+  filter: brightness(1.25);
+}
+
+/* 방금 찾은 조각은 알 한가운데에서 제자리로 튀어나온다. 날아오는 방향은 조각이 앉을
+   자리(--x/--y)를 거꾸로 돌린 것이라, 조각마다 저절로 다른 쪽에서 날아온다. */
+.shardFly .shardIcon {
+  animation: shardFly 0.72s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+@keyframes shardFly {
+  0% {
+    transform: translate(calc(var(--x) * var(--shard-x) * -0.9), calc(var(--y) * var(--shard-y) * -0.9))
+      scale(0.25) rotate(calc(var(--rot, 0deg) - 120deg));
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(var(--rot, 0deg));
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shardFly .shardIcon,
+  .eggStageDone .shardChar {
+    animation: none;
+  }
+}
+
+/* QR을 찍으러 가는 버튼. 카메라 그림 하나면 무엇을 하는지 알고, 어디서 무엇을 찾는지는
+   바로 아래 안내가 이어 말한다. 글자까지 넣은 가로 버튼은 알 그림을 위로 밀어낼 뿐이었다. */
+/* 알 아래 놓이는 손잡이라 알보다 커 보이면 안 된다. 카메라 그림만 알아보면 되는 크기까지 줄인다. */
+.scanBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin: 6px auto 0;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.scanBtn svg {
+  width: 21px;
+  height: 21px;
+}
+.scanBtn:active {
+  transform: scale(0.94);
+}
+.scanBtn:disabled {
+  background: var(--ink-3);
+  color: var(--mute);
+  pointer-events: none;
+}
+
+/* DAY 3. 알과 같은 자리에 놓이지만 다이얼이 더 커서 위아래 여백을 조금 줄인다. */
+.dialHero {
   margin-bottom: 12px;
   text-align: center;
 }
-.eggHero .btn {
-  max-width: 260px;
-  margin: 4px auto 0;
+/* 앞선 이틀을 다 깨기 전의 다이얼. 자리에는 있는데 초점이 맞지 않는다 —
+   무엇이 놓여 있는지는 보이되 글자는 하나도 읽히지 않아야 해서, 흐림을 꽤 세게 준다.
+   눌리는 건 그대로다(눌러야 얼마나 남았는지 알려줄 수 있다). */
+.dialSealed {
+  filter: blur(5px) saturate(0.5);
+  opacity: 0.85;
+  transition: filter 0.6s ease, opacity 0.6s ease;
+}
+/* 마지막 자물쇠를 깬 뒤 DAY 3을 처음 열었을 때 한 번만. 흐려져 있던 다이얼이 초점을 찾는다.
+   끝에서 아주 살짝 커졌다 제자리로 돌아오는 건, 초점이 맞는 순간을 눈이 한 번 붙잡게 하려는 것이다. */
+.dialReveal {
+  animation: dialReveal 1.6s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+@keyframes dialReveal {
+  0% {
+    filter: blur(5px) saturate(0.5);
+    opacity: 0.85;
+    transform: scale(0.97);
+  }
+  70% {
+    filter: blur(0) saturate(1);
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    filter: blur(0) saturate(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialReveal {
+    animation: none;
+  }
 }
 
-.recordList {
-  border-radius: 14px;
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  overflow: hidden;
+/* ---------- DAY 2 · 알 위 세 걸음(유형 검사 · 유형 나눔 · 잠언) ---------- */
+/* 검사 → 나눔 → 잠언, 그날 하는 순서대로 세 칸이 나란히 선다. 좁은 폭에 세 칸이라
+   이름이 두 줄로 접히기도 하는데, 칸끼리는 같은 높이로 맞춰(stretch 기본) 줄이 흐트러지지 않는다. */
+/* 알과는 한 뼘 떼어 놓는다. 붙여 두면 세 걸음이 알에 얹힌 머리처럼 보여
+   "다음 세 걸음"과 "알 깨기"가 한 덩어리로 읽힌다. */
+.linkRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  /* 아래 알과의 사이. DAY 1·3의 덱(.introRow/.recapRow)과 같은 값이다. */
+  margin-bottom: 20px;
+  /* 아이콘 원의 지름. 잇는 선이 이 값으로 제 길이와 높이를 계산하므로 한 곳에 둔다. */
+  --link-icon: calc(42px + var(--d2-grow, 0px) * 0.25);
 }
-.recordItem {
-  border-bottom: 1px solid var(--line);
-}
-.recordItem:last-child {
-  border-bottom: 0;
-}
-.recordHead {
-  width: 100%;
+/* 걸음 하나를 감싸는 상자. 앞 걸음과 잇는 선이 칸 바깥(그리드 간격)에 놓이므로 이 상자가 들고 있는다. */
+.linkStep {
+  position: relative;
   display: flex;
+}
+.linkStep > .linkTile {
+  flex: 1;
+}
+/* 원과 원을 잇는 실선. 번호를 떼고 나면 이 선이 순서를 말한다 —
+   선이 없으면 나란히 선 그림 셋으로만 읽혀 "검사부터"라는 차례가 사라진다.
+   칸 사이 간격(7px)만큼만 그으면 원에서 한참 떨어진 자리에 짧은 작대기 하나가 뜬다.
+   원은 칸 한가운데 있으므로, 앞 원의 오른쪽 끝에서 이 원의 왼쪽 끝까지를 직접 계산해 긋는다
+   (양끝은 5px씩 띄운다 — 원에 딱 붙으면 선이 원에서 자라난 것처럼 보인다). */
+.linkConnect {
+  position: absolute;
+  left: calc(-2px - 50% + var(--link-icon) / 2);
+  top: calc(var(--link-icon) / 2);
+  width: calc(100% - 3px - var(--link-icon));
+  height: 1.5px;
+  border-radius: 1px;
+  background: rgba(236, 147, 163, 0.4);
+}
+/* 상자를 걷어낸 자리. 테두리도 배경도 없다 — 알이 그림인데 그 아래 카드 셋이 서면
+   한 화면에서 서로 다른 두 그림 언어가 부딪힌다. 눌리는 자리라는 건 동그란 그림이 말한다. */
+.linkTile {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 8px 15px;
+  gap: 7px;
+  padding: 0;
   background: none;
   border: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: center;
   cursor: pointer;
-  text-align: left;
-  font-family: 'Gothic A1';
 }
-.recordHead:disabled {
+.linkIcon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--link-icon);
+  height: var(--link-icon);
+  border-radius: 50%;
+  background: rgba(236, 147, 163, 0.1);
+  border: 1px solid rgba(236, 147, 163, 0.3);
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.linkIcon svg {
+  width: calc(19px + var(--d2-grow, 0px) * 0.12);
+  height: calc(19px + var(--d2-grow, 0px) * 0.12);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.linkTile:active .linkIcon {
+  transform: scale(0.92);
+}
+
+/* 원 오른쪽 아래에 얹히는 작은 표시(마침·잠김). 바깥 테두리를 배경색으로 둘러
+   원 위에 따로 얹힌 것처럼 떼어 놓는다. */
+.linkBadge {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+.linkBadge svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.linkBadgeDone {
+  background: var(--accent);
+}
+.linkBadgeDone svg {
+  stroke: var(--ink);
+  stroke-width: 3.4;
+}
+.linkBadgeLock {
+  background: var(--ink-3);
+}
+.linkBadgeLock svg {
+  stroke: var(--mute);
+  stroke-width: 2.2;
+}
+
+.linkTileLocked {
+  opacity: 0.5;
   cursor: default;
 }
-.recordDot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--line);
+.linkTileLocked .linkIcon {
+  background: var(--ink-3);
+  border-color: var(--line);
 }
-.recordDotOn {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(236, 147, 163, 0.18);
+.linkTileLocked .linkIcon svg {
+  stroke: var(--mute);
 }
-.recordName {
-  flex: 1;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--text);
+
+/* 지금 할 차례인 한 걸음. 원 둘레에 옅은 빛이 숨 쉰다. 깜빡이지 않고 밝기만 오가게 둔다 —
+   나란히 선 셋 중 하나가 깜빡이면 알림처럼 읽혀 그날의 주인공인 알에서 눈을 뺏는다. */
+.linkTileNext .linkIcon {
+  border-color: var(--accent);
+  background: rgba(236, 147, 163, 0.2);
+  animation: linkGlow 2.4s ease-in-out infinite;
 }
-.recordHead:disabled .recordName {
-  color: var(--mute);
+@keyframes linkGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 147, 163, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(236, 147, 163, 0.3);
+  }
 }
-.recordChev {
-  flex: none;
-  color: var(--mute);
-  transition: transform 0.25s ease;
+@media (prefers-reduced-motion: reduce) {
+  .linkTileNext .linkIcon {
+    animation: none;
+    box-shadow: 0 0 10px 2px rgba(236, 147, 163, 0.26);
+  }
 }
-.recordChevOpen {
-  transform: rotate(90deg);
-  color: var(--accent);
-}
-.recordPending {
-  flex: none;
+
+/* 그림 아래 표제 한 줄. 자간을 넓게 벌린 영문 대문자라, 화면 곳곳의 다른 표제(THE JOURNEY ·
+   PRAYER TOGETHER)와 같은 말투로 읽힌다. 가장 긴 IDOL-X도 50px 남짓이라 폭에 여유가 많다. */
+.linkName {
+  max-width: 100%;
+  font-family: var(--font-display);
   font-size: 11px;
+  letter-spacing: 0.11em;
+  line-height: 1.3;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.linkTileLocked .linkName {
   color: var(--mute);
-  letter-spacing: 0.04em;
 }
-/* 찾긴 했는데 아직 아무것도 안 적은 칸. 눌러서 그때 적을 수 있다는 표시라
-   "미발견"과 달리 눈에 들어와야 한다. */
-.recordWrite {
-  flex: none;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-  border: 1px solid rgba(236, 147, 163, 0.4);
-  border-radius: 99px;
-  padding: 3px 9px;
-}
-.recordBody {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
-}
-.recordBodyOpen {
-  grid-template-rows: 1fr;
-}
-.recordBodyInner {
-  overflow: hidden;
-}
-.recordBodyInner p {
-  padding: 0 16px 16px;
-  font-size: 13.5px;
-  color: #d9cdbb;
-  line-height: 1.6;
+/* 잠겨 있을 때만 나온다 — 언제 열리는지. */
+.linkSub {
+  margin-top: 1px;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  line-height: 1.35;
+  text-align: center;
+  word-break: keep-all;
 }
 
 .myAnswerBox {
@@ -283,7 +682,7 @@
   border: 1px solid var(--line);
 }
 .myAnswerLabel {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.06em;
   color: var(--mute);
   font-weight: 700;
@@ -291,17 +690,232 @@
   text-transform: uppercase;
 }
 .myAnswerBox p {
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: #d9cdbb;
   line-height: 1.6;
 }
 
+/* 자물쇠 열림 화면의 기록 줄. 열림 문구는 가운데 정렬인데 기록만 왼쪽 문장으로 흘러
+   두 덩어리가 한 문단처럼 붙어 보였다. 숫자를 앞세운 칸 두 개로 떼어 놓는다. */
+.revealStats {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+.revealStat {
+  flex: 1;
+  max-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-caption);
+  color: var(--mute);
+}
+.revealStat b {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  font-size: var(--fs-title-s);
+  color: var(--accent-soft);
+  font-weight: 400;
+}
+.revealNote {
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+/* 그날의 판 위에 서는 가로 한 줄. DAY 1의 자기소개 나눔과 DAY 3의 되짚기가 같은 껍데기를 쓴다 —
+   둘 다 캡션 바로 아래 같은 자리에 서므로, 날을 옮겨 다닐 때 줄의 생김새까지 같아야 "여기는
+   오늘 할 일을 알려주는 자리"로 읽힌다. 안쪽에 채우는 것만 날마다 다르다.
+   세로는 한 줄만 쓴다 — 여기가 두 줄이 되는 순간 DAY 1의 아홉 번째 칸이 화면 밖으로 밀린다. */
+.introRow,
+.recapRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  /* 아래 판(자물쇠·다이얼)과의 사이. 위쪽 각주와의 6px보다 넉넉히 두어야 이 줄이
+     "각주에 딸린 덱"으로 묶이고 아래 판은 따로 선 것으로 갈린다. DAY 2의 세 걸음 줄도
+     같은 값을 쓴다 — 날을 옮겨도 덱과 판 사이가 같은 만큼 벌어져 있어야 한다. */
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid rgba(236, 147, 163, 0.3);
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.introRow:active,
+.recapRow:active {
+  transform: scale(0.99);
+}
+.introRowLocked {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.introIcon,
+.recapIcon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(236, 147, 163, 0.12);
+  display: grid;
+  place-items: center;
+}
+.introIcon svg,
+.recapIcon svg {
+  width: 17px;
+  height: 17px;
+  stroke: var(--accent);
+  fill: none;
+}
+/* 올렸다는 표시. 걸음 타일의 체크와 같은 그림이라 둘이 같은 뜻이라는 게 그림으로 읽힌다. */
+.introDone {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--ok);
+  border: 1.5px solid var(--ink-2);
+  display: grid;
+  place-items: center;
+}
+.introDone svg {
+  width: 8px;
+  height: 8px;
+  stroke: var(--ink);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.introText,
+.recapText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.introName,
+.recapName {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.35;
+}
+.introSub {
+  color: var(--mute);
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 방금 올라온 자기소개지 셋. 겹쳐 놓아 자리를 적게 쓰면서 "여럿이 올렸다"가 한눈에 읽힌다.
+   종이를 크게 깔면 이 어두운 화면에서 하얀 종이가 제일 밝은 덩어리가 되어 아홉 칸을 덮는다. */
+.introFaces {
+  display: flex;
+  flex-shrink: 0;
+  padding-right: 2px;
+}
+.introFace {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ink-3);
+  border: 1px solid var(--ink-2);
+  margin-left: -6px;
+}
+.introFace:first-child {
+  margin-left: 0;
+}
+.introFace img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.introArrow,
+.recapArrow {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--mute);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* DAY 3 · 되짚기 줄의 아랫줄. 다이얼을 여는 데 필요한 자물쇠가 날마다 몇 개씩 남았는지를 적는다.
+   지금까지 이 값은 흐린 다이얼을 눌러야 토스트로 한 번 스쳐 지나갔다 — 흐린 이유를 알려면
+   눌러봐야 했다는 뜻이다. 늘 보이는 자리로 올리면 "무엇이 남았는지"가 화면에 그냥 적혀 있다. */
+.recapDays {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* 아직 남은 날은 글자에 색을 준다. 다 깬 날을 밝게 하면 눈이 이미 끝난 쪽으로 간다 —
+   이 줄이 있는 이유는 남은 쪽을 가리키기 위해서다. */
+.recapDay {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mute);
+}
+.recapDay b {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.recapDayFull b {
+  color: var(--mute);
+  font-weight: 400;
+}
+/* 다 깬 날에만 붙는 체크. 걸음 타일·자기소개 줄의 체크와 같은 그림이라 뜻이 그림으로 읽힌다. */
+.recapCheck {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 아홉 칸은 정사각형이라 판의 키가 곧 폭이다. 칸 사이는 어느 기기에서나 12px로 둔다 —
+   세로가 긴 폰에서 남는 높이만큼 벌려본 적이 있는데, 아홉 칸이 하나의 판이 아니라
+   흩어진 아홉 개로 보였다. 남는 높이는 판이 아니라 아래 여백이 가져간다. */
 .lockGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 .lockTile {
+  position: relative;
   aspect-ratio: 1;
   border-radius: 16px;
   background: var(--ink-2);
@@ -337,6 +951,112 @@
   stroke: var(--accent);
 }
 
+/* 방금 깬 자물쇠. 게임을 끝낸 시트를 닫고 여정으로 돌아온 그 순간에 한 번만 터진다.
+   칸이 살짝 부풀었다 가라앉고, 그 위로 고리 하나가 퍼져 나간다. */
+.lockTileFx {
+  /* 퍼져 나가는 고리가 옆 칸에 덮이지 않도록 이 칸만 위로 올린다. */
+  z-index: 1;
+  animation: lockTilePop 0.75s cubic-bezier(0.22, 1.3, 0.36, 1);
+}
+.lockTileFx::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  animation: lockRing 0.85s ease-out forwards;
+}
+@keyframes lockTilePop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.11);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes lockRing {
+  0% {
+    transform: scale(0.78);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+/* 드러나는 글자. 평소의 lockLetterPop보다 크게 튀어오르고 잠깐 빛을 머금는다. */
+.lockLetterFx {
+  animation: lockLetterBurst 0.8s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+@keyframes lockLetterBurst {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+    text-shadow: none;
+  }
+  45% {
+    transform: scale(1.35);
+    opacity: 1;
+    text-shadow: 0 0 22px rgba(236, 147, 163, 0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow: none;
+  }
+}
+
+/* 아홉 글자가 모두 모인 순간. 한 칸씩 늦게 켜져 왼쪽 위에서 오른쪽 아래로 빛이 훑고 지나간다.
+   자물쇠 아홉 개가 아니라 BACKTOGOD 한 단어로 읽히는 건 이 한 번뿐이다. */
+.lockGridDone .lockTile {
+  animation: lockTileWave 1.1s ease-out;
+  animation-delay: calc(var(--i, 0) * 0.09s);
+}
+.lockGridDone .lockLetter {
+  animation: lockLetterWave 1.1s ease-out;
+  animation-delay: calc(var(--i, 0) * 0.09s);
+}
+@keyframes lockTileWave {
+  0%,
+  100% {
+    border-color: rgba(236, 147, 163, 0.45);
+    transform: translateY(0);
+  }
+  45% {
+    border-color: var(--accent);
+    transform: translateY(-5px);
+  }
+}
+@keyframes lockLetterWave {
+  0%,
+  100% {
+    text-shadow: none;
+    transform: scale(1);
+  }
+  45% {
+    text-shadow: 0 0 20px rgba(236, 147, 163, 0.9);
+    transform: scale(1.16);
+  }
+}
+
+/* 연출을 꺼둔 기기에서는 소리와 토스트만 남는다. */
+@media (prefers-reduced-motion: reduce) {
+  .lockTileFx,
+  .lockTileFx::after,
+  .lockLetterFx,
+  .lockGridDone .lockTile,
+  .lockGridDone .lockLetter {
+    animation: none;
+  }
+}
+
 /* ---------- mini games ---------- */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -344,28 +1064,53 @@
   75% { transform: translateX(6px); }
 }
 
-.tileGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+/* 맞았을 때. 틀렸을 때의 흔들림과 짝을 이루는 표시라, 아홉 게임이 판 모양은 달라도
+   이것 하나는 똑같이 쓴다 — 게임을 옮겨 다녀도 "맞았다"를 매번 새로 배우지 않게.
+   판이 크게 움직이지는 않는다. 이 표시는 다음 문제로 넘어가기 직전에 지나가는 것이라
+   눈은 이미 다음을 보고 있고, 크게 흔들면 지나간 판을 다시 읽게 된다.
+   초록 테두리는 밖으로 번지며 사라진다 — 판 안쪽을 가리지 않는 방향이다. */
+@keyframes okPop {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147, 210, 164, 0.5); }
+  40% { transform: scale(1.03); }
+  100% { transform: scale(1); box-shadow: 0 0 0 16px rgba(147, 210, 164, 0); }
 }
-.tile {
-  aspect-ratio: 1;
+.okFx {
+  animation: okPop 0.42s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .okFx {
+    animation: none;
+  }
+}
+
+/* 거꾸로 걷는 단계 앞에 한 번 세우는 확인 화면. "보여줄 때"와 "걸을 때"를 위아래로 나란히 놓아
+   화살표 방향이 뒤집힌 것 하나만 눈에 남게 한다 — 문장으로 풀어쓰면 앞 단계와 뭐가 다른지 안 보인다. */
+.mazeNoticeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
   border-radius: 14px;
   background: var(--ink-3);
   border: 1px solid var(--line);
+}
+.mazeNoticeRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  cursor: pointer;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  color: var(--text);
 }
-.tile:active {
-  transform: scale(0.95);
+.mazeNoticeKey {
+  flex: none;
+  width: 66px;
+  font-size: var(--fs-caption);
+  color: var(--mute);
 }
-.tileSelected {
-  border-color: var(--accent);
-  background: rgba(236, 147, 163, 0.14);
+.mazeNoticeFlip {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 /* 판의 높이는 칸이 정사각이라 폭에서 나온다. 즉 통째로 줄여도(FitBox) 판의 높이는 그대로다.
@@ -387,11 +1132,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 .mazeSafe {
   background: rgba(147, 210, 164, 0.35);
   border-color: var(--ok);
+}
+/* 방금 지나온 칸. 옅게 한 칸만 남겨 어느 쪽으로 넘어갔는지 눈이 따라갈 수 있게 한다. */
+.mazeSafeFade {
+  background: rgba(147, 210, 164, 0.12);
+  border-color: rgba(147, 210, 164, 0.4);
+}
+/* 내 말·도착 칸·아직 모르는 칸. 이모지로 두면 기기마다 크기와 모양이 제각각이라 도형으로 직접 그린다. */
+.mazePawn {
+  width: 56%;
+  height: 56%;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(236, 147, 163, 0.25);
+}
+.mazeGoal {
+  width: 56%;
+  height: 56%;
+  border-radius: 50%;
+  border: 2px solid var(--accent-yellow);
+}
+.mazeUnknown {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
 }
 .mazeWrongFx {
   animation: shake 0.4s;
@@ -409,12 +1179,17 @@
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--accent);
-  font-size: 18px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 .mazeBtn:active {
   transform: scale(0.92);
   background: rgba(236, 147, 163, 0.14);
+}
+/* 힌트로 길이 다시 도는 동안 잠긴다. 이때 따라 걸을 수 있으면 순서를 외울 이유가 없어진다. */
+.mazeBtn:disabled {
+  opacity: 0.28;
+  pointer-events: none;
 }
 
 .comboGrid {
@@ -423,8 +1198,9 @@
   gap: 10px;
   /* 정사각 판이라 폭을 묶으면 높이도 함께 묶인다(위 .mazeGrid 설명 참고). */
   margin-inline: auto;
-  width: min(100%, 44vh);
-  width: min(100%, 44svh);
+  /* 작은 기기(640px)에서 딱 2px 넘쳐 스크롤이 열리던 값이라 한 칸 낮췄다. */
+  width: min(100%, 42vh);
+  width: min(100%, 42svh);
 }
 .comboCard {
   aspect-ratio: 1;
@@ -459,11 +1235,22 @@
 .comboWrong {
   animation: shake 0.4s;
 }
+/* 힌트로 짚어준 카드. 선택 표시(분홍)와 헷갈리지 않게 노란색으로 천천히 깜빡인다. */
+.comboCardHinted {
+  animation: comboHintPulse 1.4s ease-in-out infinite;
+}
+@keyframes comboHintPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(233, 196, 106, 0.35); }
+  50% { box-shadow: 0 0 0 3px rgba(233, 196, 106, 0.95), 0 0 14px rgba(233, 196, 106, 0.5); }
+}
+/* 찾은 합이 쌓이는 줄. 처음부터 자리를 잡아두고 높이도 한 줄로 묶는다 —
+   합을 찾을 때마다 칸이 늘거나 줄바꿈이 생기면 그만큼 판이 위로 밀려 올라간다.
+   많이 찾은 세트에서도 높이는 그대로고, 넘치는 만큼만 옆으로 밀어 본다. */
 .comboFoundWrap {
   margin-top: 16px;
 }
 .comboFoundLabel {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   color: var(--mute);
   font-weight: 700;
@@ -472,8 +1259,23 @@
 }
 .comboFoundRow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
+  height: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.comboFoundRow::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+/* 아직 아무것도 못 찾았을 때 자리를 지키는 안내. 빈 줄로 두면 무엇이 들어올 자리인지 알 수 없다. */
+.comboFoundEmpty {
+  align-self: center;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  opacity: 0.6;
 }
 .comboFoundChip {
   display: flex;
@@ -515,14 +1317,26 @@
 }
 .timerBadge {
   flex: none;
-  font-family: 'Bebas Neue', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
   letter-spacing: 0.06em;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--accent-soft);
   background: var(--ink-3);
   border: 1px solid var(--line);
   border-radius: 99px;
   padding: 3px 10px;
+}
+.timerIcon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+/* 시계가 멈춰 있는 동안(플래시 기억의 준비 화면)은 색을 죽여 "지금은 안 흐른다"를 한눈에 보이게 한다. */
+.timerBadgePaused {
+  color: var(--mute);
 }
 /* 시트 우상단, 닫기 버튼과 같은 크기의 원형 아이콘 버튼. */
 .restartBtn {
@@ -552,110 +1366,155 @@
   inset: 0;
   z-index: 1;
 }
+/* 두 갈래를 고르는 것뿐이라 메뉴는 이름이 담기는 만큼만 넓다. 판 위에 덮이는 창이라
+   크면 그만큼 게임판을 가리고, 고를 게 둘뿐이라 커도 더 빨리 눌리지 않는다. */
 .restartMenu {
   position: absolute;
-  top: 42px;
+  top: 40px;
   right: 0;
   z-index: 2;
-  width: 212px;
+  width: 148px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px;
+  gap: 1px;
+  padding: 4px;
   background: var(--ink-3);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
 }
 .restartMenuItem {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 1px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 7px 9px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   text-align: left;
-  font-family: 'Gothic A1';
+  font-family: var(--font-body);
   cursor: pointer;
 }
 .restartMenuItem b {
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--text);
 }
 .restartMenuItem span {
-  font-size: 11.5px;
+  font-size: 10px;
+  line-height: 1.3;
   color: var(--mute);
 }
 .restartMenuItem:active {
   background: var(--ink-2);
 }
 
-.podium {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 22px;
-}
-.podiumCol {
+/* 순위 목록. 한 줄에 한 명씩, 등수 → 이름 → 힌트 → 시간 순으로 늘 같은 자리에 놓인다.
+   시간은 자릿수가 흔들리지 않게 고정폭 숫자로 찍어야 세로로 눈이 훑어진다. */
+.rankList {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  flex: 1;
-  max-width: 110px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.podiumNick {
-  font-size: 12.5px;
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-sm);
+}
+.rankNum {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-3);
+  color: var(--mute);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+/* 1·2·3위를 금·은·동으로 나눈다. 등수 숫자는 작아서 글자를 읽기 전에 색이 먼저 들어오는데,
+   한 자리만 칠해두면 나머지 둘은 등수가 아니라 그냥 회색 점으로 지나간다.
+   위아래로 옅게 기울여야 금속으로 읽힌다 — 단색으로 채우면 그냥 노랑·회색·주황 동그라미다.
+   팔레트가 따뜻한 쪽이라 은도 순회색이 아니라 살짝 따뜻한 회백으로 잡았다.
+   금은 힌트 횟수(--accent-yellow, 옅은 노랑)와 헷갈리지 않게 한 단계 진하게 눌렀다. */
+.rankRow:nth-child(1) .rankNum {
+  background: linear-gradient(180deg, #f2d585, #d9a83c);
+  color: var(--ink);
+}
+.rankRow:nth-child(2) .rankNum {
+  background: linear-gradient(180deg, #e2dfd7, #b3b0a7);
+  color: var(--ink);
+}
+.rankRow:nth-child(3) .rankNum {
+  background: linear-gradient(180deg, #d99b68, #a96a3d);
+  color: var(--ink);
+}
+.rankNick {
+  flex: 1;
+  min-width: 0;
   font-weight: 700;
   color: var(--text);
-  text-align: center;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.podiumTime {
-  font-size: 11px;
-  color: var(--mute);
-  margin-bottom: 8px;
+.rankHints {
+  flex-shrink: 0;
+  font-size: var(--fs-caption);
+  color: var(--accent-yellow);
 }
-.podiumBlock {
-  width: 100%;
-  border-radius: 12px 12px 0 0;
-  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 10px;
+.rankTime {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
-.podiumMedal {
-  font-size: 22px;
-}
-.podiumBlock1 {
-  height: 88px;
-}
-.podiumBlock2 {
-  height: 62px;
-}
-.podiumBlock3 {
-  height: 44px;
+/* 내 기록은 테두리로만 짚는다 — 배경까지 바꾸면 1위 표시와 서로 눈을 뺏는다. */
+.rankRowMe {
+  border-color: var(--accent);
 }
 
+/* 안내가 떠 있을 때와 식 한 줄이 놓였을 때의 높이가 같아야 한다 — 첫 숫자를 누른 것만으로
+   칸이 한두 픽셀 부풀면 그 아래 숫자판이 통째로 밀린다. 큰 글씨 한 줄이 담기는 높이로 맞춰둔다. */
 .eqDisplay {
-  min-height: 52px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
   border-radius: 12px;
   background: var(--ink-2);
   border: 1px solid var(--line);
-  padding: 14px 16px;
+  padding: 12px 14px;
   margin-bottom: 14px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--accent-soft);
   letter-spacing: 0.02em;
+}
+/* 아직 아무것도 안 눌렀을 때 뜨는 안내. 식과 같은 크기(17px 굵게)로 두면 좁은 기기에서 두 줄로
+   접히면서 칸이 부풀고, 정작 주인공인 식보다 안내가 커 보인다. 각주 크기로 한 줄에 담는다. */
+.eqPlaceholder {
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.eqWrong {
+  animation: shake 0.4s;
 }
 .eqNumRow,
 .eqOpRow {
@@ -672,7 +1531,7 @@
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   cursor: pointer;
   flex: 1;
@@ -718,6 +1577,16 @@
 }
 .loCell:active {
   transform: scale(0.93);
+}
+/* 힌트로 짚어준 "다음에 누를 칸". 켜짐/꺼짐 어느 쪽이든 보이도록 테두리로 표시한다. */
+.loCellHinted {
+  outline: 2px solid var(--accent-yellow);
+  outline-offset: 2px;
+  animation: loHintPulse 1.4s ease-in-out infinite;
+}
+@keyframes loHintPulse {
+  0%, 100% { outline-color: rgba(233, 196, 106, 0.4); }
+  50% { outline-color: rgba(233, 196, 106, 1); }
 }
 
 .lock {
@@ -786,13 +1655,13 @@
 }
 .name {
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--fs-body);
 }
 .lockLocked .name {
   color: var(--mute);
 }
 .sub {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--mute);
   margin-top: 1px;
 }
@@ -804,11 +1673,21 @@
 /* ---------- 성경 십자 연산 ---------- */
 /* 목표 합은 채워 넣는 칸이 아니라 눈금에 가깝다. 칸과 같은 크기로 잡으면 오른쪽 한 줄과
    아래 한 줄이 통째로 비어 보이고, 정작 눌러야 할 칸은 그만큼 작아진다. 숫자만큼만 준다. */
+/* 다른 판(.mazeGrid·.loGrid·.reflexGrid)과 같이 화면 높이로 판을 묶는다.
+   이 게임만 아래에 숫자패드가 따로 붙어서, 판이 폭을 다 쓰면 작은 기기에서 패드가 화면 밖으로
+   밀려난다. 판과 패드는 번갈아 눌러야 하므로 둘이 함께 보여야 한다.
+   다른 판보다 낮은 값을 쓰는 이유가 그 패드 몫이다. */
+/* 목표 합 칸은 auto가 아니라 고정폭이다. auto로 두면 그 칸의 내용이 조금만 달라져도
+   폭이 다시 잡히고, 남는 폭을 나눠 쓰는 아홉 칸이 통째로 줄었다 늘었다 하면서 판이 널뛴다.
+   두 자리(최대 24)면 늘 담기는 폭을 처음부터 떼어두고 끝까지 그대로 둔다. */
 .cmGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) auto;
+  grid-template-columns: repeat(3, 1fr) 32px;
   gap: 6px;
   margin-bottom: 16px;
+  margin-inline: auto;
+  width: min(100%, 31vh);
+  width: min(100%, 31svh);
 }
 .cmWrong {
   animation: shake 0.4s;
@@ -819,7 +1698,7 @@
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--text);
-  font-size: 18px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   cursor: pointer;
 }
@@ -842,30 +1721,32 @@
 .cmCellSelected.cmCellDone {
   border-color: var(--accent);
 }
+/* 힌트로 채워준 칸. 내가 놓은 숫자와 구분되도록 노란 점선을 두른다. */
+.cmCellHinted {
+  border-style: dashed;
+  border-color: var(--accent-yellow);
+  color: var(--accent-yellow);
+}
 .cmTarget {
-  min-width: 32px;
-  padding: 0 4px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--accent);
   transition: color 0.18s, background 0.18s;
 }
+/* 다 맞은 줄은 색만 바꾼다. 예전에는 체크(✓)를 덧붙였는데, 글자 하나가 늘어나는 만큼
+   목표 합 칸이 넓어지고 그 바람에 판 전체가 다시 잡혀서, 한 줄을 맞출 때마다 화면이 튀었다.
+   초록으로 바뀌는 것만으로도 어디까지 맞췄는지는 충분히 읽힌다. */
 .cmTargetDone {
   color: var(--ok);
   background: rgba(147, 210, 164, 0.18);
 }
-.cmTargetDone::after {
-  content: '✓';
-  font-size: 10px;
-  margin-left: 2px;
-}
-/* 오른쪽 아래 빈 모서리 — 목표 합 칸과 같은 폭으로 자리만 지킨다. */
+/* 오른쪽 아래 빈 모서리 — 목표 합 칸과 같은 칸을 차지하며 자리만 지킨다. */
 .cmCorner {
-  min-width: 32px;
+  min-width: 0;
 }
 
 /* ---------- 시각 부호 해독 ---------- */
@@ -889,149 +1770,226 @@
   animation: shake 0.4s;
 }
 .cbOp {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--mute);
 }
 .cbNum {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--accent-soft);
   margin-left: auto;
 }
 .cbInputDisplay {
-  font-size: 18px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--accent-soft);
   margin-left: auto;
 }
-
-/* ---------- 가짜 찾기(저울) ---------- */
-.balItemChip {
+/* 힌트로 공개한 도형값. 문제로 주어진 힌트 식과 섞이지 않도록 한 줄로 따로 모아둔다. */
+.cbRevealRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.cbRevealChip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: 700;
-  color: var(--ink);
-  flex-shrink: 0;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(240, 215, 138, 0.12);
+  border: 1px dashed var(--accent-yellow);
+  color: var(--accent-yellow);
+  font-size: var(--fs-body);
 }
-.balWeighList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+/* 식이 아니라 문장으로 주는 힌트. 알약 모양에 가두면 한 줄이 넘칠 때 글자가 잘린다. */
+.cbRevealNote {
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  text-align: left;
 }
-.balWeighRow {
+
+/* ---------- 힌트 ---------- */
+/* 게임마다 같은 자리(판 아래)에 놓인다. 대가를 버튼 안에 적어둬서 눌러보고 알게 되는 일이 없도록 한다. */
+.hintRow {
   display: flex;
   align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.hintBtn {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  padding: 6px 10px 10px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(240, 215, 138, 0.1);
+  border: 1px solid rgba(240, 215, 138, 0.45);
+  color: var(--accent-yellow);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.hintBtn:active {
+  transform: scale(0.96);
+}
+.hintIcon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.hintCost {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--mute);
+}
+/* 무엇을 알려주는 힌트인지(윗줄)와 순위에 미치는 영향(아랫줄). 둘 다 버튼에 넣으면 버튼이
+   문장이 되어버려서, 각주 크기로 옆에 붙인다. */
+.hintNote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+  color: var(--mute);
+}
+.hintSub {
+  font-size: 10px;
+  opacity: 0.72;
+}
+.eqHintText {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(240, 215, 138, 0.1);
+  color: var(--accent-yellow);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- 숫자야구 ---------- */
+.bbInputRow {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.bbSlot {
+  /* 5자리 단계는 52px씩 놓으면 좁은 기기(320px)에서 줄이 판 밖으로 나간다.
+     자리 수를 화면 쪽에서 --bb-slots로 넘겨받아, 넘칠 때만 그만큼 줄인다 — 넉넉한 기기에서는
+     단계가 바뀌어도 칸 크기가 그대로라 판이 들썩이지 않는다. */
+  width: min(52px, calc((100% - (var(--bb-slots, 3) - 1) * 10px) / var(--bb-slots, 3)));
+  height: 62px;
   border-radius: 12px;
   background: var(--ink-2);
   border: 1px solid var(--line);
-}
-.balWeighNum {
-  font-size: 11px;
-  color: var(--mute);
-  font-weight: 700;
-  width: 26px;
-  flex-shrink: 0;
-}
-/* 부등호 대신 실제 저울 모양으로 보여준다. 기운 쪽이 더 무거운 쪽. */
-/* 저울대가 길어지면 같은 각도라도 접시가 위아래로 크게 튀어 행을 벗어난다. 폭을 묶어둔다. */
-.balScale {
-  position: relative;
-  flex: 1;
-  max-width: 200px;
-  margin: 0 auto;
-  height: 72px;
-}
-.balScaleBeam {
-  position: absolute;
-  top: 10px;
-  left: 34px;
-  right: 34px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--line);
-  transform-origin: 50% 50%;
-}
-.balBeamLeft {
-  transform: rotate(-9deg);
-}
-.balBeamRight {
-  transform: rotate(9deg);
-}
-.balScalePan {
-  position: absolute;
-  top: 14px;
-  width: 60px;
-  margin-left: -30px;
-  min-height: 30px;
-  padding: 4px;
-  border-radius: 9px;
-  background: var(--ink-3);
-  border: 1px solid var(--line);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-}
-/* 접시가 저울대에 매달려 있다는 걸 알려주는 짧은 줄 */
-.balScalePan::before {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  width: 1px;
-  height: 10px;
-  background: var(--line);
-}
-.balScalePanL {
-  left: 0;
-}
-.balScalePanR {
-  left: 100%;
-}
-/* 저울대가 기울어도 접시와 그 안의 물건은 수평을 유지한다. */
-.balPanLeft {
-  transform: rotate(9deg);
-}
-.balPanRight {
-  transform: rotate(-9deg);
-}
-.balScalePivot {
-  position: absolute;
-  top: 13px;
-  left: 50%;
-  margin-left: -7px;
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 30px solid var(--line);
-}
-.balItemGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.balWrong {
-  animation: shake 0.4s;
-}
-.balItemBtn {
-  aspect-ratio: 1;
-  border-radius: 12px;
-  background: var(--ink-3);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-l);
+  letter-spacing: 0.04em;
+  color: var(--text);
   cursor: pointer;
 }
-.balItemBtn:active {
+.bbSlot:active {
   transform: scale(0.95);
+}
+/* 지금 고른 자리. 숫자패드와 힌트가 대고 일하는 곳이라, 어디에 들어갈지 눌러보기 전에 알 수 있게 한다. */
+.bbSlotActive {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(236, 147, 163, 0.22);
+}
+/* 이미 판에 놓인 숫자. 잠그지는 않는다 — 누르면 그 숫자가 고른 자리로 옮겨온다.
+   다만 어느 숫자를 이미 썼는지는 패드만 봐도 알 수 있어야 해서 흐리게 둔다. */
+.bbPadUsed {
+  opacity: 0.4;
+}
+.bbSlotHint {
+  border-color: var(--accent-yellow);
+  border-style: dashed;
+}
+.bbRevealNote {
+  margin: -4px 0 12px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--accent-yellow);
+}
+/* 아웃(0S 0B). 숫자야구에는 "틀림"이 따로 없지만 하나도 걸리지 않은 수는 빗나간 수다 —
+   결과 글씨만 흐려지고 마는 대신, 방금 넣은 자리가 한 번 흔들려 그걸 알린다. */
+.bbOutFx {
+  animation: shake 0.4s;
+}
+.bbLog {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* 시도가 쌓여도 판이 화면 밖으로 밀리지 않도록 이 목록만 스크롤한다. */
+  max-height: 30vh;
+  max-height: 30svh;
+  overflow-y: auto;
+}
+.bbLogLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  font-weight: 700;
+}
+/* 시도 수가 기록에 얼마로 얹혔는지. 힌트 버튼의 +30초와 같은 표기라 따로 설명하지 않아도 읽힌다. */
+.bbLogCost {
+  margin-left: auto;
+  color: var(--accent-yellow);
+}
+.bbLogRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.bbLogNo {
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  width: 16px;
+  flex-shrink: 0;
+}
+.bbLogDigits {
+  display: flex;
+  gap: 5px;
+}
+.bbLogDigit {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text);
+}
+.bbLogResult {
+  margin-left: auto;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: var(--fs-lg);
+  color: var(--ok);
+}
+.bbLogOut {
+  color: var(--mute);
 }
 
 /* ---------- 순발력 타격 ---------- */
@@ -1058,6 +2016,26 @@
 .reflexCell:active {
   transform: scale(0.93);
 }
+/* 명중한 칸. 켜진 칸이 그냥 꺼지기만 하면 내가 맞힌 것인지 혼자 꺼진 것인지 알 수 없다.
+   판 전체를 부풀리는 okFx 대신 칸 하나만 물들이는 이유는, 이 게임만은 손가락이 다음 칸을
+   겨누고 있는 중이라 판이 조금만 움직여도 조준이 어긋나기 때문이다. */
+.reflexCellHit {
+  animation: reflexHit 0.3s ease-out;
+}
+@keyframes reflexHit {
+  0% { background: var(--ok); border-color: var(--ok); }
+  100% { background: var(--ink-3); border-color: var(--line); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reflexCellHit {
+    animation: none;
+  }
+}
+/* 헛탭. 벌시간이 붙었다는 걸 판 자체가 흔들려서 알린다 — 이 게임은 화면을 보고 있느라
+   위쪽 알림까지 눈이 갈 틈이 없다. */
+.reflexMissFx {
+  animation: shake 0.4s;
+}
 
 /* ---------- 플래시 기억 ---------- */
 /* 단어를 한 개씩 띄우므로 높이를 고정해 글자가 뜰 때마다 화면이 들썩이지 않게 한다. */
@@ -1069,7 +2047,7 @@
   padding: 16px 8px;
 }
 .flashWord {
-  font-size: 34px;
+  font-size: var(--fs-title-l);
   font-weight: 800;
   color: var(--accent-soft);
   text-align: center;
@@ -1105,7 +2083,7 @@
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--text);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
 }
@@ -1120,6 +2098,21 @@
   animation: shake 0.4s;
 }
 
+/* 속성마다 조건이 따로 있는 게임의 규칙 목록. 본문과 같은 각주 크기로 두되,
+   왼쪽에 선을 하나 세워 "설명 문장"이 아니라 "따로 읽는 조건들"로 보이게 한다. */
+.introRules {
+  margin: 0 0 12px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--line);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+  color: var(--mute);
+}
+
 /* ---------- 인트로 동작 미리보기 ---------- */
 .introDemo {
   margin: 4px 0 20px;
@@ -1129,10 +2122,12 @@
   gap: 10px;
 }
 
+/* 폭·높이는 칸과 사이 여백을 더한 값(36×3 + 8×2 = 124)과 정확히 같아야 한다.
+   판이 이보다 크면 남는 여백만큼 아래 도착 표시가 마지막 칸 밖으로 밀려난다. */
 .demoMzGrid {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 124px;
+  height: 124px;
   display: grid;
   grid-template-columns: repeat(3, 36px);
   grid-template-rows: repeat(3, 36px);
@@ -1143,35 +2138,51 @@
   border: 1px solid var(--line);
   border-radius: 7px;
 }
+/* 칸마다 animation-delay를 달리 줘서 시작 칸부터 하나씩 켜졌다 꺼진다(0.35s = 6s의 5.8%).
+   판을 통째로 비추면 실제 게임과 다른 걸 가르치는 셈이 된다. */
 .demoMzSafe {
   animation: demoMzSafe 6s steps(1) infinite;
 }
 @keyframes demoMzSafe {
-  0%, 16% { background: rgba(147, 210, 164, 0.35); border-color: var(--ok); }
-  16.5%, 100% { background: var(--ink-3); border-color: var(--line); }
+  0% { background: rgba(147, 210, 164, 0.35); border-color: var(--ok); }
+  5.8%, 100% { background: var(--ink-3); border-color: var(--line); }
 }
+/* 실제 판과 같은 표시를 쓴다 — 도착 칸은 테두리 원, 내 말은 채워진 원.
+   둘 다 칸과 같은 36px 상자를 칸 자리에 그대로 겹쳐 놓는다(도착은 오른쪽 아래 칸, 말은 왼쪽 위 칸). */
 .demoMzFlag {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
+  right: 0;
+  bottom: 0;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+}
+.demoMzFlag::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-yellow);
 }
 .demoMzDot {
   position: absolute;
-  left: 2px;
-  top: 2px;
+  left: 0;
+  top: 0;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   animation: demoMzMove 6s ease-in-out infinite;
+}
+.demoMzDot::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 @keyframes demoMzMove {
   0%, 30% { transform: translate(0, 0); }
@@ -1240,7 +2251,7 @@
   54%, 100% { outline-color: rgba(236, 147, 163, 0); outline-offset: 10px; }
 }
 .demoLoTag {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--ok);
   animation: demoLoTag 6s steps(1) infinite;
@@ -1251,7 +2262,10 @@
   91%, 100% { opacity: 0; }
 }
 
-/* 실제 판과 똑같이 3x3 칸 + 오른쪽/아래 목표합 형태로 축소해서 보여준다. */
+/* 실제 판과 똑같이 3x3 칸 + 오른쪽/아래 목표합 + 1~9 숫자패드 형태로 축소해서 보여준다.
+   9초 한 바퀴 동안 "빈칸 고르기 → 숫자 누르기 → 그 줄이 초록으로" 를 두 번 돌린다.
+   시각(9초 기준): 0.6s 첫 칸 선택 → 1.3s 숫자 5 → 1.8s 채워짐(줄 2개 완성)
+                  → 3.0s 둘째 칸 선택 → 3.7s 숫자 4 → 4.2s 채워짐(줄 2개 더) → 5.0s 클리어 → 8.3s 되감기 */
 .demoCmGrid {
   display: grid;
   grid-template-columns: repeat(4, 28px);
@@ -1259,59 +2273,167 @@
   gap: 5px;
 }
 .demoCmCell {
+  position: relative;
   border-radius: 7px;
   background: var(--ink-3);
   border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--text);
+  outline: 2px solid transparent;
 }
-.demoCmBlank {
-  position: relative;
-  border-color: var(--accent);
-  background: rgba(236, 147, 163, 0.14);
+/* 처음부터 합이 맞아 있는 줄(3행·1열). 실제 판의 완성된 칸과 같은 색이다. */
+.demoCmDone {
+  background: rgba(147, 210, 164, 0.16);
+  border-color: rgba(147, 210, 164, 0.55);
+  color: var(--ok);
 }
-.demoCmQ {
+.demoCmOn1 {
+  animation: demoCmOn1 9s steps(1) infinite;
+}
+.demoCmOn2 {
+  animation: demoCmOn2 9s steps(1) infinite;
+}
+@keyframes demoCmOn1 {
+  0%, 19.9% { background: var(--ink-3); border-color: var(--line); color: var(--text); }
+  20%, 92.1% { background: rgba(147, 210, 164, 0.16); border-color: rgba(147, 210, 164, 0.55); color: var(--ok); }
+  92.2%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); }
+}
+@keyframes demoCmOn2 {
+  0%, 46.6% { background: var(--ink-3); border-color: var(--line); color: var(--text); }
+  46.7%, 92.1% { background: rgba(147, 210, 164, 0.16); border-color: rgba(147, 210, 164, 0.55); color: var(--ok); }
+  92.2%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); }
+}
+/* 빈칸은 "고르는 중(outline)"과 "줄이 맞아 초록으로 굳음(배경·테두리)"이 함께 걸린다.
+   두 클래스로 나눠 걸면 뒤에 선언된 animation 하나만 남고 앞의 것이 통째로 지워지므로,
+   한 줄에 두 애니메이션을 같이 적어둔다. */
+.demoCmBlank1 {
+  animation: demoCmOn1 9s steps(1) infinite, demoCmSel1 9s steps(1) infinite;
+}
+.demoCmBlank2 {
+  animation: demoCmOn2 9s steps(1) infinite, demoCmSel2 9s steps(1) infinite;
+}
+@keyframes demoCmSel1 {
+  0%, 6.6% { outline-color: transparent; }
+  6.7%, 19.9% { outline-color: var(--accent); }
+  20%, 100% { outline-color: transparent; }
+}
+@keyframes demoCmSel2 {
+  0%, 33.2% { outline-color: transparent; }
+  33.3%, 46.6% { outline-color: var(--accent); }
+  46.7%, 100% { outline-color: transparent; }
+}
+.demoCmQ1,
+.demoCmQ2,
+.demoCmFill1,
+.demoCmFill2 {
   position: absolute;
+}
+.demoCmQ1 {
   color: var(--mute);
-  animation: demoCmFadeOut 4s steps(1) infinite;
+  animation: demoCmOut1 9s steps(1) infinite;
 }
-.demoCmFill {
-  position: absolute;
-  color: var(--accent-soft);
-  animation: demoCmFadeIn 4s steps(1) infinite;
+.demoCmFill1 {
+  animation: demoCmIn1 9s steps(1) infinite;
 }
-@keyframes demoCmFadeOut {
-  0%, 44% { opacity: 1; }
-  45%, 92% { opacity: 0; }
-  93%, 100% { opacity: 1; }
+.demoCmQ2 {
+  color: var(--mute);
+  animation: demoCmOut2 9s steps(1) infinite;
 }
-@keyframes demoCmFadeIn {
-  0%, 44% { opacity: 0; }
-  45%, 92% { opacity: 1; }
-  93%, 100% { opacity: 0; }
+.demoCmFill2 {
+  animation: demoCmIn2 9s steps(1) infinite;
+}
+@keyframes demoCmOut1 {
+  0%, 19.9% { opacity: 1; }
+  20%, 92.1% { opacity: 0; }
+  92.2%, 100% { opacity: 1; }
+}
+@keyframes demoCmIn1 {
+  0%, 19.9% { opacity: 0; }
+  20%, 92.1% { opacity: 1; }
+  92.2%, 100% { opacity: 0; }
+}
+@keyframes demoCmOut2 {
+  0%, 46.6% { opacity: 1; }
+  46.7%, 92.1% { opacity: 0; }
+  92.2%, 100% { opacity: 1; }
+}
+@keyframes demoCmIn2 {
+  0%, 46.6% { opacity: 0; }
+  46.7%, 92.1% { opacity: 1; }
+  92.2%, 100% { opacity: 0; }
 }
 .demoCmTarget {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--accent);
 }
-.demoCmTargetHit {
-  animation: demoCmTargetFx 4s steps(1) infinite;
+/* 실제 판과 같이, 합이 맞은 줄의 목표 숫자는 초록으로만 바뀐다(체크는 붙이지 않는다). */
+.demoCmTgtDone {
+  color: var(--ok);
 }
-@keyframes demoCmTargetFx {
-  0%, 44% { color: var(--accent); }
-  45%, 92% { color: var(--ok); }
-  93%, 100% { color: var(--accent); }
+.demoCmTgtOn1 {
+  animation: demoCmTgtOn1 9s steps(1) infinite;
 }
+.demoCmTgtOn2 {
+  animation: demoCmTgtOn2 9s steps(1) infinite;
+}
+@keyframes demoCmTgtOn1 {
+  0%, 19.9% { color: var(--accent); opacity: 0.75; }
+  20%, 92.1% { color: var(--ok); opacity: 1; }
+  92.2%, 100% { color: var(--accent); opacity: 0.75; }
+}
+@keyframes demoCmTgtOn2 {
+  0%, 46.6% { color: var(--accent); opacity: 0.75; }
+  46.7%, 92.1% { color: var(--ok); opacity: 1; }
+  92.2%, 100% { color: var(--accent); opacity: 0.75; }
+}
+/* 세 문장을 같은 칸에 겹쳐두고 켜고 끈다 — 글자 수가 달라도 줄 높이가 흔들리지 않는다. */
+.demoCmCountWrap {
+  display: grid;
+  justify-items: center;
+}
+.demoCmCount {
+  grid-area: 1 / 1;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--mute);
+  opacity: 0;
+}
+.demoCmCount1 {
+  animation: demoCmCount1 9s steps(1) infinite;
+}
+.demoCmCount2 {
+  animation: demoCmCount2 9s steps(1) infinite;
+}
+.demoCmCount3 {
+  animation: demoCmCount3 9s steps(1) infinite;
+}
+@keyframes demoCmCount1 {
+  0%, 19.9% { opacity: 1; }
+  20%, 92.1% { opacity: 0; }
+  92.2%, 100% { opacity: 1; }
+}
+@keyframes demoCmCount2 {
+  0%, 19.9% { opacity: 0; }
+  20%, 46.6% { opacity: 1; }
+  46.7%, 100% { opacity: 0; }
+}
+@keyframes demoCmCount3 {
+  0%, 46.6% { opacity: 0; }
+  46.7%, 92.1% { opacity: 1; color: var(--ok); }
+  92.2%, 100% { opacity: 0; }
+}
+/* 실제 판과 같은 5칸씩 두 줄. flex로 흘리면 기기 폭에 따라 줄바꿈 위치가 달라진다. */
 .demoCmPad {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 24px);
   gap: 5px;
 }
 .demoCmKey {
@@ -1323,17 +2445,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 700;
-  color: var(--mute);
+  color: var(--text);
 }
-.demoCmKeyTap {
-  animation: demoCmKeyFx 4s steps(1) infinite;
+/* 이미 판에 올라간 숫자는 못 누른다 — 실제 게임의 비활성 숫자키와 같은 흐림이다. */
+.demoCmKeyUsed {
+  opacity: 0.25;
 }
-@keyframes demoCmKeyFx {
-  0%, 24% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
-  25%, 44% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
-  45%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+.demoCmKeyTap1 {
+  animation: demoCmKeyTap1 9s steps(1) infinite;
+}
+.demoCmKeyTap2 {
+  animation: demoCmKeyTap2 9s steps(1) infinite;
+}
+@keyframes demoCmKeyTap1 {
+  0%, 14.3% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  14.4%, 19.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  20%, 92.1% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92.2%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+@keyframes demoCmKeyTap2 {
+  0%, 41% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  41.1%, 46.6% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  46.7%, 92.1% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92.2%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+.demoCmTag {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ok);
+  opacity: 0;
+  animation: demoCmTag 9s steps(1) infinite;
+}
+@keyframes demoCmTag {
+  0%, 55.5% { opacity: 0; }
+  55.6%, 92.1% { opacity: 1; }
+  92.2%, 100% { opacity: 0; }
 }
 
 /* 도형의 숫자는 끝까지 밝히지 않는다 — 실제 게임처럼 힌트 두 줄에서 최종식 답만 나온다. */
@@ -1358,12 +2506,12 @@
   background: rgba(236, 147, 163, 0.08);
 }
 .demoCbOp {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--mute);
 }
 .demoCbNum {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--accent-soft);
   margin-left: auto;
@@ -1377,7 +2525,7 @@
 .demoCbQ {
   position: absolute;
   right: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--accent-soft);
   animation: demoCbFadeOut 5s steps(1) infinite;
@@ -1385,7 +2533,7 @@
 .demoCbAns {
   position: absolute;
   right: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--ok);
   animation: demoCbFadeIn 5s steps(1) infinite;
@@ -1401,39 +2549,193 @@
   93%, 100% { opacity: 0; }
 }
 
-.demoMemRow {
+/* 실제 게임은 ①큰 글씨 한 장씩 스쳐 지나가기 ②선택지 판에서 본 순서대로 탭하기, 두 화면으로 나뉜다.
+   12초 한 바퀴를 반으로 갈라 두 화면을 번갈아 튼다. 같은 칸에 겹쳐 둬서 높이가 흔들리지 않는다. */
+.demoMemStage {
+  display: grid;
+  width: 100%;
+  max-width: 240px;
+}
+.demoMemPhase {
+  grid-area: 1 / 1;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  opacity: 0;
+}
+.demoMemPhaseShow {
+  animation: demoMemShow 12s steps(1) infinite;
+}
+.demoMemPhasePick {
+  animation: demoMemPick 12s steps(1) infinite;
+}
+@keyframes demoMemShow {
+  0%, 49.4% { opacity: 1; }
+  49.5%, 100% { opacity: 0; }
+}
+@keyframes demoMemPick {
+  0%, 49.9% { opacity: 0; }
+  50%, 96.9% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+.demoMemStep {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--mute);
+}
+/* 실제 게임의 큰 글씨 한 장. 한 번에 하나만 보이도록 같은 자리에 겹쳐 둔다. */
+.demoMemWordBox {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  min-height: 46px;
+}
+.demoMemWord {
+  grid-area: 1 / 1;
+  font-size: var(--fs-title);
+  font-weight: 800;
+  color: var(--accent-soft);
+  opacity: 0;
+}
+.demoMemWord1 {
+  animation: demoMemW1 12s steps(1) infinite;
+}
+.demoMemWord2 {
+  animation: demoMemW2 12s steps(1) infinite;
+}
+.demoMemWord3 {
+  animation: demoMemW3 12s steps(1) infinite;
+}
+.demoMemWord4 {
+  animation: demoMemW4 12s steps(1) infinite;
+}
+@keyframes demoMemW1 {
+  0%, 4.1% { opacity: 0; }
+  4.2%, 11.6% { opacity: 1; }
+  11.7%, 100% { opacity: 0; }
+}
+@keyframes demoMemW2 {
+  0%, 14.1% { opacity: 0; }
+  14.2%, 21.6% { opacity: 1; }
+  21.7%, 100% { opacity: 0; }
+}
+@keyframes demoMemW3 {
+  0%, 24.1% { opacity: 0; }
+  24.2%, 31.6% { opacity: 1; }
+  31.7%, 100% { opacity: 0; }
+}
+@keyframes demoMemW4 {
+  0%, 34.1% { opacity: 0; }
+  34.2%, 41.6% { opacity: 1; }
+  41.7%, 100% { opacity: 0; }
+}
+.demoMemDots {
+  display: flex;
+  gap: 6px;
+}
+.demoMemDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.demoMemDot1 {
+  animation: demoMemD1 12s steps(1) infinite;
+}
+.demoMemDot2 {
+  animation: demoMemD2 12s steps(1) infinite;
+}
+.demoMemDot3 {
+  animation: demoMemD3 12s steps(1) infinite;
+}
+.demoMemDot4 {
+  animation: demoMemD4 12s steps(1) infinite;
+}
+@keyframes demoMemD1 {
+  0%, 4.1% { background: var(--line); }
+  4.2%, 49.4% { background: var(--accent); }
+  49.5%, 100% { background: var(--line); }
+}
+@keyframes demoMemD2 {
+  0%, 14.1% { background: var(--line); }
+  14.2%, 49.4% { background: var(--accent); }
+  49.5%, 100% { background: var(--line); }
+}
+@keyframes demoMemD3 {
+  0%, 24.1% { background: var(--line); }
+  24.2%, 49.4% { background: var(--accent); }
+  49.5%, 100% { background: var(--line); }
+}
+@keyframes demoMemD4 {
+  0%, 34.1% { background: var(--line); }
+  34.2%, 49.4% { background: var(--accent); }
+  49.5%, 100% { background: var(--line); }
+}
+/* 실제 게임과 같은 3열 선택지 판(정답 4개 + 오답 4개). */
+.demoMemGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
 }
 .demoMemChip {
-  width: 44px;
-  height: 34px;
-  border-radius: 8px;
+  padding: 7px 2px;
+  border-radius: 9px;
   background: var(--ink-3);
   border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-caption);
   font-weight: 700;
-  color: var(--mute);
-  animation: demoMemFlash 5s steps(1) infinite, demoMemTap 5s steps(1) infinite;
+  color: var(--text);
+  outline: 2px solid transparent;
 }
-/* 실제 게임처럼 한 개씩 차례로 켜졌다 꺼진 뒤, 같은 순서로 탭하는 흐름을 보여준다. */
-.demoMemChip1 {
-  animation-delay: 0.6s, 0.4s;
+/* 고른 칸은 눌린 표시가 잠깐 뜬 뒤 흐려진다 — 실제 게임에서 이미 고른 단어가 잠기는 것과 같다. */
+.demoMemPick1 {
+  animation: demoMemP1 12s steps(1) infinite;
 }
-.demoMemChip2 {
-  animation-delay: 1.2s, 0.8s;
+.demoMemPick2 {
+  animation: demoMemP2 12s steps(1) infinite;
 }
-@keyframes demoMemFlash {
-  0%, 11% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
-  12%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); }
+.demoMemPick3 {
+  animation: demoMemP3 12s steps(1) infinite;
 }
-@keyframes demoMemTap {
-  0%, 39% { box-shadow: none; }
-  40%, 48% { box-shadow: 0 0 0 2px var(--accent-soft); }
-  49%, 100% { box-shadow: none; }
+.demoMemPick4 {
+  animation: demoMemP4 12s steps(1) infinite;
+}
+@keyframes demoMemP1 {
+  0%, 54.9% { outline-color: transparent; opacity: 1; }
+  55%, 56.6% { outline-color: var(--accent); opacity: 1; }
+  56.7%, 100% { outline-color: transparent; opacity: 0.28; }
+}
+@keyframes demoMemP2 {
+  0%, 62.4% { outline-color: transparent; opacity: 1; }
+  62.5%, 64.1% { outline-color: var(--accent); opacity: 1; }
+  64.2%, 100% { outline-color: transparent; opacity: 0.28; }
+}
+@keyframes demoMemP3 {
+  0%, 69.9% { outline-color: transparent; opacity: 1; }
+  70%, 71.6% { outline-color: var(--accent); opacity: 1; }
+  71.7%, 100% { outline-color: transparent; opacity: 0.28; }
+}
+@keyframes demoMemP4 {
+  0%, 77.4% { outline-color: transparent; opacity: 1; }
+  77.5%, 79.1% { outline-color: var(--accent); opacity: 1; }
+  79.2%, 100% { outline-color: transparent; opacity: 0.28; }
+}
+.demoMemTag {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ok);
+  opacity: 0;
+  animation: demoMemTag 12s steps(1) infinite;
+}
+@keyframes demoMemTag {
+  0%, 83.2% { opacity: 0; }
+  83.3%, 96.9% { opacity: 1; }
+  97%, 100% { opacity: 0; }
 }
 
 .demoRxGrid {
@@ -1464,242 +2766,475 @@
   23%, 100% { background: var(--ink-3); border-color: var(--line); box-shadow: none; }
 }
 
-/* 기호(◀▶) 대신 실제로 기우는 저울을 그려서 "무거운 쪽이 내려간다"를 눈으로 보여준다. */
-.demoScale {
-  position: relative;
-  width: 152px;
-  height: 62px;
-}
-.demoScaleBeam {
-  position: absolute;
-  top: 6px;
-  left: 18px;
-  right: 18px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--line);
-  transform-origin: 50% 50%;
-  animation: demoScaleTilt 4s ease-in-out infinite;
-}
-.demoScalePan {
-  position: absolute;
-  top: 12px;
-  width: 30px;
-  height: 30px;
-  margin-left: -15px;
-  border-radius: 8px;
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: demoScaleCounter 4s ease-in-out infinite;
-}
-/* 접시가 저울대에 매달려 있다는 걸 알려주는 짧은 줄 */
-.demoScalePan::before {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  width: 1px;
-  height: 10px;
-  background: var(--line);
-}
-.demoScalePanL {
-  left: 0;
-}
-.demoScalePanR {
-  left: 100%;
-}
-.demoScalePivot {
-  position: absolute;
-  top: 9px;
-  left: 50%;
-  margin-left: -7px;
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 26px solid var(--line);
-}
-@keyframes demoScaleTilt {
-  0%, 22% { transform: rotate(0deg); }
-  40%, 92% { transform: rotate(-9deg); }
-  100% { transform: rotate(0deg); }
-}
-@keyframes demoScaleCounter {
-  0%, 22% { transform: rotate(0deg); }
-  40%, 92% { transform: rotate(9deg); }
-  100% { transform: rotate(0deg); }
-}
-.demoBalItems {
-  display: flex;
-  gap: 8px;
-}
-.demoBalItem {
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.demoBalFound {
-  animation: demoBalFoundFx 4s ease-out infinite;
-}
-@keyframes demoBalFoundFx {
-  0%, 44% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
-  56%, 92% { outline: 2px solid rgba(236, 147, 163, 0.9); outline-offset: 3px; }
-  93%, 100% { outline: 2px solid rgba(236, 147, 163, 0); outline-offset: 0; }
-}
-
-/* 실제 판과 똑같은 카드(도형·색·배경)를 써서, 셋이 하나씩 선택된 뒤 결합으로 성립하는 흐름을 보여준다.
-   12초 루프를 3초씩 4구간으로 나눠 "셋 다 다름 → 색만 같음 → 모양만 같음 → 결" 순으로 돌린다.
-   네 구간을 같은 칸에 겹쳐 두고 opacity로만 갈아끼우기 때문에 높이가 흔들리지 않는다. */
-.demoComboStage {
-  display: grid;
-}
-.demoComboPhase {
-  grid-area: 1 / 1;
+/* 세 번의 시도가 어떻게 읽히는지 한 줄씩 차례로 떠오르며 보여준다.
+   9초 루프를 3초씩 나눠, 한 번 뜬 줄은 그대로 남기고 다음 줄이 더해지는 식으로 쌓는다. */
+.demoBbList {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 260px;
+}
+.demoBbRow {
+  display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
   opacity: 0;
-  animation: demoComboPhase 12s steps(1) infinite;
+  animation: demoBbRowIn 9s ease-out infinite;
 }
-.demoComboPhase1 {
+.demoBbRow1 {
   animation-delay: 0s;
 }
-.demoComboPhase2 {
+.demoBbRow2 {
   animation-delay: 3s;
 }
-.demoComboPhase3 {
+.demoBbRow3 {
   animation-delay: 6s;
 }
-.demoComboPhase4 {
-  animation-delay: 9s;
+@keyframes demoBbRowIn {
+  0% { opacity: 0; transform: translateY(4px); }
+  6%, 97% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
 }
-@keyframes demoComboPhase {
-  0%, 23.5% { opacity: 1; }
-  24%, 100% { opacity: 0; }
+.demoBbDigits {
+  display: flex;
+  gap: 4px;
+}
+.demoBbDigit {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text);
+}
+.demoBbResult {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: var(--fs-body);
+  color: var(--ok);
+  flex-shrink: 0;
+}
+.demoBbNote {
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  margin-left: auto;
+  text-align: right;
 }
 
-.demoComboRow {
-  display: flex;
-  gap: 8px;
+/* 실제 판 그대로 아홉 장을 3x3으로 깔아두고, 그 위에서 결합 넷을 차례로 찾아간다.
+   14초 루프를 2.8초씩 다섯 구간으로 나눈다 — 셋 다 다름 → 색만 같음 → 모양만 같음
+   → 모양·배경이 같고 색만 다름 → "결". 판은 그대로 두고 설명 문구만 갈아끼운다.
+   한 구간 안에서는 0.35s 간격으로 세 장이 차례로 선택되고, 1.85s에 초록으로 굳는다. */
+.demoCbxGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  gap: 7px;
 }
-.demoComboCard {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
+.demoCbxCard {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   border: 2px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
   outline: 2px solid transparent;
 }
-/* 선택 표시는 outline, 결합 성립 표시는 box-shadow로 나눠 서로 덮어쓰지 않게 한다.
-   구간별 시작 시각은 아래 demoComboOk*에서 animation-delay로 한꺼번에 밀어준다. */
-.demoComboPick1 {
-  animation: demoComboPick1 12s steps(1) infinite, demoComboOk 12s ease-out infinite;
+/* 판 위에는 "고르는 중"(분홍 outline)만 켠다. 찾은 결합은 판이 아니라 아래 "찾은 결합" 줄에 쌓는다 —
+   실제 게임과 같은 자리이기도 하고, 판에 계속 남겨두면 마지막엔 아홉 장이 통째로 표시돼서
+   한 장을 한 번씩 소모하는 게임처럼 읽힌다.
+   2·3·4·6번 카드는 결합 두 개에 걸쳐 있어 선택 구간이 두 번이라 전용 키프레임을 쓴다.
+   5번은 어느 결합에도 안 들어가서 아예 애니메이션이 붙지 않는다. */
+.demoCbx0 {
+  animation: demoCbxPick1 14s steps(1) infinite 5.6s;
 }
-.demoComboPick2 {
-  animation: demoComboPick2 12s steps(1) infinite, demoComboOk 12s ease-out infinite;
+.demoCbx1 {
+  animation: demoCbxPick3 14s steps(1) infinite 8.4s;
 }
-.demoComboPick3 {
-  animation: demoComboPick3 12s steps(1) infinite, demoComboOk 12s ease-out infinite;
+.demoCbx2 {
+  animation: demoCbxDual2 14s steps(1) infinite;
 }
-.demoComboOk1 {
-  animation-delay: 0s, 0s;
+.demoCbx3 {
+  animation: demoCbxDual3 14s steps(1) infinite;
 }
-.demoComboOk2 {
-  animation-delay: 3s, 3s;
+.demoCbx4 {
+  animation: demoCbxDual4 14s steps(1) infinite;
 }
-.demoComboOk3 {
-  animation-delay: 6s, 6s;
+.demoCbx6 {
+  animation: demoCbxDual6 14s steps(1) infinite;
 }
-@keyframes demoComboPick1 {
-  0%, 3.2% { outline-color: transparent; outline-offset: 0; }
-  3.4%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
-  13.4%, 100% { outline-color: transparent; outline-offset: 3px; }
+.demoCbx7 {
+  animation: demoCbxPick3 14s steps(1) infinite 5.6s;
 }
-@keyframes demoComboPick2 {
-  0%, 6.5% { outline-color: transparent; outline-offset: 0; }
-  6.7%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
-  13.4%, 100% { outline-color: transparent; outline-offset: 3px; }
+.demoCbx8 {
+  animation: demoCbxPick2 14s steps(1) infinite 2.8s;
 }
-@keyframes demoComboPick3 {
-  0%, 9.8% { outline-color: transparent; outline-offset: 0; }
-  10%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
-  13.4%, 100% { outline-color: transparent; outline-offset: 3px; }
+/* 구간 안에서 몇 번째로 선택되는지에 따라 셋. 구간 시작 시각은 animation-delay로 민다. */
+@keyframes demoCbxPick1 {
+  0%, 2.4% { outline-color: transparent; outline-offset: 0; }
+  2.5%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 100% { outline-color: transparent; outline-offset: 3px; }
 }
-@keyframes demoComboOk {
-  0%, 13.2% { box-shadow: none; }
-  13.4%, 22.5% { box-shadow: 0 0 0 3px rgba(147, 210, 164, 0.55); }
-  22.7%, 100% { box-shadow: none; }
+@keyframes demoCbxPick2 {
+  0%, 6% { outline-color: transparent; outline-offset: 0; }
+  6.1%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoCbxPick3 {
+  0%, 9.6% { outline-color: transparent; outline-offset: 0; }
+  9.7%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+/* 두 결합에 걸친 카드 — 구간 시작이 두 번이라 delay로는 못 밀고 한 바퀴를 통째로 적는다.
+   구간은 0/20/40/60%에서 시작하고, 그 구간의 결합은 시작 +13.3%에 완성된다. */
+@keyframes demoCbxDual2 {
+  0%, 29.6% { outline-color: transparent; outline-offset: 0; }
+  29.7%, 33.2% { outline-color: var(--accent); outline-offset: 3px; }
+  33.3%, 62.4% { outline-color: transparent; outline-offset: 3px; }
+  62.5%, 73.2% { outline-color: var(--accent); outline-offset: 3px; }
+  73.3%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoCbxDual3 {
+  0%, 2.4% { outline-color: transparent; outline-offset: 0; }
+  2.5%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 22.4% { outline-color: transparent; outline-offset: 3px; }
+  22.5%, 33.2% { outline-color: var(--accent); outline-offset: 3px; }
+  33.3%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoCbxDual4 {
+  0%, 6% { outline-color: transparent; outline-offset: 0; }
+  6.1%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 46% { outline-color: transparent; outline-offset: 3px; }
+  46.1%, 53.2% { outline-color: var(--accent); outline-offset: 3px; }
+  53.3%, 100% { outline-color: transparent; outline-offset: 3px; }
+}
+@keyframes demoCbxDual6 {
+  0%, 9.6% { outline-color: transparent; outline-offset: 0; }
+  9.7%, 13.2% { outline-color: var(--accent); outline-offset: 3px; }
+  13.3%, 66% { outline-color: transparent; outline-offset: 3px; }
+  66.1%, 73.2% { outline-color: var(--accent); outline-offset: 3px; }
+  73.3%, 100% { outline-color: transparent; outline-offset: 3px; }
 }
 
-.demoComboCaption {
-  font-size: 12px;
+/* 문장 다섯이 같은 칸에 겹쳐 있어 칸 높이는 그중 가장 긴 문장(두 줄)에 맞춰진다.
+   나머지 한 줄짜리는 가운데에 놓아야 문장이 바뀔 때 글자가 위아래로 튀지 않는다. */
+.demoCbxCapWrap {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  text-align: center;
+}
+.demoCbxCap {
+  grid-area: 1 / 1;
+  font-size: var(--fs-sm);
   font-weight: 700;
+  color: var(--ok);
+  opacity: 0;
+  animation: demoCbxCap 14s steps(1) infinite;
+}
+.demoCbxCap1 {
+  animation-delay: 0s;
+}
+.demoCbxCap2 {
+  animation-delay: 2.8s;
+}
+.demoCbxCap3 {
+  animation-delay: 5.6s;
+}
+.demoCbxCap4 {
+  animation-delay: 8.4s;
+}
+/* 마지막 "결" 안내만 초록이 아니라 흐린 글씨 — 결합을 찾은 게 아니라 넘어가는 동작이라서. */
+.demoCbxCap5 {
   color: var(--mute);
+  animation-delay: 11.2s;
 }
-/* 결합이 성립하는 순간 설명 문구도 같이 초록으로 바뀌어, 왜 결합인지 눈이 따라가게 한다. */
-.demoComboCaptionOk1 {
-  animation: demoComboCaptionOk 12s steps(1) infinite 0s;
-}
-.demoComboCaptionOk2 {
-  animation: demoComboCaptionOk 12s steps(1) infinite 3s;
-}
-.demoComboCaptionOk3 {
-  animation: demoComboCaptionOk 12s steps(1) infinite 6s;
-}
-@keyframes demoComboCaptionOk {
-  0%, 13.2% { color: var(--mute); }
-  13.4%, 22.5% { color: var(--ok); }
-  22.7%, 100% { color: var(--mute); }
+@keyframes demoCbxCap {
+  0%, 19.5% { opacity: 1; }
+  19.6%, 100% { opacity: 0; }
 }
 
-.demoComboPassBtn {
-  padding: 7px 20px;
+.demoCbxPassBtn {
+  padding: 6px 18px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--ink-3);
   color: var(--mute);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-  animation: demoComboPass 12s steps(1) infinite;
+  animation: demoCbxPass 14s steps(1) infinite;
 }
-@keyframes demoComboPass {
-  0%, 81% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
-  82%, 92% { background: var(--accent); border-color: var(--accent); color: var(--ink); transform: scale(0.94); }
-  93%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
+@keyframes demoCbxPass {
+  0%, 84.9% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
+  85%, 89.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); transform: scale(0.94); }
+  90%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
 }
 
-.demoEqRow {
+/* 찾은 결합이 쌓이는 줄. 빈 칸 넷은 처음부터 놓여 있고, 결합이 완성될 때마다 그 칸 안의 카드만 켜진다 —
+   몇 개짜리 판인지가 처음부터 읽히고, 칸이 늘었다 줄었다 하며 아래를 밀지도 않는다.
+   같은 카드가 두 칸에 다시 나오는 것이 여기서 그대로 보이는 게 이 줄을 둔 이유다. */
+.demoCbxFoundRow {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 16px;
-  font-weight: 700;
-  flex-wrap: wrap;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.demoCbxFoundLabel {
+  font-size: var(--fs-caption);
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--mute);
+  margin-right: 2px;
+}
+.demoCbxFoundChip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 7px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.demoCbxFoundSwatch {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+.demoCbxFound1 {
+  animation: demoCbxFound1 14s steps(1) infinite;
+}
+.demoCbxFound2 {
+  animation: demoCbxFound2 14s steps(1) infinite;
+}
+.demoCbxFound3 {
+  animation: demoCbxFound3 14s steps(1) infinite;
+}
+.demoCbxFound4 {
+  animation: demoCbxFound4 14s steps(1) infinite;
+}
+@keyframes demoCbxFound1 {
+  0%, 13.2% { opacity: 0; }
+  13.3%, 95.9% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes demoCbxFound2 {
+  0%, 33.2% { opacity: 0; }
+  33.3%, 95.9% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes demoCbxFound3 {
+  0%, 53.2% { opacity: 0; }
+  53.3%, 95.9% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes demoCbxFound4 {
+  0%, 73.2% { opacity: 0; }
+  73.3%, 95.9% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+
+/* 실제 화면과 같은 순서로 축소해서 보여준다 — 목표 숫자 → 식이 쌓이는 칸 → 숫자 4개 → 연산자 → 확인.
+   10초 한 바퀴: 0.5s부터 0.6s 간격으로 18 ÷ 6 × 5 - 4 를 눌러 쌓고, 5.0s에 확인, 5.3s에 결과. */
+.demoEqTarget {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--mute);
+}
+.demoEqTarget b {
+  color: var(--accent);
+  font-size: var(--fs-body);
+  margin-left: 2px;
+}
+.demoEqDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 30px;
+  min-width: 168px;
+  padding: 5px 12px;
+  border-radius: 10px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  font-size: var(--fs-body);
+  font-weight: 700;
 }
 .demoEqTok {
   opacity: 0;
-  color: var(--text);
-  animation: demoEqReveal 5s steps(1) infinite;
+  color: var(--accent-soft);
 }
-@keyframes demoEqReveal {
-  0%, 4% { opacity: 0; }
-  5%, 100% { opacity: 1; }
+.demoEqTok1 {
+  animation: demoEqT1 10s steps(1) infinite;
+}
+.demoEqTok2 {
+  animation: demoEqT2 10s steps(1) infinite;
+}
+.demoEqTok3 {
+  animation: demoEqT3 10s steps(1) infinite;
+}
+.demoEqTok4 {
+  animation: demoEqT4 10s steps(1) infinite;
+}
+.demoEqTok5 {
+  animation: demoEqT5 10s steps(1) infinite;
+}
+.demoEqTok6 {
+  animation: demoEqT6 10s steps(1) infinite;
+}
+.demoEqTok7 {
+  animation: demoEqT7 10s steps(1) infinite;
+}
+@keyframes demoEqT1 {
+  0%, 4.9% { opacity: 0; }
+  5%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT2 {
+  0%, 10.9% { opacity: 0; }
+  11%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT3 {
+  0%, 16.9% { opacity: 0; }
+  17%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT4 {
+  0%, 22.9% { opacity: 0; }
+  23%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT5 {
+  0%, 28.9% { opacity: 0; }
+  29%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT6 {
+  0%, 34.9% { opacity: 0; }
+  35%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+@keyframes demoEqT7 {
+  0%, 40.9% { opacity: 0; }
+  41%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
 }
 .demoEqEq {
   color: var(--ok);
-  margin-left: 6px;
+  margin-left: 4px;
   opacity: 0;
-  animation: demoEqResult 5s steps(1) infinite;
+  animation: demoEqResult 10s steps(1) infinite;
 }
 @keyframes demoEqResult {
-  0%, 79% { opacity: 0; }
-  80%, 100% { opacity: 1; }
+  0%, 52.9% { opacity: 0; }
+  53%, 91.9% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+.demoEqNumRow,
+.demoEqOpRow {
+  display: flex;
+  gap: 6px;
+}
+.demoEqNum,
+.demoEqOp {
+  width: 34px;
+  padding: 5px 0;
+  border-radius: 8px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text);
+}
+.demoEqOp {
+  color: var(--accent);
+}
+/* 한 번 쓴 숫자는 눌린 뒤 그대로 흐려진다 — "전부 한 번씩만"이 글이 아니라 그림으로 읽힌다. */
+.demoEqNum1 {
+  animation: demoEqUse1 10s steps(1) infinite;
+}
+.demoEqNum2 {
+  animation: demoEqUse2 10s steps(1) infinite;
+}
+.demoEqNum3 {
+  animation: demoEqUse3 10s steps(1) infinite;
+}
+.demoEqNum4 {
+  animation: demoEqUse4 10s steps(1) infinite;
+}
+@keyframes demoEqUse1 {
+  0%, 3.4% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  3.5%, 4.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  5%, 91.9% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+@keyframes demoEqUse2 {
+  0%, 15.4% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  15.5%, 16.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  17%, 91.9% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+@keyframes demoEqUse3 {
+  0%, 27.4% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  27.5%, 28.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  29%, 91.9% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+@keyframes demoEqUse4 {
+  0%, 39.4% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+  39.5%, 40.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); opacity: 1; }
+  41%, 91.9% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 0.25; }
+  92%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--text); opacity: 1; }
+}
+/* 곱하기는 두 번, 더하기는 한 번 눌린다. 연산자는 몇 번이든 다시 쓸 수 있어 흐려지지 않는다. */
+.demoEqOpMul {
+  animation: demoEqOpMul 10s steps(1) infinite;
+}
+.demoEqOpAdd {
+  animation: demoEqOpAdd 10s steps(1) infinite;
+}
+@keyframes demoEqOpMul {
+  0%, 9.4% { background: var(--ink-3); border-color: var(--line); color: var(--accent); }
+  9.5%, 10.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  11%, 21.4% { background: var(--ink-3); border-color: var(--line); color: var(--accent); }
+  21.5%, 22.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  23%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--accent); }
+}
+@keyframes demoEqOpAdd {
+  0%, 33.4% { background: var(--ink-3); border-color: var(--line); color: var(--accent); }
+  33.5%, 34.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+  35%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--accent); }
+}
+.demoEqConfirm {
+  padding: 6px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--ink-3);
+  color: var(--mute);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  animation: demoEqConfirm 10s steps(1) infinite;
+}
+@keyframes demoEqConfirm {
+  0%, 49.9% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
+  50%, 52.9% { background: var(--accent); border-color: var(--accent); color: var(--ink); transform: scale(0.94); }
+  53%, 100% { background: var(--ink-3); border-color: var(--line); color: var(--mute); transform: scale(1); }
 }

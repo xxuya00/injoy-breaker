@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- maximum-scale=1 : iOS Safari는 글씨가 16px보다 작은 입력칸을 누르면 화면을 저절로
+         확대하고, 다 적고 나와도 확대된 채로 둔다. 이 한 줄이 그 자동 확대를 막는다.
+         (iOS 10부터 손가락으로 벌려서 하는 확대는 이 값과 상관없이 늘 된다.) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>breaker-scaffold</title>
   </head>
   <body>

@@ -1,6 +1,6 @@
 .brand {
-  font-family: 'Bebas Neue';
-  font-size: 72px;
+  font-family: var(--font-display);
+  font-size: var(--fs-brand);
   letter-spacing: 0.06em;
   line-height: 0.9;
   color: var(--text);
@@ -10,24 +10,35 @@
 /* 이어하기 화면은 담을 내용이 적어서 FitBox가 최대 배율(1.4배)까지 키운다.
    그 배율에서도 로고가 폭을 넘지 않도록 이 화면에서만 작게 둔다. */
 .brandSm {
-  font-size: 50px;
+  font-size: var(--fs-brand-sm);
 }
 .crack {
   color: var(--accent);
 }
+/* 로고 아래 한 줄. 담기는 말이 한글이므로 본문 글꼴로 둔다.
+   (Bebas Neue를 걸면 한글이 폴백으로 떨어지면서 라틴용 자간 0.28em까지 함께 먹어
+    "내 안 의 우 상 을" 처럼 낱글자로 흩어진다.) */
 .tagline {
   color: var(--mute);
-  letter-spacing: 0.28em;
-  font-size: 12px;
-  font-family: 'Bebas Neue';
+  letter-spacing: 0.08em;
+  font-size: var(--fs-sm);
+  font-family: var(--font-body);
   margin-top: 6px;
+}
+
+/* 등록·이어하기 버튼. 이 화면의 주인공은 적어 넣는 칸들이라, 버튼이 그 칸보다 커 보이면
+   안 된다. .btn.sm은 inline-flex라 폭은 글자 길이만큼이고, 세로 가운데 정렬은
+   .center-min(align-items 기본값 stretch)에서 늘어나지 않도록 align-self로 잡아준다. */
+.submit {
+  align-self: center;
+  margin-top: 14px;
 }
 
 .switchLink {
   background: none;
   border: 0;
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
@@ -35,7 +46,7 @@
 }
 
 .fieldLabel {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   color: var(--mute);
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -45,16 +56,18 @@
 .groupGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 7px;
 }
+/* 조 번호는 한두 글자뿐이라 칸이 클수록 빈 여백만 커진다. 누르기에 충분한 높이(38px 남짓)만
+   남기고, 글씨도 이름·닉네임 칸과 같은 본문 크기로 맞춘다. */
 .groupBtn {
   background: var(--ink-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 0;
+  border-radius: 11px;
+  padding: 9px 0;
   color: var(--text);
-  font-family: 'Bebas Neue';
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;

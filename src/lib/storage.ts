@@ -54,6 +54,18 @@ export function markIntroSeen() {
   localStorage.setItem(INTRO_SEEN_KEY, '1');
 }
 
+// DAY 3 다이얼의 흐림이 걷히는 순간은 한 번뿐이다. 마지막 자물쇠를 깬 뒤 처음으로 DAY 3을
+// 열었을 때만 재생하고, 그 뒤로는 앱을 다시 켜도 처음부터 또렷한 다이얼로 시작한다.
+const DIAL_REVEAL_KEY = 'breaker:dialReveal';
+
+export function hasDialRevealed(id: string): boolean {
+  return localStorage.getItem(`${DIAL_REVEAL_KEY}:${id}`) === '1';
+}
+
+export function markDialRevealed(id: string) {
+  localStorage.setItem(`${DIAL_REVEAL_KEY}:${id}`, '1');
+}
+
 export function saveGroup(group: string) {
   localStorage.setItem(GROUP_KEY, group);
 }
@@ -84,12 +96,10 @@ export function savePrayedIds(ids: string[]) {
 
 // 타임어택형 미니게임의 누적 경과시간(ms).
 // 화면을 보고 있는 동안만 흐르고, 나가면 그 지점에서 멈췄다가 다시 들어오면 이어서 흐른다.
+// 도전 횟수는 세지 않는다 — 몇 번을 다시 해도 순위에는 본인 최고 기록 하나만 남으므로
+// (사람마다 문서 하나, 더 좋은 기록일 때만 덮어씀), 횟수를 제한할 이유가 없다.
 function gameElapsedKey(lockId: string) {
   return `breaker:gameElapsed:${lockId}`;
-}
-// 순위에 반영되는 시도 횟수. 처음 3번의 시도까지만 기록되고, 그중 가장 빠른 기록이 순위판에 남는다.
-function gameAttemptsKey(lockId: string) {
-  return `breaker:gameAttempts:${lockId}`;
 }
 
 export function getAccumulatedMs(lockId: string): number {
@@ -99,17 +109,6 @@ export function getAccumulatedMs(lockId: string): number {
 
 export function setAccumulatedMs(lockId: string, ms: number) {
   localStorage.setItem(gameElapsedKey(lockId), String(ms));
-}
-
-export function getGameAttempts(lockId: string): number {
-  const v = localStorage.getItem(gameAttemptsKey(lockId));
-  return v ? Number(v) : 0;
-}
-
-export function incrementGameAttempts(lockId: string): number {
-  const next = getGameAttempts(lockId) + 1;
-  localStorage.setItem(gameAttemptsKey(lockId), String(next));
-  return next;
 }
 
 // 유형검사 진행 상황. 문항을 풀다가 앱을 나가거나 새로고침해도 보던 화면 그대로 이어서
@@ -157,6 +156,11 @@ export interface StoredTypeSummary {
   primary: string;
   secondary: string;
   comboName: string;
+  /**
+   * 묵상의 결(B/D/F/S). 나눔 자리에서 실천 가이드를 다시 펴 보려면 이 글자 하나면 된다.
+   * 예전에 검사를 마친 사람의 기록에는 없으므로 없을 수도 있는 값으로 둔다.
+   */
+  walkCode?: string;
 }
 
 function typeSummaryKey(id: string) {
@@ -176,6 +180,77 @@ export function loadTypeSummary(id: string): StoredTypeSummary | null {
   } catch {
     return null;
   }
+}
+
+// 나눔을 마쳤는지. 나눔은 앱 밖(둘러앉아 이야기하는 자리)에서 일어나는 일이라 앱이 끝을
+// 알 방법이 없다. 그래서 나눔 화면 끝의 "나눔 마치기"를 누른 것만 표시로 남긴다 —
+// 화면에 들어온 것만으로 마쳤다고 치면, 질문을 훑어보러 들른 사람도 다음 걸음으로 넘어가 버린다.
+function shareDoneKey(id: string) {
+  return `breaker:shareDone:${id}`;
+}
+
+export function markShareDone(id: string) {
+  localStorage.setItem(shareDoneKey(id), '1');
+}
+
+export function hasShareDone(id: string): boolean {
+  return localStorage.getItem(shareDoneKey(id)) === '1';
+}
+
+// 나눔 자리에서 적는 메모. 같은 유형 나눔에서 정리한 우리 유형이 조 나눔에서 소개할 재료가
+// 되므로, 앞의 나눔에서 적은 글이 뒤의 나눔에서도 그대로 펴져야 한다.
+// 남에게 보여줄 글이 아니라 내가 말할 거리를 붙들어두는 메모라서 시트에도 Firestore에도
+// 올리지 않고 이 기기에만 둔다. key는 나눔 세션 키('same' | 'group').
+function shareMemoKey(id: string) {
+  return `breaker:shareMemo:${id}`;
+}
+
+export function saveShareMemo(id: string, memo: Record<string, string>) {
+  localStorage.setItem(shareMemoKey(id), JSON.stringify(memo));
+}
+
+export function loadShareMemo(id: string): Record<string, string> {
+  const raw = localStorage.getItem(shareMemoKey(id));
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+// 잠언을 남겼는지. 글 자체는 Firestore에 있지만, 여정 화면에서 "세 걸음 중 어디까지 왔나"를
+// 보여주자고 목록 전체를 실시간 구독할 이유는 없다. 남긴 순간에 이 기기에 표시만 남긴다.
+// 기기를 옮겨 왔다면 잠언 화면에 들어가 내 글을 만나는 순간 그때 표시가 생긴다.
+function proverbWrittenKey(id: string) {
+  return `breaker:proverbWritten:${id}`;
+}
+
+export function markProverbWritten(id: string) {
+  localStorage.setItem(proverbWrittenKey(id), '1');
+}
+
+export function hasProverbWritten(id: string): boolean {
+  return localStorage.getItem(proverbWrittenKey(id)) === '1';
+}
+
+// 자기소개지를 올렸는지. 사진 자체는 Firestore에 있지만, 여정 화면 한 줄에 표시 하나를
+// 켜자고 원본을 받아올 수는 없다(한 장이 수백 KB다). 올린 순간에 이 기기에 표시만 남긴다.
+// "나만 보기"로 올린 사진은 목록에 오르지 않으므로, 이 표시가 아니면 여정에서는 알 길이 없다.
+// 기기를 옮겨 왔다면 자기소개 화면에 들어가 내 것을 만나는 순간 그때 표시가 생긴다.
+function introSheetKey(id: string) {
+  return `breaker:introSheet:${id}`;
+}
+
+export function markIntroSheetUploaded(id: string, uploaded: boolean) {
+  if (uploaded) localStorage.setItem(introSheetKey(id), '1');
+  else localStorage.removeItem(introSheetKey(id));
+}
+
+export function hasIntroSheet(id: string): boolean {
+  return localStorage.getItem(introSheetKey(id)) === '1';
 }
 
 // 아침 큐티에 적은 답변. 인도자에게 내는 기록이 아니라 본인만 보는 글이라

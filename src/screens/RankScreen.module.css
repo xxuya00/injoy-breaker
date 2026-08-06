@@ -1,15 +1,52 @@
+/* 이 화면은 FitBox에게 남는 높이를 통째로 받아(useFillFit) 스스로 나눈다. */
+.wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* 여덟 줄이 남는 높이를 나눠 갖는다. 넘치면(SE 가로모드처럼 아주 낮은 화면) 여기서 스크롤한다. */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.list::-webkit-scrollbar {
+  width: 0;
+}
+/* 각주는 언제나 맨 아래. 목록이 짧아도 화면 한가운데에 떠 있지 않는다. */
+.footnote {
+  flex: 0 0 auto;
+  margin-top: 12px;
+}
+
+/* 여덟 조가 밀어 올리지 않고 한 화면에 다 들어와야 한다. 줄 사이 여백을 절반으로 줄이면
+   여덟 줄에서 팔십 남짓이 돌아온다 — 줄이 촘촘해져도 아래위 선이 조를 갈라주므로 읽기는 그대로다.
+   조의 수는 정해져 있으므로 남는 높이는 계수로 어림잡지 않고 여덟 줄이 똑같이 나눠 갖는다
+   (flex-grow). 어떤 기기에서든 목록이 딱 떨어지고, 줄 안에서 글은 가운데에 선다.
+   줄지 않는(flex-shrink: 0) 이유는, 세로가 아주 짧은 화면에서 여덟 줄을 억지로 눌러 담는
+   대신 목록이 스크롤하게 두기 위해서다. */
 .rankItem {
+  flex: 1 0 auto;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 0;
+  padding: 7px 0;
   border-bottom: 1px solid var(--line);
 }
 .no {
-  font-family: 'Bebas Neue';
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-s);
   width: 26px;
   color: var(--accent);
+}
+/* 아직 점수가 없는 조. 등수 자리를 비워두면 줄이 흔들리므로 줄표로 자리만 지킨다. */
+.noEmpty {
+  color: var(--mute);
+  opacity: 0.45;
 }
 .groupInfo {
   flex: 1;
@@ -18,15 +55,23 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 6px;
+  gap: 8px;
+  margin-bottom: 5px;
 }
 .nick {
+  flex: 0 0 auto;
   font-weight: 700;
-  font-size: 15.5px;
+  font-size: var(--fs-body);
 }
 .pt {
   color: var(--mute);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
+  text-align: right;
+}
+/* 총점 뒤에 붙는 내역(자물쇠 몇 · 진행자 몇). 총점보다 한 급 작게 써서 같은 줄에 있어도
+   먼저 읽히는 건 총점이 되게 한다. */
+.split {
+  font-size: var(--fs-caption);
 }
 .bar {
   height: 6px;
@@ -40,4 +85,31 @@
   background: linear-gradient(90deg, var(--accent), var(--accent-soft));
   transition: width 0.6s ease;
   border-radius: 99px;
+}
+/* 진행자가 얹은 점수. 자물쇠로 쌓인 몫과 얹힌 몫을 갈라 적어 총점의 출처가 보이게 한다. */
+.bonusUp {
+  color: var(--ok);
+  font-weight: 700;
+}
+.bonusDown {
+  color: var(--danger);
+  font-weight: 700;
+}
+/* 진행자가 사유까지 적어둔 조에만 나오는 줄. */
+.bonusNote {
+  margin-top: 4px;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+  line-height: 1.4;
+}
+
+/* 세로가 짧은 기기에서는 여기까지 줄여야 여덟 조가 한 화면에 들어온다.
+   글자 크기는 그대로 두고 줄 사이만 좁힌다 — 작아진 글씨보다 촘촘한 줄이 낫다. */
+@media (max-height: 700px) {
+  .rankItem {
+    padding: 4px 0;
+  }
+  .groupRow {
+    margin-bottom: 3px;
+  }
 }

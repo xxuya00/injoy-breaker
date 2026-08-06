@@ -2,75 +2,76 @@ import type { Day, DayData } from '../types';
 
 export const LOCKS: Record<Day, DayData> = {
   1: {
-    caption: '일상을 떠나 도착했습니다. 잠긴 뇌를 가볍게 두드려 깨우는 날.',
+    caption: '첫째날, 솔로몬의 지혜를 구해 잠금장치를 break하세요.',
     items: [
       {
         id: 'd1a',
         name: '첫 번째 두드림',
         sub: '십자 연산 · 머리 굴리기',
         type: 'crossmath',
-        reveal: '가로도 세로도 결국 하나의 답을 향합니다. 우리의 하루도 그렇게 하나님을 향해 있습니다.',
+        reveal: '가로도 세로도 맞아야 풀립니다. 한쪽만 맞춘 하루는 아직 풀리지 않은 하루입니다.',
       },
       {
         id: 'd1b',
         name: '두 번째 두드림',
         sub: '기억의 미로 · 관찰력',
         type: 'maze',
-        reveal: '보이지 않아도 걸어온 길은 사라지지 않습니다. 기억이 곧 믿음의 발걸음이 됩니다.',
+        reveal: '길은 이미 사라졌는데 기억을 따라 걸었습니다. 믿음도 보이지 않는 길을 걷는 일입니다.',
       },
       {
         id: 'd1c',
         name: '세 번째 두드림',
         sub: '부호 해독 · 추론',
         type: 'codebreak',
-        reveal: '감춰진 것도 끝까지 풀면 드러납니다. 지혜는 보이지 않는 것을 보는 눈입니다.',
+        reveal: '보이는 것으로 보이지 않는 값을 알아냈습니다. 지혜란 그런 눈입니다.',
       },
       {
         id: 'd1d',
         name: '네 번째 두드림',
         sub: '플래시 암기 · 순간 집중',
         type: 'memory',
-        reveal: '잠깐 스쳐가도 마음에 새기면 남습니다. 말씀도 그렇게 새겨야 합니다.',
+        reveal: '스쳐 지나간 것도 새기면 남습니다. 말씀도 그렇게 새겨야 합니다.',
       },
       {
         id: 'd1e',
         name: '다섯 번째 두드림',
         sub: '순발력 · 반응속도',
         type: 'reflex',
-        reveal: '깨어있는 자만이 제때 반응합니다. 오늘 하루도 깨어 있기를.',
+        reveal: '깨어 있는 만큼만 제때 반응할 수 있었습니다.',
       },
       {
         id: 'd1f',
         name: '여섯 번째 두드림',
-        sub: '저울 추론 · 논리',
-        type: 'balance',
-        reveal: '무엇이 진짜 무거운지 아는 것, 그것이 지혜입니다.',
+        sub: '숫자야구 · 추리',
+        type: 'baseball',
+        reveal: '한 번에 맞힌 사람은 없습니다. 어긋난 답도 답으로 가는 걸음이었습니다.',
       },
       {
         id: 'd1g',
         name: '일곱 번째 두드림',
         sub: '결합 찾기 · 관찰과 조합',
         type: 'combo',
-        reveal: '같음과 다름을 동시에 봐야 보이는 것들이 있습니다.',
+        reveal: '같음과 다름을 함께 봐야 비로소 보이는 것이 있습니다.',
       },
       {
         id: 'd1h',
         name: '여덟 번째 두드림',
         sub: '수식 만들기 · 목표를 향해',
         type: 'equation',
-        reveal: '흩어진 숫자도 답을 향해 모이면 하나의 길이 됩니다.',
+        reveal: '흩어진 숫자도 목표가 생기면 하나의 길이 됩니다.',
       },
       {
         id: 'd1i',
         name: '아홉 번째 두드림',
         sub: '라이트 아웃 · 하나씩 꺼가기',
         type: 'lightsout',
-        reveal: '얽혀 보여도, 순서를 알면 결국 다 꺼집니다.',
+        reveal: '얽혀 보여도 순서를 찾으면 결국 다 꺼집니다.',
       },
     ],
   },
   2: {
-    caption: '숲과 계곡 곳곳에 숨은 QR을 찾아 알에 금을 냅니다. 하나씩 발견할 때마다 껍질이 깨져갑니다.',
+    // 한 줄에 담기는 길이로 끊는다. 두 줄이 되면 "요."만 다음 줄로 떨어져 나가 보기 흉하다.
+    caption: '둘째날, 숲과 계곡에 숨은 QR을 찾아 알을 break 하세요.',
     items: [
       {
         id: 'd2a',
@@ -129,18 +130,42 @@ export const LOCKS: Record<Day, DayData> = {
     ],
   },
   3: {
-    caption: '깨어난 집중으로 마지막 자물쇠를 엽니다. 그리고 세상으로 나아갑니다.',
+    caption: '셋째날, 수련회를 통해 얻은 메시지는 무엇인가요?',
     items: [
       {
         id: 'd3a',
-        name: '최후의 자물쇠',
-        sub: '결단 · 진짜 열쇠',
+        name: '시간의 다이얼',
+        sub: '마지막 두드림 · 열둘 다음의 한 칸',
         type: 'final',
         reveal: '',
       },
     ],
   },
 };
+
+// 여섯 개의 크랙이 모두 나서 알이 깨진 순간에 열리는 화면.
+// QR 미션마다 남기는 기록은 "방금 그 자리에서 무엇을 했는가"지만, 이건 하루를 통과한 뒤의
+// 마무리라 성격이 다르다. 그래서 등록할 때 적는 다짐(VOW_PROMPT)처럼 문구를 따로 둔다.
+export const FIRST_LOVE_PROMPT = {
+  /** 미션 기록과 같은 곳에 저장할 때 쓰는 키. 자물쇠 id와 겹치지 않도록 밑줄을 넣어둔다. */
+  id: 'd2_first_love',
+  pill: '알이 완전히 깨졌습니다',
+  title: '초심',
+  question: '여러분의 초심은 무엇이었나요?',
+  body: '지금 이 순간, 내가 가장 좋아하는 말씀을 되새기고 잠잠히 묵상하며 기록해봐요.',
+  placeholder: '가장 좋아하는 말씀과, 그 말씀 앞에 선 지금의 마음을 적어보세요…',
+  /** 알이 깨진 뒤 이 기록을 다시 열어보는 자리에 붙는 말 */
+  recallLabel: '내 초심 다시 보기',
+};
+
+/**
+ * 껍질 조각 여섯 개에 한 글자씩 새겨진 말. 조각을 다 찾으면 "초심을 찾아서"가 완성되고,
+ * 그 자리에서 곧바로 초심을 적게 된다(FIRST_LOVE_PROMPT).
+ *
+ * 조각은 알 좌우로 세 줄에 걸쳐 흩어지므로(JourneyScreen의 SHARD_SCATTER), 왼쪽에서 오른쪽으로,
+ * 위에서 아래로 읽으면 이 순서 그대로 읽힌다 — 초 심 / 을 찾 / 아 서.
+ */
+export const SHARD_WORD = ['초', '심', '을', '찾', '아', '서'];
 
 export const FINAL_REQUIRED = [
   'd1a', 'd1b', 'd1c', 'd1d', 'd1e', 'd1f', 'd1g', 'd1h', 'd1i',
@@ -167,11 +192,11 @@ export const DAY_GATES: Record<Day, GateMeta> = {
   3: { id: 'day3', label: 'DAY 3 전체', lockedSub: '아직 열리지 않은 날이에요' },
 };
 
-/** DAY 2 안의 각 코너. 하루를 통째로 열어두고 코너별로 시간을 따로 줄 수 있다. */
+/** 하루 안의 각 코너. 하루를 통째로 열어두고 코너별로 시간을 따로 줄 수 있다. */
 export const SECTION_GATES = {
+  d1Intro: { id: 'd1_intro', label: 'DAY 1 · 자기소개 나눔', lockedSub: '나눔 시간에 열려요' },
   d2Type: { id: 'd2_type', label: 'DAY 2 · IDOL-X 유형 검사', lockedSub: '아직 열리지 않았어요' },
   d2Qr: { id: 'd2_qr', label: 'DAY 2 · QR 스캔(알 깨기)', lockedSub: '아직 열리지 않았어요' },
-  d2Write: { id: 'd2_write', label: 'DAY 2 · 숲의 기록', lockedSub: '아직 열리지 않았어요' },
   d2Share: { id: 'd2_share', label: 'DAY 2 · 유형 나눔', lockedSub: '나눔 시간에 열려요' },
   d3Decide: { id: 'd3_decide', label: 'DAY 3 · 마지막 열쇠(결단)', lockedSub: '아직 열리지 않았어요' },
 } as const satisfies Record<string, GateMeta>;

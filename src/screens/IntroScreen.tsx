@@ -142,7 +142,7 @@ export default function IntroScreen() {
         {slide.kind === 'closing' && slide.title && (
           <div
             className={`${styles.brand} ${styles.rise}`}
-            style={{ animationDelay: '0ms', fontSize: 44, marginBottom: 14 }}
+            style={{ animationDelay: '0ms', fontSize: 'var(--fs-hero)', marginBottom: 14 }}
           >
             BR<span className={styles.crack}>/</span>EAKER
           </div>
@@ -172,9 +172,9 @@ export default function IntroScreen() {
       </div>
 
       {last ? (
-        <div className={styles.rise} style={{ animationDelay: `${footDelay}ms` }}>
-          <button className={`btn ${styles.cta}`} onClick={finish}>
-            {enrolled ? '여정으로 돌아가기' : INTRO_CTA}
+        <div className={`${styles.rise} ${styles.ctaWrap}`} style={{ animationDelay: `${footDelay}ms` }}>
+          <button className={`btn sm ${styles.cta}`} onClick={finish}>
+            {enrolled ? '돌아가기' : INTRO_CTA}
           </button>
         </div>
       ) : (

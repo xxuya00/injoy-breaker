@@ -1,0 +1,323 @@
+.wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0;
+}
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 190px;
+  height: 190px;
+  margin: -95px 0 0 -95px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 147, 163, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+.svg {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  /* 링을 손가락으로 끄는 동안 화면이 같이 스크롤되거나 글자가 잡혀 끌리면 안 된다. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.35));
+}
+
+.rim {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke 0.35s ease;
+}
+/* 띠는 안으로 갈수록 한 단계씩 밝아진다. 세 겹이 같은 색이면 층이 안 보이고
+   "글자가 잔뜩 그려진 원" 한 장으로 읽힌다. */
+.band {
+  fill: none;
+  transition: stroke 0.35s ease;
+}
+.band1 {
+  stroke: #1d1712;
+}
+.band2 {
+  stroke: #241d16;
+}
+.band3 {
+  stroke: #2b221a;
+}
+/* 띠의 바깥 끝에 걸리는 빛과 안쪽 끝에 지는 그늘. 판이 겹쳐 놓였다는 걸 색이 아니라 빛으로 말한다. */
+.edgeLit {
+  fill: none;
+  stroke: rgba(255, 240, 230, 0.07);
+  stroke-width: 1;
+}
+.edgeShade {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 1.5;
+}
+
+/* 열두 시로 모아야 할 칸. 링과 함께 돈다. */
+.cell {
+  fill: rgba(236, 147, 163, 0.09);
+  stroke: rgba(236, 147, 163, 0.3);
+  stroke-width: 1;
+  transition: fill 0.35s ease, stroke 0.35s ease;
+}
+/* 세 링을 관통하는 열두 시 통로. 칸 셋이 여기에 들어차면 원이 열린다. */
+.corridor {
+  fill: rgba(246, 195, 205, 0.06);
+  stroke: rgba(246, 195, 205, 0.22);
+  stroke-width: 1;
+  pointer-events: none;
+  transition: fill 0.35s ease, stroke 0.35s ease;
+}
+.hub {
+  fill: var(--ink);
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke 0.35s ease;
+}
+
+/* 링과 그 위의 글자는 같은 곡선·같은 시간으로 움직여야 글자가 삐뚤어져 보이지 않는다.
+   끝에서 살짝 지나쳤다 되돌아오는 곡선이라, 한 칸마다 톱니에 걸리듯 딱 멈춘다. */
+.ring,
+.slot {
+  transition: transform 0.17s cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+.slot {
+  fill: var(--mute);
+  font-family: var(--font-title);
+  text-anchor: middle;
+  dominant-baseline: central;
+  transition: transform 0.17s cubic-bezier(0.34, 1.5, 0.64, 1), fill 0.35s ease;
+}
+.slotLatin,
+.slotNum {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+.slotTarget {
+  fill: var(--text);
+}
+/* 한 칸 걸릴 때마다 표식이 한 번 밝아졌다 가라앉는다. 진동이 안 오는 기기(아이폰)에서
+   "지금 한 칸 넘어갔다"를 알려주는 건 사실상 이 깜빡임 하나다. transform 대신 색만 건드리는 건
+   SVG에서 크기를 바꾸려면 도형마다 기준점을 따로 잡아줘야 해서, 그만한 연출이 아니기 때문이다. */
+.pointer {
+  fill: var(--accent);
+  animation: detentKick 0.2s ease-out;
+}
+@keyframes detentKick {
+  0% {
+    fill: var(--text);
+  }
+  100% {
+    fill: var(--accent);
+  }
+}
+
+/* 원 밖으로 밀려난 열세 번째 칸. 테두리 안의 숫자들과 달리 어디에도 속하지 않는다. */
+.spill {
+  fill: var(--accent);
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  dominant-baseline: central;
+  animation: spillIn 0.45s 0.4s ease backwards;
+}
+.spillTick {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  animation: spillIn 0.45s 0.4s ease backwards;
+}
+/* 크기가 아니라 밝기만 건드린다. SVG에서 scale을 주려면 각 글자의 좌표를 transform-origin으로
+   따로 넣어줘야 하는데, 그렇게까지 할 만한 연출이 아니다. */
+@keyframes spillIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 다 맞춘 뒤 "여기로 한 칸 더" 를 가리키는 획. 테두리 바깥에 그려서, 밀어낸 다음 13이 앉을
+   자리를 미리 짚어준다. 숨을 쉬듯 밝아졌다 가라앉기만 하고 움직이지는 않는다 —
+   다이얼 위에서 도는 건 손이어야 한다. */
+.pushArrow {
+  animation: pushBreathe 1.9s ease-in-out infinite;
+  pointer-events: none;
+}
+.pushArrow path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+/* 획과 같은 선택자 무게로 적어야 위의 fill:none을 이긴다 — 화살촉은 속이 찬 삼각형이다. */
+.pushArrow path.pushArrowHead {
+  fill: var(--accent);
+  stroke: none;
+}
+@keyframes pushBreathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pushArrow {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+.hubHint {
+  fill: var(--mute);
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  transition: fill 0.35s ease;
+}
+
+/* ---------- 여정 화면에 얹은 미리보기 ---------- */
+/* 링은 돌지 않고, 다이얼 어디를 눌러도 다이얼 화면으로 들어간다. 아래에 버튼을 따로 두면
+   돌릴 물건과 누를 물건이 따로 서서, 정작 다이얼은 그림처럼 보인다. */
+.svgTap {
+  cursor: pointer;
+}
+/* 가운데 판만 살아 있게 두어, 손이 갈 곳을 빛으로 가리킨다. */
+.hubLit {
+  stroke: var(--accent);
+  animation: hubBreathe 2.6s ease-in-out infinite;
+}
+.hubHintLit {
+  fill: var(--accent-soft);
+}
+.hubHalo {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hubHalo 2.6s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes hubBreathe {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+@keyframes hubHalo {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+/* 빛이 도는 걸 불편해하는 기기에서는 색만 남긴다. 눌러야 할 곳이 어디인지는 그것으로도 전해진다. */
+@media (prefers-reduced-motion: reduce) {
+  .hubLit,
+  .hubHalo {
+    animation: none;
+  }
+  .hubHalo {
+    opacity: 0.35;
+  }
+}
+/* 가운데 판에 새겨지는 주소. 위에 책 이름, 아래에 장(12) — 원이 깨지면 절까지 붙어 12:13이 된다. */
+.hubRef {
+  fill: var(--accent-soft);
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  text-anchor: middle;
+}
+.hubBook {
+  fill: var(--mute);
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-anchor: middle;
+  transition: fill 0.35s ease;
+}
+.wrapBroken .hubBook {
+  fill: var(--text-2);
+}
+
+/* 표식 칸 셋이 열두 시 통로에 들어찬 상태. 두 단어가 읽히기 시작하고, 통로에 불이 들어온다. */
+.wrapSolved .glow,
+.wrapBroken .glow {
+  opacity: 1;
+}
+.wrapSolved .slotLatin,
+.wrapBroken .slotLatin {
+  fill: var(--accent-soft);
+}
+.wrapSolved .slotTarget,
+.wrapBroken .slotTarget {
+  fill: var(--accent-soft);
+}
+.wrapSolved .cell,
+.wrapBroken .cell {
+  fill: rgba(236, 147, 163, 0.16);
+  stroke: rgba(246, 195, 205, 0.5);
+}
+.wrapSolved .corridor,
+.wrapBroken .corridor {
+  fill: rgba(246, 195, 205, 0.08);
+  stroke: rgba(246, 195, 205, 0.55);
+}
+.wrapSolved .rim,
+.wrapSolved .hub {
+  stroke: var(--accent);
+}
+
+/* 열두 칸을 다 채운 뒤 한 칸을 더 민 순간. 시계에 없는 자리로 넘어가면서 원이 깨진다. */
+.wrapBroken .rim,
+.wrapBroken .hub {
+  stroke: var(--accent);
+}
+.wrapBroken .svg {
+  animation: dialBreak 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 열린 걸 알리는 신호는 세 번이면 충분하다. 계속 깜빡이면 여정 화면에 얹힌 다이얼처럼
+   누를 수도 없는 것에 시선이 붙잡힌다. */
+.wrapBroken .pointer {
+  animation: pointerPulse 1.6s ease-in-out 3;
+}
+@keyframes dialBreak {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  35% {
+    transform: scale(1.05) rotate(-2.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes pointerPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

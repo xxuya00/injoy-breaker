@@ -1,0 +1,132 @@
+/* 다른 화면과 같은 제목 크기. 이 화면의 주인공은 적는 칸이라 더 키우지 않는다. */
+.title {
+  font-size: var(--fs-title-l);
+  margin-bottom: 10px;
+}
+
+.lead {
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: #efe3d0;
+  word-break: keep-all;
+  margin-bottom: 6px;
+}
+.hint {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--mute);
+  word-break: keep-all;
+  margin-bottom: 12px;
+}
+/* 입력칸 바로 아래 줄. 글자 수는 왼쪽 끝에, 보내기는 오른쪽 끝에 붙는다. */
+.writeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 2px;
+}
+.count {
+  font-size: var(--fs-caption);
+  color: var(--mute);
+}
+
+.scopeRow {
+  display: flex;
+  gap: 6px;
+  margin: 20px 0 12px;
+}
+.scopeBtn {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.scopeBtnOn {
+  background: rgba(236, 147, 163, 0.16);
+  border-color: var(--accent);
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+
+/* 이 화면은 FitBox에게 남는 높이를 통째로 받아(useFillFit) 스스로 나눈다. 적는 칸까지는
+   제 높이만 차지하고, 남는 높이는 아래 목록이 가져간다. 넘치는 몫은 여기서 흘려 보낸다
+   (fill 모드의 바깥 상자는 스크롤하지 않는다). */
+.wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.wrap::-webkit-scrollbar {
+  width: 0;
+}
+
+.empty {
+  /* 아직 문장이 없어도 목록 자리는 그대로 지킨다. 글은 그 안에서 가운데에 둔다. */
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 16px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--mute);
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  word-break: keep-all;
+}
+.list {
+  /* 남는 높이를 받는 쪽. 문장이 많아 넘치면 .wrap이 통째로 흘려 보내므로 스크롤은 하나뿐이다.
+     줄어들 수 있게 두면(shrink 1) 스크롤 대신 목록이 눌려 아래쪽 문장이 잘려 나온다. */
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.item {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+/* 목록이 길어져도 내 문장은 눈에 바로 걸리게 한다. */
+.itemMine {
+  border-color: rgba(236, 147, 163, 0.45);
+  background: rgba(236, 147, 163, 0.08);
+}
+.text {
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: #efe3d0;
+  word-break: keep-all;
+  white-space: pre-wrap;
+}
+.by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--fs-caption);
+  color: var(--mute);
+}
+.byType,
+.byMine {
+  padding: 1px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+}
+.byMine {
+  color: var(--accent);
+  border-color: rgba(236, 147, 163, 0.45);
+}

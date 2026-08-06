@@ -1,0 +1,355 @@
+/* 화면 제목은 다른 화면과 같은 크기로 둔다(잠언·나눔과 나란히 놓이는 코너다). */
+.title {
+  font-size: var(--fs-title-l);
+  margin: 6px 0 10px;
+}
+.lead {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+/* ---- 아직 안 올렸을 때 ---- */
+.empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: var(--ink-2);
+  border: 1px dashed rgba(236, 147, 163, 0.45);
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.empty:active {
+  transform: scale(0.99);
+}
+.emptyIcon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(236, 147, 163, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emptyIcon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent);
+}
+.emptyText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+.emptySub {
+  color: var(--mute);
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* ---- 내가 올린 것 ---- */
+.mine {
+  display: flex;
+  gap: 13px;
+  padding: 13px;
+  border-radius: 14px;
+  background: var(--ink-2);
+  border: 1px solid rgba(236, 147, 163, 0.35);
+}
+.mineShot {
+  width: 74px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ink-3);
+  cursor: pointer;
+  line-height: 0;
+}
+.mineShot img {
+  width: 100%;
+  display: block;
+}
+.mineInfo {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+.mineName {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+/* 공개 범위. 지금 어디까지 보이는지가 이 알약 하나에 적혀 있고, 눌러서 바꾼다. */
+.scopeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px 4px 11px;
+  border-radius: 99px;
+  background: rgba(236, 147, 163, 0.14);
+  border: 1px solid rgba(236, 147, 163, 0.4);
+  color: var(--accent-soft);
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  cursor: pointer;
+}
+.scopeChip svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scopeMenu {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 118px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+.scopeItem {
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.scopeItemOn {
+  background: rgba(236, 147, 163, 0.14);
+  color: var(--accent-soft);
+  font-weight: 700;
+}
+
+.mineActions {
+  display: flex;
+  gap: 14px;
+  margin-top: auto;
+}
+.textBtn {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.textBtnDanger {
+  color: var(--danger);
+}
+
+.confirm {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.confirmText {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+.confirmRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* ---- 모두의 자기소개지 ---- */
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 22px 0 10px;
+}
+.listLabel {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+}
+.filterRow {
+  display: flex;
+  gap: 5px;
+}
+.filterBtn {
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+.filterBtnOn {
+  background: rgba(236, 147, 163, 0.14);
+  border-color: var(--accent);
+  color: var(--accent-soft);
+}
+
+.none {
+  padding: 26px 0;
+  text-align: center;
+  color: var(--mute);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.card:active {
+  transform: scale(0.98);
+}
+/* 그림이 도착하기 전에도 칸은 제 비율대로 자리를 잡고 있는다. 도착할 때마다 칸이 부풀면
+   아래 줄이 밀려 내려가서, 누르려던 사람 것이 손끝에서 달아난다. */
+.cardShot {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.cardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cardName {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cardGroup {
+  color: var(--mute);
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
+/* ---- 크게 보기 ---- */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+.viewerBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(12px + env(safe-area-inset-top)) 14px 10px 18px;
+}
+.viewerName {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.viewerGroup {
+  color: var(--mute);
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.viewerClose {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.viewerClose:active {
+  transform: scale(0.92);
+}
+.viewerBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 12px calc(16px + env(safe-area-inset-bottom));
+}
+.viewerImg {
+  width: 100%;
+  display: block;
+  border-radius: 8px;
+  background: #fff;
+}
+.viewerWait {
+  padding-top: 40px;
+  text-align: center;
+  color: var(--mute);
+  font-size: var(--fs-sm);
+}

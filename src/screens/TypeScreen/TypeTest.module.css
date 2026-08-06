@@ -35,8 +35,8 @@
   background: var(--ink-2);
   border: 1.5px solid var(--line);
   color: var(--mute);
-  font-family: 'Bebas Neue';
-  font-size: clamp(13px, 3.6vw, 16px);
+  font-family: var(--font-display);
+  font-size: clamp(12px, 3.2vw, 14px);
   cursor: pointer;
   transition: transform 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
   display: flex;
@@ -60,7 +60,7 @@
 .scaleEndLabels {
   display: flex;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   color: var(--mute);
   padding: 0 2px;
   margin-bottom: 6px;
@@ -80,8 +80,8 @@
   min-width: 0;
 }
 .abSide p {
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-size: var(--fs-caption);
+  line-height: 1.55;
   color: #d9cdbb;
   margin-top: 8px;
   word-break: keep-all;
@@ -98,14 +98,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   flex: none;
   border-radius: 50%;
   background: rgba(236, 147, 163, 0.16);
   color: var(--accent);
-  font-family: 'Bebas Neue';
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
   border: 1px solid rgba(236, 147, 163, 0.4);
 }
 .abBadgeB {
@@ -116,64 +116,89 @@
 .abDivider {
   flex: none;
   align-self: center;
-  font-family: 'Bebas Neue';
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
   color: var(--mute);
   letter-spacing: 0.05em;
 }
 
-.ttBars {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin: 16px 0 4px;
-}
-.ttBarRow {
+/* 응답 분포(육각형)와 1·2위 칸을 한 줄에 나란히. 둘 다 "내가 어디로 치우쳤나"를 말하는
+   것이라, 위아래로 떼어놓는 대신 붙여두면 한눈에 같이 읽히고 세로 자리도 절반이 된다. */
+.shapeRow {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin: 10px 0 0;
 }
-.ttBarLabel {
-  width: 74px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--mute);
-  flex-shrink: 0;
+/* 이 카드에서 한눈에 읽히는 건 도형이다. 1·2위는 이름표라 작아도 읽히지만 도형은 작으면
+   여섯 축의 차이가 뭉개진다 — 그래서 넓은 쪽을 도형에 준다. */
+.shapeChart {
+  flex: 0 0 auto;
+  width: clamp(132px, 54%, 178px);
+  text-align: center;
 }
-/* 유형 이름 아래에 붙는 분류명(관계지향형 등) */
-.ttBarLabel em {
+.radar {
   display: block;
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: rgba(168, 154, 138, 0.62);
+  width: 100%;
+  height: auto;
 }
-.ttBarTrack {
-  flex: 1;
-  height: 7px;
-  border-radius: 6px;
-  background: var(--ink-3);
-  overflow: hidden;
+.radarGrid {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.8;
 }
-.ttBarFill {
-  height: 100%;
-  border-radius: 6px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+.radarAxis {
+  stroke: var(--line);
+  stroke-width: 0.7;
+}
+.radarShape {
+  fill: rgba(236, 147, 163, 0.22);
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.radarDot {
+  fill: var(--accent-soft);
+}
+/* 1위 축의 꼭짓점만 조금 크게. 어디가 가장 높은지를 도형만 보고도 짚을 수 있다. */
+.radarDotTop {
+  fill: #fff;
+}
+.radarLabel {
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  font-weight: 600;
+  fill: var(--mute);
+}
+.radarLabelTop {
+  fill: var(--accent-soft);
+  font-weight: 800;
+}
+/* 축 이름 바로 아래 붙는 값. 이름보다 작게 두어 "이름에 딸린 숫자"로 읽히게 한다. */
+.radarPct {
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.03em;
+  fill: var(--mute);
+}
+.radarPctTop {
+  fill: var(--accent);
 }
 /* 카드 머리줄(.cardTagRow) 안에 놓이므로 아래 여백은 그 줄이 가진다. */
 .ttResultTag {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--accent);
 }
 
-/* 제목이 'IDOL-B: "야심 찬 실력자"'로 길어지므로 기본 h1(44px)보다 줄여 두 줄 안에 담는다. */
+/* 제목이 'IDOL-B: "야심 찬 실력자"'로 길어지므로 기본 h1(44px)보다 줄여 두 줄 안에 담는다.
+   결과 카드를 한 화면에 담으려면 제목이 먼저 자리를 내줘야 한다 — 제목이 말하는 조합 이름은
+   아래 '자세히 보기' 줄이 한 번 더 말해준다. */
 .resultTitle {
-  font-size: 29px;
-  line-height: 1.22;
-  margin-bottom: 14px;
+  font-size: var(--fs-title);
+  line-height: 1.25;
+  margin: 4px 0 10px;
 }
 
 /* 카드 머리줄. 왼쪽은 이 카드가 무엇인지, 오른쪽은 내 조합 이름표. */
@@ -193,7 +218,7 @@
   display: inline-block;
   padding: 2px 9px;
   border-radius: 99px;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.02em;
   border: 1px solid;
@@ -219,24 +244,30 @@
 /* ---------- 결과 덱 (우상 진단 ↔ 영적 처방) ---------- */
 /* 두 장을 위아래로 이어 붙이면 처방이 한참 내려야 나오는 덤이 된다. 좌우로 넘겨보게 두고,
    이름표는 점 대신 글자로 쓴다 — 넘기기 전에도 저쪽에 무엇이 있는지 보여야 넘길 마음이 생긴다. */
+/* 두 장을 오가는 손잡이일 뿐인데 화면 폭을 다 쓰는 큰 알약 두 개라 결과 카드만큼 무거웠다.
+   글자 길이에 맞춘 폭으로 줄이고 가운데에 둔다 — 눌러야 할 것이 아니라 지금 어디를 보고
+   있는지를 알려주는 표시에 가깝다. */
 .deckTabs {
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-  margin-bottom: 12px;
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  margin: 0 auto 8px;
   border-radius: 99px;
   background: var(--ink-3);
   border: 1px solid var(--line);
 }
+.deckTabsWrap {
+  display: flex;
+  justify-content: center;
+}
 .deckTab {
-  flex: 1;
-  padding: 9px 8px;
+  padding: 4px 16px;
   border-radius: 99px;
   border: 0;
   background: none;
   color: var(--mute);
-  font-family: 'Gothic A1';
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -258,8 +289,13 @@
   scrollbar-width: none;
   /* 슬라이드는 각자 제 높이를 갖는다(짧은 쪽을 늘려 속이 빈 카드를 만들지 않는다). */
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 결과 카드는 화면 폭이 좁아 24px 안여백이 그대로 세로 자리로 돌아온다. 조금 줄여
+   같은 내용을 한 화면에 담는다. */
+.resultCard {
+  padding: 16px;
 }
 .deck::-webkit-scrollbar {
   display: none;
@@ -275,25 +311,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   width: 100%;
-  margin-top: 14px;
+  margin-top: 10px;
   padding: 0;
   background: none;
   border: 0;
   color: inherit;
-  font-family: 'Gothic A1';
+  font-family: var(--font-body);
   cursor: pointer;
 }
 .bridgeLine {
   width: 1px;
-  height: 16px;
+  height: 11px;
   background: linear-gradient(180deg, transparent, var(--accent));
 }
 .bridgeText {
   text-align: center;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--fs-caption);
+  line-height: 1.6;
   color: var(--mute);
   word-break: keep-all;
 }
@@ -305,12 +341,12 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 99px;
   background: rgba(236, 147, 163, 0.14);
   border: 1px solid rgba(236, 147, 163, 0.45);
   color: var(--accent-soft);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 .bridge:active .bridgeGo {
@@ -329,14 +365,14 @@
   margin-bottom: 6px;
 }
 .walkName {
-  font-size: 20px;
+  font-size: var(--fs-title-s);
   font-weight: 800;
   margin: 0;
 }
 .walkName em {
-  font-family: 'Bebas Neue';
+  font-family: var(--font-display);
   font-style: normal;
-  font-size: 15px;
+  font-size: var(--fs-body);
   letter-spacing: 0.08em;
   color: var(--accent);
   margin-left: 7px;
@@ -346,27 +382,27 @@
   border-radius: 99px;
   border: 1px solid var(--line);
   background: var(--ink-3);
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--mute);
   white-space: nowrap;
 }
 .walkTagline {
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--accent-soft);
   margin-bottom: 12px;
   word-break: keep-all;
 }
 .walkFusion {
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.75;
   color: #d9cdbb;
   word-break: keep-all;
 }
 .guideLabel {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--accent);
@@ -387,7 +423,7 @@
 .guideList li {
   position: relative;
   padding-left: 26px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.65;
   color: #efe3d0;
   word-break: keep-all;
@@ -404,15 +440,60 @@
   background: rgba(236, 147, 163, 0.16);
   border: 1px solid rgba(236, 147, 163, 0.4);
   color: var(--accent);
-  font-family: 'Bebas Neue';
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
   display: grid;
   place-items: center;
 }
 
+/* 결과지 맨 아래. 다시 검사하기와 안내 두 줄이 나란히 가운데에 선다. */
+.resultFoot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+.footNote {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+  color: var(--mute);
+  word-break: keep-all;
+}
+/* 두 번째 줄은 결과 이야기가 아니라 다음 순서 안내다. 색을 한 단계 낮춰 두 줄이
+   한 문단으로 뭉치지 않게 한다. */
+.footNote span + span {
+  color: rgba(168, 154, 138, 0.62);
+}
+
+/* 다시 검사하기. 결과지에서 가장 덜 하는 일이라 바로 위 "영적 처방 보기"보다 조용해야 한다.
+   글자 길이만큼만 차지하고, 색도 강조색 대신 낮은 회색을 쓴다. */
+.restartBtn {
+  align-self: center;
+  padding: 7px 16px;
+  border-radius: 99px;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, transform 0.12s;
+}
+.restartBtn:active {
+  transform: scale(0.97);
+  color: var(--accent);
+  border-color: rgba(236, 147, 163, 0.5);
+}
+
 /* 카드 안에서 소제목 역할을 한다(내 응답 분포 등) */
 .ttSubLabel {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--accent-soft);
@@ -421,20 +502,24 @@
   padding-top: 12px;
 }
 
+/* 육각형 옆에 세로로 쌓는다(예전엔 가로로 나란히 놓여 한 줄을 통째로 썼다).
+   도형에 자리를 내주느라 이름표는 한 단계 작아졌다 — 여기 적힌 두 이름은 카드 제목과
+   맨 윗줄 알약이 이미 한 번씩 말한 것이라, 작아도 못 읽을 일이 없다. */
 .rankBadges {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  gap: 8px;
-  margin: 14px 0 8px;
+  flex-direction: column;
+  gap: 6px;
 }
 /* 1·2위 자리는 눌러서 다른 유형으로 바꿔볼 수 있는 버튼이다. */
 .rankBadge {
-  flex: 1;
   min-width: 0;
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 6px 9px;
+  border-radius: 11px;
   background: var(--ink-3);
   border: 1px solid var(--line);
-  font-family: 'Gothic A1';
+  font-family: var(--font-body);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -450,10 +535,13 @@
 .rankBadgeOpen {
   border-color: var(--accent);
 }
+/* 칸 안 세 줄(순위·이름·분류)은 본문 줄간격(1.6)을 그대로 쓰면 글자보다 빈 줄이 더 두껍다.
+   한 덩어리로 붙여 읽는 이름표라 줄간격을 바짝 좁힌다. */
 .rankBadgeRank {
   display: block;
-  font-family: 'Bebas Neue';
-  font-size: 11px;
+  font-family: var(--font-display);
+  font-size: var(--fs-caption);
+  line-height: 1.2;
   letter-spacing: 0.08em;
   color: var(--mute);
 }
@@ -464,23 +552,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  font-size: 15px;
+  gap: 3px;
+  font-size: var(--fs-sm);
+  line-height: 1.3;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .rankBadgeTitle {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.3;
   font-weight: 500;
   color: var(--mute);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .chev {
   flex: none;
   color: var(--mute);
   transition: transform 0.25s ease;
+}
+/* 이름표가 작아진 만큼 화살표도 같이 줄인다(기본 15px은 13px 글자 옆에서 혼자 커 보인다). */
+.rankBadgeLabel .chev {
+  width: 13px;
+  height: 13px;
 }
 .chevOpen {
   transform: rotate(90deg);
@@ -496,7 +591,7 @@
   border: 1px solid var(--line);
 }
 .typePickerHint {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   color: var(--mute);
   margin-bottom: 8px;
 }
@@ -511,20 +606,20 @@
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--text);
-  font-family: 'Gothic A1';
+  font-family: var(--font-body);
   cursor: pointer;
   text-align: center;
   transition: border-color 0.15s, background 0.15s;
 }
 .typeChip b {
   display: block;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 .typeChip em {
   display: block;
   font-style: normal;
-  font-size: 10px;
+  font-size: var(--fs-caption);
   color: var(--mute);
   letter-spacing: -0.02em;
 }
@@ -537,14 +632,14 @@
 }
 
 .comboDesc {
-  font-size: 14.5px;
+  font-size: var(--fs-body);
   color: #d9cdbb;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   word-break: keep-all;
 }
 
 .exploreHint {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   color: var(--mute);
   margin-bottom: 10px;
 }
@@ -557,8 +652,8 @@
   background: none;
   border: 1px dashed rgba(236, 147, 163, 0.5);
   color: var(--accent-soft);
-  font-family: 'Gothic A1';
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -570,13 +665,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 11px 14px;
+  padding: 9px 14px;
   border-radius: 12px;
   background: var(--ink-3);
   border: 1px solid var(--line);
   color: var(--text);
-  font-family: 'Gothic A1';
-  font-size: 13.5px;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -591,12 +686,15 @@
 .detailInner {
   overflow: hidden;
 }
+/* 두 문단으로 나뉜 설명. 오른쪽 끝이 들쭉날쭉하면 문단 두 덩어리가 서로 다른 글처럼 보여서
+   양쪽 끝을 맞춘다. keep-all(어절 단위로만 끊기)을 함께 쓰면 어절 사이가 크게 벌어지므로,
+   글자 사이에서도 끊기는 한글 기본 규칙에 맡긴다. */
 .detailText {
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.75;
   color: #d9cdbb;
   padding-top: 14px;
-  word-break: keep-all;
+  text-align: justify;
 }
 .detailVerse {
   margin-top: 14px;
@@ -604,14 +702,14 @@
   border-radius: 12px;
   border-left: 2px solid var(--accent);
   background: rgba(24, 20, 15, 0.5);
-  font-size: 15px;
+  font-size: var(--fs-body);
   font-weight: 600;
   line-height: 1.5;
   color: #efe3d0;
 }
 .detailVerseRef {
   display: block;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--accent);
@@ -620,15 +718,17 @@
 
 /* 제목 위 영문 줄이 두 줄로 접히지 않게 한 줄에 담는다. */
 .ttEyebrow {
-  font-size: 9.5px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.2em;
   white-space: nowrap;
 }
 
-/* FitBox가 이 화면을 키우지 않으므로(shrink 모드) 여기 적은 크기가 곧 눈에 보이는 크기다.
-   한글은 어절 중간에서 끊기면 읽는 속도가 크게 떨어져 keep-all로 어절째 넘긴다. */
+/* 여기 적은 크기가 곧 눈에 보이는 크기다(FitBox는 배율을 건드리지 않는다).
+   한글은 어절 중간에서 끊기면 읽는 속도가 크게 떨어져 keep-all로 어절째 넘긴다.
+   문항은 100개가 넘게 이어지므로, 한 문항이 화면을 가득 채우기보다 한눈에 들어오는 편이 낫다. */
 .qHeading {
-  font-size: 16px;
+  font-size: var(--fs-body);
+  font-weight: 700;
   line-height: 1.5;
   word-break: keep-all;
 }
@@ -636,18 +736,18 @@
 /* 1부·2부로 들어서는 전환 화면. 예전에는 안내 문장이 h2로 화면을 가득 채웠는데,
    정작 알려야 하는 건 "지금 몇 부에 들어선다"는 것이라 위계를 뒤집었다. */
 .sectionStep {
-  font-family: 'Bebas Neue';
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
   letter-spacing: 0.22em;
   color: var(--accent);
   margin-bottom: 4px;
 }
 .sectionTitle {
-  font-size: 23px;
+  font-size: var(--fs-title-s);
   margin-bottom: 10px;
 }
 .sectionBody {
-  font-size: 15px;
+  font-size: var(--fs-sm);
   line-height: 1.7;
   color: #d9cdbb;
   word-break: keep-all;
@@ -656,8 +756,8 @@
 
 /* 문항을 푸는 동안에는 제목이 주인공이 아니다. 결과 화면에서만 원래 크기로 돌아간다. */
 .testTitle {
-  font-size: 26px;
-  margin-bottom: 14px;
+  font-size: var(--fs-title-s);
+  margin-bottom: 12px;
 }
 
 /* 문항마다 글이 한 줄이었다 세 줄이었다 하면, 화면 전체를 기기 높이에 맞춰 담는 배율(FitBox)이
@@ -690,8 +790,8 @@
   background: none;
   border: 1px solid var(--line);
   color: var(--mute);
-  font-family: 'Gothic A1';
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, transform 0.12s;
@@ -713,8 +813,8 @@
   margin: 4px 0 2px;
 }
 .progressLabel {
-  font-family: 'Bebas Neue';
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
   letter-spacing: 0.1em;
   color: var(--accent);
 }

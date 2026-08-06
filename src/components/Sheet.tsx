@@ -39,10 +39,9 @@ export default function Sheet({ open, onClose, children, fullscreen, action, hea
                 </svg>
               </button>
             </div>
-            {/* 게임이 도는 전체화면 시트도 기기 높이에 맞춰 한 화면에 담는다.
-                다만 작은 기기에서 줄이기만 하고 키우지는 않는다(shrink). 내용이 적다고
-                통째로 확대하면 제목·버튼만 커진 확대경처럼 보이고, 판마다 글씨 크기가 달라진다. */}
-            <FitBox mode="shrink">{children}</FitBox>
+            {/* 게임이 도는 전체화면 시트. 담기면 가운데, 넘치면 스크롤한다.
+                판마다 내용의 양이 달라도 글씨 크기는 그대로다. */}
+            <FitBox mode="fit">{children}</FitBox>
           </>
         ) : (
           <>
@@ -55,7 +54,7 @@ export default function Sheet({ open, onClose, children, fullscreen, action, hea
     </div>
   );
 
-  // 화면 축소(transform) 안쪽에 있으면 시트까지 같이 줄어들므로 덮개 전용 자리로 옮겨 그린다.
+  // 화면 안쪽에 그리면 그 화면의 스크롤·여백에 갇히므로, 덮개 전용 자리로 옮겨 그린다.
   if (!overlayRoot) return null;
   return createPortal(sheet, overlayRoot);
 }

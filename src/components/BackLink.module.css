@@ -5,7 +5,7 @@
   background: none;
   border: 0;
   color: var(--mute);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
